@@ -30,6 +30,9 @@
           <div class="form-group"><label for="profile-position">Position</label><input id="profile-position" /></div>
           <div class="form-group"><label for="profile-office">Office</label><input id="profile-office" /></div>
           <div class="form-group"><label for="profile-department">Department</label><input id="profile-department" /></div>
+          <div class="form-group"><label for="profile-manager-name">Designated line manager name</label><input id="profile-manager-name" /></div>
+          <div class="form-group"><label for="profile-manager-email">Designated line manager email</label><input id="profile-manager-email" type="email" /></div>
+          <div class="form-group"><label>Alternate approvers</label><input id="profile-alternate-1-name" placeholder="Alternate name" /><input id="profile-alternate-1-email" type="email" placeholder="Alternate email" /><input id="profile-alternate-2-name" placeholder="Alternate name" /><input id="profile-alternate-2-email" type="email" placeholder="Alternate email" /></div>
         </div>
         <button type="submit" class="btn btn--primary profile-save-button" id="profile-button">Save profile</button>
       </form>
@@ -85,6 +88,13 @@
         document.getElementById('profile-position').value = profile.position || '';
         document.getElementById('profile-office').value = profile.office || '';
         document.getElementById('profile-department').value = profile.department || '';
+        document.getElementById('profile-manager-name').value = profile.managerName || '';
+        document.getElementById('profile-manager-email').value = profile.managerEmail || '';
+        (profile.alternateManagers || []).forEach((contact, index) => {
+          const slot = index + 1;
+          document.getElementById(`profile-alternate-${slot}-name`).value = contact.name || '';
+          document.getElementById(`profile-alternate-${slot}-email`).value = contact.email || '';
+        });
         document.querySelector('.profile-edit-card').hidden = true;
         document.getElementById('edit-profile-btn').addEventListener('click', () => {
           document.querySelector('.profile-edit-card').hidden = false;
@@ -109,6 +119,12 @@
           position: document.getElementById('profile-position').value.trim(),
           office: document.getElementById('profile-office').value.trim(),
           department: document.getElementById('profile-department').value.trim(),
+          managerName: document.getElementById('profile-manager-name').value.trim(),
+          managerEmail: document.getElementById('profile-manager-email').value.trim(),
+          alternateManagers: [1, 2].map((slot) => ({
+            name: document.getElementById(`profile-alternate-${slot}-name`).value.trim(),
+            email: document.getElementById(`profile-alternate-${slot}-email`).value.trim(),
+          })).filter((contact) => contact.name || contact.email),
         });
         setAuth(getToken(), { ...getUser(), ...updated });
         card.querySelector('.detail-grid').outerHTML = `<dl class="detail-grid"><dt>Full Name</dt><dd>${escapeHtml(updated.name)}</dd><dt>Email</dt><dd>${escapeHtml(updated.email)}</dd><dt>Employee Number</dt><dd>${escapeHtml(updated.employeeNumber || '—')}</dd><dt>Position</dt><dd>${escapeHtml(updated.position || '—')}</dd><dt>Role</dt><dd><span class="badge badge--role">${escapeHtml(updated.role)}</span></dd><dt>Department</dt><dd>${escapeHtml(updated.department || '—')}</dd><dt>Office</dt><dd>${escapeHtml(updated.office || '—')}</dd></dl>`;
