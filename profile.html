@@ -32,7 +32,13 @@
           <div class="form-group"><label for="profile-department">Department</label><input id="profile-department" /></div>
           <div class="form-group"><label for="profile-manager-name">Designated line manager name</label><input id="profile-manager-name" /></div>
           <div class="form-group"><label for="profile-manager-email">Designated line manager email</label><input id="profile-manager-email" type="email" /></div>
-          <div class="form-group"><label>Alternate approvers</label><input id="profile-alternate-1-name" placeholder="Alternate name" /><input id="profile-alternate-1-email" type="email" placeholder="Alternate email" /><input id="profile-alternate-2-name" placeholder="Alternate name" /><input id="profile-alternate-2-email" type="email" placeholder="Alternate email" /></div>
+          <div class="form-group profile-approvers-group">
+            <label>Line manager and alternate approvers</label>
+            <p class="form-hint">Enter the people who can approve your TARs. Alternate approvers are used when your designated line manager is unavailable.</p>
+            <div class="approver-contact"><strong>Alternate approver 1</strong><input id="profile-alternate-1-name" placeholder="Full name" /><input id="profile-alternate-1-email" type="email" placeholder="Email address" /></div>
+            <div class="approver-contact"><strong>Alternate approver 2</strong><input id="profile-alternate-2-name" placeholder="Full name" /><input id="profile-alternate-2-email" type="email" placeholder="Email address" /></div>
+            <div class="approver-contact"><strong>Alternate approver 3</strong><input id="profile-alternate-3-name" placeholder="Full name" /><input id="profile-alternate-3-email" type="email" placeholder="Email address" /></div>
+          </div>
         </div>
         <button type="submit" class="btn btn--primary profile-save-button" id="profile-button">Save profile</button>
       </form>
@@ -78,7 +84,11 @@
       showPageLoading(loading);
       try {
         const profile = await fetchCurrentUser();
-        card.innerHTML = `<dl class="detail-grid"><dt>Full Name</dt><dd>${escapeHtml(profile.name)}</dd><dt>Email</dt><dd>${escapeHtml(profile.email)}</dd><dt>Employee Number</dt><dd>${escapeHtml(profile.employeeNumber || '—')}</dd><dt>Position</dt><dd>${escapeHtml(profile.position || '—')}</dd><dt>Role</dt><dd><span class="badge badge--role">${escapeHtml(profile.role)}</span></dd><dt>Department</dt><dd>${escapeHtml(profile.department || '—')}</dd><dt>Office</dt><dd>${escapeHtml(profile.office || '—')}</dd></dl>`;
+        const alternateManagers = profile.alternateManagers || [];
+        const alternateSummary = alternateManagers.length
+          ? alternateManagers.map((contact) => `${escapeHtml(contact.name)} (${escapeHtml(contact.email)})`).join('<br />')
+          : '—';
+        card.innerHTML = `<dl class="detail-grid"><dt>Full Name</dt><dd>${escapeHtml(profile.name)}</dd><dt>Email</dt><dd>${escapeHtml(profile.email)}</dd><dt>Employee Number</dt><dd>${escapeHtml(profile.employeeNumber || '—')}</dd><dt>Position</dt><dd>${escapeHtml(profile.position || '—')}</dd><dt>Role</dt><dd><span class="badge badge--role">${escapeHtml(profile.role)}</span></dd><dt>Department</dt><dd>${escapeHtml(profile.department || '—')}</dd><dt>Office</dt><dd>${escapeHtml(profile.office || '—')}</dd><dt>Designated line manager</dt><dd>${escapeHtml(profile.managerName || '—')}${profile.managerEmail ? ` (${escapeHtml(profile.managerEmail)})` : ''}</dd><dt>Alternate approvers</dt><dd>${alternateSummary}</dd></dl>`;
         card.innerHTML += '<button type="button" class="btn btn--primary" id="edit-profile-btn">Edit Profile</button>';
         card.hidden = false;
         loading.innerHTML = '';
@@ -92,8 +102,10 @@
         document.getElementById('profile-manager-email').value = profile.managerEmail || '';
         (profile.alternateManagers || []).forEach((contact, index) => {
           const slot = index + 1;
-          document.getElementById(`profile-alternate-${slot}-name`).value = contact.name || '';
-          document.getElementById(`profile-alternate-${slot}-email`).value = contact.email || '';
+          if (slot <= 3) {
+            document.getElementById(`profile-alternate-${slot}-name`).value = contact.name || '';
+            document.getElementById(`profile-alternate-${slot}-email`).value = contact.email || '';
+          }
         });
         document.querySelector('.profile-edit-card').hidden = true;
         document.getElementById('edit-profile-btn').addEventListener('click', () => {
@@ -121,13 +133,17 @@
           department: document.getElementById('profile-department').value.trim(),
           managerName: document.getElementById('profile-manager-name').value.trim(),
           managerEmail: document.getElementById('profile-manager-email').value.trim(),
-          alternateManagers: [1, 2].map((slot) => ({
+          alternateManagers: [1, 2, 3].map((slot) => ({
             name: document.getElementById(`profile-alternate-${slot}-name`).value.trim(),
             email: document.getElementById(`profile-alternate-${slot}-email`).value.trim(),
           })).filter((contact) => contact.name || contact.email),
         });
         setAuth(getToken(), { ...getUser(), ...updated });
-        card.querySelector('.detail-grid').outerHTML = `<dl class="detail-grid"><dt>Full Name</dt><dd>${escapeHtml(updated.name)}</dd><dt>Email</dt><dd>${escapeHtml(updated.email)}</dd><dt>Employee Number</dt><dd>${escapeHtml(updated.employeeNumber || '—')}</dd><dt>Position</dt><dd>${escapeHtml(updated.position || '—')}</dd><dt>Role</dt><dd><span class="badge badge--role">${escapeHtml(updated.role)}</span></dd><dt>Department</dt><dd>${escapeHtml(updated.department || '—')}</dd><dt>Office</dt><dd>${escapeHtml(updated.office || '—')}</dd></dl>`;
+        const updatedAlternates = updated.alternateManagers || [];
+        const updatedAlternateSummary = updatedAlternates.length
+          ? updatedAlternates.map((contact) => `${escapeHtml(contact.name)} (${escapeHtml(contact.email)})`).join('<br />')
+          : '—';
+        card.querySelector('.detail-grid').outerHTML = `<dl class="detail-grid"><dt>Full Name</dt><dd>${escapeHtml(updated.name)}</dd><dt>Email</dt><dd>${escapeHtml(updated.email)}</dd><dt>Employee Number</dt><dd>${escapeHtml(updated.employeeNumber || '—')}</dd><dt>Position</dt><dd>${escapeHtml(updated.position || '—')}</dd><dt>Role</dt><dd><span class="badge badge--role">${escapeHtml(updated.role)}</span></dd><dt>Department</dt><dd>${escapeHtml(updated.department || '—')}</dd><dt>Office</dt><dd>${escapeHtml(updated.office || '—')}</dd><dt>Designated line manager</dt><dd>${escapeHtml(updated.managerName || '—')}${updated.managerEmail ? ` (${escapeHtml(updated.managerEmail)})` : ''}</dd><dt>Alternate approvers</dt><dd>${updatedAlternateSummary}</dd></dl>`;
         document.querySelector('.profile-edit-card').hidden = true;
         showToast('Profile updated.', 'success');
       } catch (err) {
