@@ -70,6 +70,13 @@
       </section>
 
       <section class="form-section">
+        <h2>Additional Travel Segments</h2>
+        <p class="form-hint">Optional: add each extra destination with the departure point, arrival point, and travel dates. The original itinerary above remains the primary TAR segment.</p>
+        <div id="travel-segments"></div>
+        <button type="button" class="btn btn--secondary btn--sm" id="add-travel-segment">Add destination</button>
+      </section>
+
+      <section class="form-section">
         <h2>Assignment &amp; Purpose</h2>
         <div class="form-group">
           <label for="assignedAreaOfOperation">Assigned Area of Operation</label>
@@ -176,6 +183,23 @@
     const errorEl = document.getElementById('form-error');
     const submitBtn = document.getElementById('submit-btn');
     const showRequestFormBtn = document.getElementById('show-request-form');
+    const travelSegments = document.getElementById('travel-segments');
+
+    function addTravelSegment(segment = {}) {
+      const row = document.createElement('div');
+      row.className = 'travel-segment form-row';
+      row.innerHTML = `
+        <div class="form-group"><label>From</label><input type="text" data-segment="from" required value="${escapeHtml(segment.from || '')}" /></div>
+        <div class="form-group"><label>To</label><input type="text" data-segment="to" required value="${escapeHtml(segment.to || '')}" /></div>
+        <div class="form-group"><label>Destination</label><input type="text" data-segment="destination" required value="${escapeHtml(segment.destination || '')}" /></div>
+        <div class="form-group"><label>Arrival</label><input type="date" data-segment="dateFrom" required value="${escapeHtml(segment.dateFrom ? String(segment.dateFrom).slice(0, 10) : '')}" /></div>
+        <div class="form-group"><label>Departure</label><input type="date" data-segment="dateTo" required value="${escapeHtml(segment.dateTo ? String(segment.dateTo).slice(0, 10) : '')}" /></div>
+        <button type="button" class="btn btn--danger btn--sm remove-travel-segment">Remove</button>`;
+      row.querySelector('.remove-travel-segment').addEventListener('click', () => row.remove());
+      travelSegments.appendChild(row);
+    }
+
+    document.getElementById('add-travel-segment').addEventListener('click', () => addTravelSegment());
     const downloadTemplateBtn = document.getElementById('download-template-btn');
     const passengersList = document.getElementById('passengers-list');
     const approverSelectContainer = document.getElementById('approver-select');

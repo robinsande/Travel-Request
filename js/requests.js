@@ -42,6 +42,13 @@ function buildRequestPayload(form) {
       destination: fd.get('itinerary_destination')?.trim() || '',
       accommodationNeeded: fd.get('itinerary_accommodationNeeded') === 'on',
     },
+    travelSegments: Array.from(form.querySelectorAll('.travel-segment')).map((row) => ({
+      from: row.querySelector('[data-segment="from"]').value.trim(),
+      to: row.querySelector('[data-segment="to"]').value.trim(),
+      destination: row.querySelector('[data-segment="destination"]').value.trim(),
+      dateFrom: row.querySelector('[data-segment="dateFrom"]').value,
+      dateTo: row.querySelector('[data-segment="dateTo"]').value,
+    })),
     passengers,
   };
 }
@@ -75,6 +82,12 @@ async function populateRequestForm(form, request, passengerOptions = null) {
   set('itinerary_dateFrom', it.dateFrom ? it.dateFrom.slice(0, 10) : '');
   set('itinerary_dateTo', it.dateTo ? it.dateTo.slice(0, 10) : '');
   set('itinerary_destination', it.destination);
+  const segments = request.travelSegments || [];
+  const segmentContainer = form.querySelector('#travel-segments');
+  if (segmentContainer) {
+    segmentContainer.innerHTML = '';
+    segments.forEach((segment) => addTravelSegment(segmentContainer, segment));
+  }
   form.elements.itinerary_accommodationNeeded.checked = !!it.accommodationNeeded;
 
   const container = form.querySelector('#passengers-list');
@@ -90,6 +103,20 @@ async function populateRequestForm(form, request, passengerOptions = null) {
 
 let passengerIndex = 0;
 let cachedPassengerOptions = null;
+
+function addTravelSegment(container, segment = {}) {
+  const row = document.createElement('div');
+  row.className = 'travel-segment form-row';
+  row.innerHTML = `
+    <div class="form-group"><label>From</label><input type="text" data-segment="from" required value="${escapeHtml(segment.from || '')}" /></div>
+    <div class="form-group"><label>To</label><input type="text" data-segment="to" required value="${escapeHtml(segment.to || '')}" /></div>
+    <div class="form-group"><label>Destination</label><input type="text" data-segment="destination" required value="${escapeHtml(segment.destination || '')}" /></div>
+    <div class="form-group"><label>Arrival</label><input type="date" data-segment="dateFrom" required value="${escapeHtml(segment.dateFrom ? String(segment.dateFrom).slice(0, 10) : '')}" /></div>
+    <div class="form-group"><label>Departure</label><input type="date" data-segment="dateTo" required value="${escapeHtml(segment.dateTo ? String(segment.dateTo).slice(0, 10) : '')}" /></div>
+    <button type="button" class="btn btn--danger btn--sm remove-travel-segment">Remove</button>`;
+  row.querySelector('.remove-travel-segment').addEventListener('click', () => row.remove());
+  container.appendChild(row);
+}
 
 async function loadPassengerOptions() {
   if (cachedPassengerOptions) return cachedPassengerOptions;
@@ -490,6 +517,7 @@ function renderRequestDetail(request) {
         <dt>Travel Dates</dt><dd>${formatDate(it.dateFrom)} – ${formatDate(it.dateTo)}</dd>
         <dt>Accommodation Needed</dt><dd>${it.accommodationNeeded ? 'Yes' : 'No'}</dd>
       </dl>
+      ${(request.travelSegments || []).length ? `<h3>Additional Travel Segments</h3><div class="detail-grid">${request.travelSegments.map((segment) => `<dt>Route</dt><dd>${escapeHtml(segment.from)} → ${escapeHtml(segment.to)}: ${escapeHtml(segment.destination)} (${formatDate(segment.dateFrom)} – ${formatDate(segment.dateTo)})</dd>`).join('')}</div>` : ''}
     </section>
 
     <section class="detail-section">

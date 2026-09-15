@@ -147,6 +147,11 @@
             <input type="text" id="itinerary_destination" name="itinerary_destination" required />
           </div>
           <div class="form-group">
+            <h3>Additional Travel Segments</h3>
+            <div id="travel-segments"></div>
+            <button type="button" class="btn btn--secondary btn--sm" id="add-travel-segment">Add destination</button>
+          </div>
+          <div class="form-group">
             <label class="checkbox-label">
               <input type="checkbox" name="itinerary_accommodationNeeded" />
               Accommodation needed
@@ -200,6 +205,9 @@
     const rejectBtn = document.getElementById('reject-btn');
     const resubmitSection = document.getElementById('resubmit-section');
     const resubmitForm = document.getElementById('resubmit-form');
+    document.getElementById('add-travel-segment')?.addEventListener('click', () => {
+      addTravelSegment(document.getElementById('travel-segments'));
+    });
     const resubmitError = document.getElementById('resubmit-error');
     const resubmitBtn = document.getElementById('resubmit-btn');
     const resubmitApproverContainer = document.getElementById('resubmit-approver-select');
