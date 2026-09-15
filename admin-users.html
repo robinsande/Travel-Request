@@ -71,6 +71,7 @@
           <div class="form-group"><label for="edit-user-position">Position</label><input id="edit-user-position" /></div>
           <div class="form-group"><label for="edit-user-office">Office</label><input id="edit-user-office" /></div>
           <div class="form-group"><label for="edit-user-department">Department</label><input id="edit-user-department" /></div>
+          <div class="form-group"><label for="edit-user-alternates">Alternate approvers</label><select id="edit-user-alternates" multiple></select><p class="form-hint">Select active admins who can approve this user when the designated manager is unavailable.</p></div>
         </div>
         <button type="submit" class="btn btn--primary" id="edit-user-button">Save profile</button>
         <button type="button" class="btn btn--secondary" id="cancel-edit-user">Cancel</button>
@@ -171,6 +172,7 @@
           position: document.getElementById('edit-user-position').value.trim(),
           office: document.getElementById('edit-user-office').value.trim(),
           department: document.getElementById('edit-user-department').value.trim(),
+          alternateApproverIds: Array.from(document.getElementById('edit-user-alternates').selectedOptions).map((option) => option.value),
         });
         editPanel.hidden = true;
         await loadUsers();
@@ -254,6 +256,14 @@
               document.getElementById('edit-user-position').value = user.position || '';
               document.getElementById('edit-user-office').value = user.office || '';
               document.getElementById('edit-user-department').value = user.department || '';
+              const alternateSelect = document.getElementById('edit-user-alternates');
+              alternateSelect.innerHTML = users
+                .filter((candidate) => candidate.role === 'admin' && candidate.isActive !== false && candidate.department === (user.department || '') && String(candidate._id || candidate.id) !== button.dataset.userId)
+                .map((candidate) => {
+                  const candidateId = String(candidate._id || candidate.id);
+                  const selected = (user.alternateApproverIds || []).some((id) => String(id?._id || id) === candidateId);
+                  return `<option value="${escapeHtml(candidateId)}" ${selected ? 'selected' : ''}>${escapeHtml(candidate.name)} (${escapeHtml(candidate.department || 'No department')})</option>`;
+                }).join('');
               editPanel.hidden = false;
               document.getElementById('edit-user-name').focus();
             });

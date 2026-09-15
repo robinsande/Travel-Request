@@ -276,6 +276,7 @@ function renderRequestRow(request, options = {}) {
         ${request.requestedBy ? `<span>Requested by: ${escapeHtml(requester)}</span>` : ''}
       </div>
       <p class="request-card__purpose">${escapeHtml(request.purposeOfTrip || '')}</p>
+      <span class="btn btn--secondary btn--sm">View TAR Form</span>
     </a>`;
 }
 
