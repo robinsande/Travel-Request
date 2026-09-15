@@ -35,10 +35,13 @@
       </form>
     </section>
     <section class="profile-card profile-password-card" aria-labelledby="password-heading">
-      <h2 id="password-heading" class="profile-card__title">Change password</h2>
+      <div class="section-heading-row">
+        <h2 id="password-heading" class="profile-card__title">Change password</h2>
+        <button type="button" class="btn btn--primary" id="show-password-form">Change password</button>
+      </div>
       <p class="text-muted profile-card__intro">Enter your current password, then choose a new one.</p>
       <div id="password-error" class="alert alert--error" hidden role="alert"></div>
-      <form id="password-form" novalidate>
+      <form id="password-form" novalidate hidden>
         <div class="form-group"><label for="current-password">Current password</label><input id="current-password" type="password" required autocomplete="current-password" /></div>
         <div class="form-group"><label for="new-password">New password</label><input id="new-password" type="password" minlength="8" required autocomplete="new-password" /></div>
         <div class="form-group"><label for="confirm-password">Confirm new password</label><input id="confirm-password" type="password" minlength="8" required autocomplete="new-password" /></div>
@@ -66,6 +69,7 @@
     const profileForm = document.getElementById('profile-form');
     const profileError = document.getElementById('profile-error');
     const profileButton = document.getElementById('profile-button');
+    const passwordFormToggle = document.getElementById('show-password-form');
 
     async function loadProfile() {
       showPageLoading(loading);
@@ -117,6 +121,12 @@
       }
     });
 
+    passwordFormToggle.addEventListener('click', () => {
+      form.hidden = false;
+      passwordFormToggle.hidden = true;
+      form.elements['current-password'].focus();
+    });
+
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
       error.hidden = true;
@@ -129,6 +139,8 @@
       try {
         await setPassword(getUser().email, form.elements['current-password'].value, newPassword);
         form.reset();
+        form.hidden = true;
+        passwordFormToggle.hidden = false;
         showToast('Password updated successfully.', 'success');
       } catch (err) {
         renderApiErrors(error, err);

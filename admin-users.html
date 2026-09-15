@@ -25,8 +25,9 @@
         <span class="section-mark" aria-hidden="true">+</span>
       </div>
       <p class="section-intro">Create a ready-to-use staff or line-manager account with a secure initial password.</p>
+      <button type="button" class="btn btn--primary" id="show-create-user-form">Create account</button>
       <div id="create-user-error" class="alert alert--error" hidden role="alert"></div>
-      <form id="create-user-form" novalidate>
+      <form id="create-user-form" novalidate hidden>
         <div class="form-grid">
           <div class="form-group"><label for="new-name">Full name</label><input id="new-name" required /></div>
           <div class="form-group"><label for="new-email">Email address</label><input id="new-email" type="email" required /></div>
@@ -97,6 +98,7 @@
     const createForm = document.getElementById('create-user-form');
     const createError = document.getElementById('create-user-error');
     const createButton = document.getElementById('create-user-btn');
+    const createFormToggle = document.getElementById('show-create-user-form');
     if (currentUser.role !== 'superadmin') {
       document.getElementById('new-role').value = 'user';
       document.getElementById('new-role').disabled = true;
@@ -119,12 +121,20 @@
           role: document.getElementById('new-role').value,
         });
         createForm.reset();
+        createForm.hidden = true;
+        createFormToggle.hidden = false;
         showToast('Account created successfully.', 'success');
       } catch (error) {
         renderApiErrors(createError, error);
       } finally {
         setLoading(createButton, false);
       }
+    });
+
+    createFormToggle.addEventListener('click', () => {
+      createForm.hidden = false;
+      createFormToggle.hidden = true;
+      document.getElementById('new-name').focus();
     });
 
     async function loadUsers() {
