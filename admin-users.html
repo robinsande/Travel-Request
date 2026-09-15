@@ -60,6 +60,22 @@
 
     <div id="users-loading"></div>
     <div id="users-empty"></div>
+    <section id="edit-user-panel" class="form-section" hidden>
+      <h2>Edit user profile</h2>
+      <div id="edit-user-error" class="alert alert--error" hidden role="alert"></div>
+      <form id="edit-user-form" novalidate>
+        <div class="form-grid">
+          <div class="form-group"><label for="edit-user-name">Full name</label><input id="edit-user-name" required /></div>
+          <div class="form-group"><label for="edit-user-email">Email</label><input id="edit-user-email" type="email" required /></div>
+          <div class="form-group"><label for="edit-user-employee-number">Employee number</label><input id="edit-user-employee-number" /></div>
+          <div class="form-group"><label for="edit-user-position">Position</label><input id="edit-user-position" /></div>
+          <div class="form-group"><label for="edit-user-office">Office</label><input id="edit-user-office" /></div>
+          <div class="form-group"><label for="edit-user-department">Department</label><input id="edit-user-department" /></div>
+        </div>
+        <button type="submit" class="btn btn--primary" id="edit-user-button">Save profile</button>
+        <button type="button" class="btn btn--secondary" id="cancel-edit-user">Cancel</button>
+      </form>
+    </section>
     <div class="data-table-wrap role-users-table" id="users-table-wrap" hidden>
       <table class="data-table">
         <thead>
@@ -99,6 +115,10 @@
     const createError = document.getElementById('create-user-error');
     const createButton = document.getElementById('create-user-btn');
     const createFormToggle = document.getElementById('show-create-user-form');
+    const editPanel = document.getElementById('edit-user-panel');
+    const editForm = document.getElementById('edit-user-form');
+    const editError = document.getElementById('edit-user-error');
+    let editingUserId = null;
     if (currentUser.role !== 'superadmin') {
       document.getElementById('new-role').value = 'user';
       document.getElementById('new-role').disabled = true;
@@ -119,34 +139,6 @@
           department: document.getElementById('new-department').value.trim(),
           role: document.getElementById('new-role').value,
         });
-        tbody.querySelectorAll('.user-status-button').forEach((button) => {
-          button.addEventListener('click', async () => {
-            const isActive = button.dataset.active === 'true';
-            button.disabled = true;
-            try {
-              await updateUserStatus(button.dataset.userId, !isActive);
-              await loadUsers();
-              showToast(isActive ? 'User deactivated.' : 'User activated.', 'success');
-            } catch (error) {
-              showToast(error.message || 'Failed to update user status.', 'error');
-              button.disabled = false;
-            }
-          });
-        });
-        tbody.querySelectorAll('.user-delete-button').forEach((button) => {
-          button.addEventListener('click', async () => {
-            if (!window.confirm('Permanently delete this user account? This cannot be undone.')) return;
-            button.disabled = true;
-            try {
-              await deleteUser(button.dataset.userId);
-              await loadUsers();
-              showToast('User account deleted.', 'success');
-            } catch (error) {
-              showToast(error.message || 'Failed to delete user.', 'error');
-              button.disabled = false;
-            }
-          });
-        });
         createForm.reset();
         createForm.hidden = true;
         createFormToggle.hidden = false;
@@ -166,6 +158,30 @@
       createForm.hidden = false;
       createFormToggle.hidden = true;
       document.getElementById('new-name').focus();
+    });
+
+    editForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      editError.hidden = true;
+      try {
+        await updateUserProfile(editingUserId, {
+          name: document.getElementById('edit-user-name').value.trim(),
+          email: document.getElementById('edit-user-email').value.trim(),
+          employeeNumber: document.getElementById('edit-user-employee-number').value.trim(),
+          position: document.getElementById('edit-user-position').value.trim(),
+          office: document.getElementById('edit-user-office').value.trim(),
+          department: document.getElementById('edit-user-department').value.trim(),
+        });
+        editPanel.hidden = true;
+        await loadUsers();
+        showToast('User profile updated.', 'success');
+      } catch (error) {
+        renderApiErrors(editError, error);
+      }
+    });
+
+    document.getElementById('cancel-edit-user').addEventListener('click', () => {
+      editPanel.hidden = true;
     });
 
     async function loadUsers() {
@@ -196,6 +212,67 @@
                 showToast(error.message || 'Failed to update role.', 'error');
               } finally {
                 select.disabled = false;
+              }
+            });
+          });
+          tbody.querySelectorAll('.user-status-button').forEach((button) => {
+            button.addEventListener('click', async () => {
+              const isActive = button.dataset.active === 'true';
+              button.disabled = true;
+              try {
+                await updateUserStatus(button.dataset.userId, !isActive);
+                await loadUsers();
+                showToast(isActive ? 'User deactivated.' : 'User activated.', 'success');
+              } catch (error) {
+                showToast(error.message || 'Failed to update user status.', 'error');
+                button.disabled = false;
+              }
+            });
+          });
+          tbody.querySelectorAll('.user-delete-button').forEach((button) => {
+            button.addEventListener('click', async () => {
+              if (!window.confirm('Permanently delete this user account? This cannot be undone.')) return;
+              button.disabled = true;
+              try {
+                await deleteUser(button.dataset.userId);
+                await loadUsers();
+                showToast('User account deleted.', 'success');
+              } catch (error) {
+                showToast(error.message || 'Failed to delete user.', 'error');
+                button.disabled = false;
+              }
+            });
+          });
+          tbody.querySelectorAll('.user-edit-button').forEach((button) => {
+            button.addEventListener('click', () => {
+              const user = users.find((item) => String(item._id || item.id) === button.dataset.userId);
+              if (!user) return;
+              editingUserId = button.dataset.userId;
+              document.getElementById('edit-user-name').value = user.name || '';
+              document.getElementById('edit-user-email').value = user.email || '';
+              document.getElementById('edit-user-employee-number').value = user.employeeNumber || '';
+              document.getElementById('edit-user-position').value = user.position || '';
+              document.getElementById('edit-user-office').value = user.office || '';
+              document.getElementById('edit-user-department').value = user.department || '';
+              editPanel.hidden = false;
+              document.getElementById('edit-user-name').focus();
+            });
+          });
+          tbody.querySelectorAll('.user-reset-password-button').forEach((button) => {
+            button.addEventListener('click', async () => {
+              if (!window.confirm('Reset this user password and generate a new temporary password?')) return;
+              button.disabled = true;
+              try {
+                const result = await resetUserPassword(button.dataset.userId);
+                const expires = new Date(result.passwordExpiresAt).toLocaleDateString();
+                const passwordResult = document.getElementById('temporary-password-result');
+                passwordResult.innerHTML = `Temporary password for <strong>${escapeHtml(result.email)}</strong>: <code>${escapeHtml(result.temporaryPassword)}</code><br>Expires: ${escapeHtml(expires)}. Copy it now; it will not be shown again.`;
+                passwordResult.hidden = false;
+                showToast('Password reset successfully.', 'success');
+              } catch (error) {
+                showToast(error.message || 'Failed to reset password.', 'error');
+              } finally {
+                button.disabled = false;
               }
             });
           });

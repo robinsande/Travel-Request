@@ -62,6 +62,8 @@ function renderUserRow(user) {
         ${user.isActive === false ? 'Inactive' : 'Active'}
         <div class="user-actions">
           <button type="button" class="btn btn--secondary user-status-button" data-user-id="${escapeHtml(user._id || user.id)}" data-active="${user.isActive !== false}">${user.isActive === false ? 'Activate' : 'Deactivate'}</button>
+          <button type="button" class="btn btn--secondary user-edit-button" data-user-id="${escapeHtml(user._id || user.id)}">Edit profile</button>
+          <button type="button" class="btn btn--secondary user-reset-password-button" data-user-id="${escapeHtml(user._id || user.id)}">Reset password</button>
           <button type="button" class="btn btn--danger user-delete-button" data-user-id="${escapeHtml(user._id || user.id)}">Delete</button>
         </div>
       </td>
