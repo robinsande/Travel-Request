@@ -54,7 +54,7 @@
 
     const user = getUser();
     const params = new URLSearchParams(window.location.search);
-    const isSuperadminView = user?.role === 'superadmin' || params.get('scope') === 'all';
+    const isSuperadminView = params.get('scope') === 'all';
     const activeNav = isSuperadminView ? 'all-reimbursements' : 'my-reimbursements';
 
     initProtectedPage(activeNav);
@@ -130,6 +130,7 @@
         const filterParams = getReimbursementFilterParams();
         const result = await fetchMyReimbursements(filterParams);
         let reports = unwrapListResult(result, ['reports']);
+        reports.sort((a, b) => new Date(b.submittedAt || b.createdAt || 0) - new Date(a.submittedAt || a.createdAt || 0));
         if (Object.keys(filterParams).length) {
           reports = reports.filter(matchesLocalFilters);
         }

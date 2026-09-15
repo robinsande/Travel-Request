@@ -80,7 +80,7 @@
     let showNewBtn = canCreateRequests();
     let currentPage = 1;
 
-    if (user.role === 'superadmin' || scope === 'all') {
+    if (scope === 'all') {
       activeNav = 'all-requests';
       pageTitle = 'All Travel Requests';
       showFilters = true;
@@ -100,13 +100,13 @@
       ? 'Team — Reimbursement Requests — CARE TAR'
       : isTeamView
         ? 'Team — Travel Requests — CARE TAR'
-        : user.role === 'superadmin' || scope === 'all'
+        : scope === 'all'
           ? 'All Travel Requests — CARE TAR'
           : 'Travel Requests — CARE TAR';
 
     const subtitleEl = document.getElementById('page-subtitle');
     if (subtitleEl) {
-      if (user.role === 'superadmin' || scope === 'all') {
+      if (scope === 'all') {
         subtitleEl.textContent = 'All travel requests across the organization.';
       } else if (isTeamReimbursementView) {
         subtitleEl.textContent =
@@ -139,7 +139,7 @@
         document.getElementById('filter-search').placeholder = 'Trip, base location, requester…';
         document.getElementById('filter-email-label').textContent = 'Submitted by';
         document.getElementById('filter-email').placeholder = 'Name or email…';
-      } else if (scope === 'team' || user.role === 'superadmin') {
+      } else if (scope === 'team') {
         document.getElementById('filter-search').placeholder = 'Purpose, destination, requester…';
       }
     }
@@ -161,7 +161,7 @@
       const filters = { page: currentPage, limit: 20 };
 
       if (scope === 'team') filters.scope = 'team';
-      else if (scope === 'all' || user.role === 'superadmin') filters.scope = 'all';
+      else if (scope === 'all') filters.scope = 'all';
       else filters.scope = 'mine';
 
       if (!showFilters) return filters;
@@ -271,6 +271,7 @@
       try {
         const result = await fetchMyRequests(getFilterParams());
         const requests = result.data || result.requests || result || [];
+        requests.sort((a, b) => new Date(b.submittedAt || b.createdAt || 0) - new Date(a.submittedAt || a.createdAt || 0));
         const pagination = result.pagination;
 
         loadingEl.innerHTML = '';

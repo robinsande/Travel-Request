@@ -24,14 +24,14 @@
       <a href="activate.html">activate your account</a>.
     </div>
 
-    <form id="login-form" novalidate>
+    <form id="login-form" autocomplete="off" novalidate>
       <div class="form-group">
         <label for="email">Email address</label>
-        <input type="email" id="email" name="email" required autocomplete="email" />
+        <input type="email" id="email" name="email" required autocomplete="off" />
       </div>
       <div class="form-group">
         <label for="password">Password</label>
-        <input type="password" id="password" name="password" required autocomplete="current-password" />
+        <input type="password" id="password" name="password" required autocomplete="off" />
       </div>
       <button type="submit" class="btn btn--primary btn--block" id="login-btn">Sign In</button>
     </form>
@@ -73,6 +73,7 @@
 
       try {
         await login(email, password);
+        form.reset();
         window.location.href = 'dashboard.html';
       } catch (err) {
         if (err instanceof ApiError && err.status === 403 && err.body?.details?.code === 'ACCOUNT_NOT_ACTIVATED') {
