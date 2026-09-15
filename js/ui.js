@@ -292,12 +292,12 @@ async function showBackendConnectionStatus(containerId) {
   container.hidden = false;
   container.className = 'alert alert--error';
   container.innerHTML = `
-    <strong>Backend not reachable.</strong>
+    <strong>Backend connection failed.</strong>
     <ul>
       <li>Expected API: <code>${escapeHtml(result.url)}</code></li>
-      <li>Start the backend with npm start.</li>
-      <li>Open the frontend over HTTP, such as http://localhost:5500.</li>
-      <li>Add ?apiBase=http://127.0.0.1:5000/api to this page if needed.</li>
+      <li>Confirm the Render service is running and that its health endpoint returns OK.</li>
+      <li>Check the browser console for a CORS or blocked-network message.</li>
+      <li>For local development, add ?apiBase=http://127.0.0.1:5000/api to this page.</li>
     </ul>
   `;
 }
