@@ -499,20 +499,13 @@ function getNavItems() {
   if (user.role === 'superadmin') {
     items.push(
       { href: 'requests.html', label: 'My Travel Requests', id: 'my-requests' },
-      { href: 'reimbursements.html', label: 'My Reimbursement Requests', id: 'my-reimbursements' },
       { href: 'requests.html?scope=all', label: 'All Travel Requests', id: 'all-requests' },
       { href: 'approvals.html', label: 'All Approvals', id: 'approvals' },
-      {
-        href: 'reimbursements.html?scope=all',
-        label: 'All Reimbursement Requests',
-        id: 'all-reimbursements',
-      },
       { href: 'admin-users.html', label: 'Users', id: 'admin-users' }
     );
   } else {
     items.push(
-      { href: 'requests.html', label: 'My Travel Requests', id: 'my-requests' },
-      { href: 'reimbursements.html', label: 'My Reimbursement Requests', id: 'my-reimbursements' }
+      { href: 'requests.html', label: 'My Travel Requests', id: 'my-requests' }
     );
 
     if (user.role === 'admin') {
