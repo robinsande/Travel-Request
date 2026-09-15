@@ -22,8 +22,9 @@
     </p>
 
     <div id="form-error" class="alert alert--error" hidden role="alert"></div>
+    <button type="button" class="btn btn--primary" id="show-reimbursement-form">Create New Reimbursement</button>
 
-    <form id="reimbursement-form" novalidate>
+    <form id="reimbursement-form" novalidate hidden>
       <section class="form-section">
         <h2>Approver</h2>
         <div class="form-group">
@@ -136,11 +137,22 @@
     const form = document.getElementById('reimbursement-form');
     const errorEl = document.getElementById('form-error');
     const submitBtn = document.getElementById('submit-btn');
+    const showReimbursementFormBtn = document.getElementById('show-reimbursement-form');
     const lineItemsBody = document.getElementById('line-items-body');
     const travelSelect = document.getElementById('travelRequestId');
     const approverSelectContainer = document.getElementById('approver-select');
     const reimbursementId = new URLSearchParams(window.location.search).get('id');
     let approverSelect = null;
+
+    if (reimbursementId) {
+      showReimbursementFormBtn.hidden = true;
+      form.hidden = false;
+    }
+    showReimbursementFormBtn.addEventListener('click', () => {
+      form.hidden = false;
+      showReimbursementFormBtn.hidden = true;
+      form.querySelector('input, select, textarea')?.focus();
+    });
 
     function setEmployeeDetails(details = {}) {
       const name = details.name || '—';
@@ -287,6 +299,8 @@
             : createReimbursement(payload)
         );
         showToast(reimbursementId ? 'Reimbursement request updated successfully.' : 'Reimbursement request submitted successfully.', 'success');
+        form.hidden = true;
+        showReimbursementFormBtn.hidden = false;
         const id = getReimbursementId(result);
         window.location.href = id ? `reimbursement-detail.html?id=${encodeURIComponent(id)}` : 'reimbursements.html';
       } catch (err) {
