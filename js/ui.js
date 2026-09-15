@@ -644,6 +644,7 @@ function renderAppShell(activeId) {
   const shell = document.getElementById('app-shell');
   if (!shell) return;
 
+    rememberAndMaskPageUrl();
   const navItems = getNavItems();
   const navHtml = navItems
     .map((item) => {
