@@ -163,6 +163,7 @@
           <h2>Passengers</h2>
           <p class="form-hint">Search and select the employees traveling on this request.</p>
           <div id="passengers-list"></div>
+          <button type="button" class="btn btn--secondary btn--sm" id="add-passenger">Add passenger</button>
         </section>
 
         <div class="btn-group">
@@ -207,6 +208,12 @@
     const resubmitForm = document.getElementById('resubmit-form');
     document.getElementById('add-travel-segment')?.addEventListener('click', () => {
       addTravelSegment(document.getElementById('travel-segments'));
+    });
+    document.getElementById('add-passenger')?.addEventListener('click', async () => {
+      const options = await loadPassengerOptions();
+      addPassengerRow(document.getElementById('passengers-list'), options);
+      document.getElementById('passengers-list').lastElementChild?.querySelector('.searchable-select__input')?.focus();
+      await loadApprovers(getSelectedApproverId(currentRequest));
     });
     const resubmitError = document.getElementById('resubmit-error');
     const resubmitBtn = document.getElementById('resubmit-btn');

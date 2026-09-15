@@ -151,6 +151,7 @@
         <h2>Passengers</h2>
         <p class="form-hint">Search and select the employees listed on this travel request. Passengers receive status notifications and can claim reimbursement after approval.</p>
         <div id="passengers-list"></div>
+        <button type="button" class="btn btn--secondary btn--sm" id="add-passenger">Add passenger</button>
       </section>
 
       <div class="btn-group">
@@ -200,6 +201,12 @@
     }
 
     document.getElementById('add-travel-segment').addEventListener('click', () => addTravelSegment());
+    document.getElementById('add-passenger').addEventListener('click', async () => {
+      const options = await loadPassengerOptions();
+      addPassengerRow(passengersList, options);
+      passengersList.lastElementChild?.querySelector('.searchable-select__input')?.focus();
+      await loadApprovers();
+    });
     const downloadTemplateBtn = document.getElementById('download-template-btn');
     const passengersList = document.getElementById('passengers-list');
     const approverSelectContainer = document.getElementById('approver-select');
