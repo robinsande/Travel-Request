@@ -13,7 +13,7 @@
     <div id="profile-loading"></div>
     <section id="profile-card" class="profile-card" hidden></section>
     <div class="profile-tools">
-    <section class="profile-card profile-edit-card" aria-labelledby="edit-profile-heading">
+    <section class="profile-card profile-edit-card" aria-labelledby="edit-profile-heading" hidden>
       <div class="section-heading-row">
         <div>
           <span class="section-kicker">PERSONAL DETAILS</span>
@@ -25,6 +25,7 @@
       <form id="profile-form" novalidate>
         <div class="form-grid">
           <div class="form-group"><label for="profile-name">Full name</label><input id="profile-name" required /></div>
+          <div class="form-group"><label for="profile-email">Email</label><input id="profile-email" type="email" required autocomplete="email" /></div>
           <div class="form-group"><label for="profile-employee-number">Employee number</label><input id="profile-employee-number" /></div>
           <div class="form-group"><label for="profile-position">Position</label><input id="profile-position" /></div>
           <div class="form-group"><label for="profile-office">Office</label><input id="profile-office" /></div>
@@ -70,14 +71,21 @@
       showPageLoading(loading);
       try {
         const profile = await fetchCurrentUser();
-        card.innerHTML = `<dl class="detail-grid"><dt>Full Name</dt><dd>${escapeHtml(profile.name)}</dd><dt>Email</dt><dd>${escapeHtml(profile.email)}</dd><dt>Role</dt><dd><span class="badge badge--role">${escapeHtml(profile.role)}</span></dd><dt>Department</dt><dd>${escapeHtml(profile.department || '—')}</dd><dt>Office</dt><dd>${escapeHtml(profile.office || '—')}</dd></dl>`;
+        card.innerHTML = `<dl class="detail-grid"><dt>Full Name</dt><dd>${escapeHtml(profile.name)}</dd><dt>Email</dt><dd>${escapeHtml(profile.email)}</dd><dt>Employee Number</dt><dd>${escapeHtml(profile.employeeNumber || '—')}</dd><dt>Position</dt><dd>${escapeHtml(profile.position || '—')}</dd><dt>Role</dt><dd><span class="badge badge--role">${escapeHtml(profile.role)}</span></dd><dt>Department</dt><dd>${escapeHtml(profile.department || '—')}</dd><dt>Office</dt><dd>${escapeHtml(profile.office || '—')}</dd></dl>`;
+        card.innerHTML += '<button type="button" class="btn btn--primary" id="edit-profile-btn">Edit Profile</button>';
         card.hidden = false;
         loading.innerHTML = '';
         document.getElementById('profile-name').value = profile.name || '';
+        document.getElementById('profile-email').value = profile.email || '';
         document.getElementById('profile-employee-number').value = profile.employeeNumber || '';
         document.getElementById('profile-position').value = profile.position || '';
         document.getElementById('profile-office').value = profile.office || '';
         document.getElementById('profile-department').value = profile.department || '';
+        document.querySelector('.profile-edit-card').hidden = true;
+        document.getElementById('edit-profile-btn').addEventListener('click', () => {
+          document.querySelector('.profile-edit-card').hidden = false;
+          document.getElementById('profile-name').focus();
+        });
         setAuth(getToken(), { ...getUser(), ...profile });
       } catch (err) {
         loading.innerHTML = '';
@@ -92,12 +100,15 @@
       try {
         const updated = await updateCurrentUser({
           name: document.getElementById('profile-name').value.trim(),
+          email: document.getElementById('profile-email').value.trim(),
           employeeNumber: document.getElementById('profile-employee-number').value.trim(),
           position: document.getElementById('profile-position').value.trim(),
           office: document.getElementById('profile-office').value.trim(),
           department: document.getElementById('profile-department').value.trim(),
         });
         setAuth(getToken(), { ...getUser(), ...updated });
+        card.querySelector('.detail-grid').outerHTML = `<dl class="detail-grid"><dt>Full Name</dt><dd>${escapeHtml(updated.name)}</dd><dt>Email</dt><dd>${escapeHtml(updated.email)}</dd><dt>Employee Number</dt><dd>${escapeHtml(updated.employeeNumber || '—')}</dd><dt>Position</dt><dd>${escapeHtml(updated.position || '—')}</dd><dt>Role</dt><dd><span class="badge badge--role">${escapeHtml(updated.role)}</span></dd><dt>Department</dt><dd>${escapeHtml(updated.department || '—')}</dd><dt>Office</dt><dd>${escapeHtml(updated.office || '—')}</dd></dl>`;
+        document.querySelector('.profile-edit-card').hidden = true;
         showToast('Profile updated.', 'success');
       } catch (err) {
         renderApiErrors(profileError, err);

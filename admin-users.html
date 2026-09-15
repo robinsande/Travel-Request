@@ -31,7 +31,9 @@
           <div class="form-group"><label for="new-name">Full name</label><input id="new-name" required /></div>
           <div class="form-group"><label for="new-email">Email address</label><input id="new-email" type="email" required /></div>
           <div class="form-group"><label for="new-password">Initial password</label><input id="new-password" type="password" minlength="8" required /></div>
+          <div class="form-group"><label for="new-employee-number">Employee number</label><input id="new-employee-number" /></div>
           <div class="form-group"><label for="new-position">Position</label><input id="new-position" /></div>
+          <div class="form-group"><label for="new-office">Office</label><input id="new-office" /></div>
           <div class="form-group"><label for="new-department">Department</label><input id="new-department" /></div>
           <div class="form-group"><label for="new-role">Role</label><select id="new-role"><option value="user">Staff user</option><option value="admin">Admin / line manager / approver</option></select></div>
         </div>
@@ -110,7 +112,9 @@
           name: document.getElementById('new-name').value.trim(),
           email: document.getElementById('new-email').value.trim(),
           password: document.getElementById('new-password').value,
+          employeeNumber: document.getElementById('new-employee-number').value.trim(),
           position: document.getElementById('new-position').value.trim(),
+          office: document.getElementById('new-office').value.trim(),
           department: document.getElementById('new-department').value.trim(),
           role: document.getElementById('new-role').value,
         });
