@@ -231,6 +231,11 @@ p { margin: 0 0 var(--spacing-md); max-width: 72ch; }
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
+.auth-input {
+  display: block;
+  box-sizing: border-box;
+}
+
 .form-group input[type="text"]:hover,
 .form-group input[type="email"]:hover,
 .form-group input[type="password"]:hover,
