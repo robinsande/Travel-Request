@@ -498,8 +498,6 @@ function getNavItems() {
 
   if (user.role === 'superadmin') {
     items.push(
-      { href: 'request-new.html', label: 'New Travel Request', id: 'new-request' },
-      { href: 'reimbursement-new.html', label: 'New Reimbursement', id: 'new-reimbursement' },
       { href: 'requests.html', label: 'My Travel Requests', id: 'my-requests' },
       { href: 'reimbursements.html', label: 'My Reimbursement Requests', id: 'my-reimbursements' },
       { href: 'requests.html?scope=all', label: 'All Travel Requests', id: 'all-requests' },
