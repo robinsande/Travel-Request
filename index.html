@@ -43,7 +43,9 @@
   <script src="js/auth.js"></script>
   <script>
     if (getToken()) {
-      window.location.replace('dashboard.html');
+      const resumePath = sessionStorage.getItem('tar_resume_path');
+      sessionStorage.removeItem('tar_resume_path');
+      window.location.replace(resumePath || 'dashboard.html');
     } else {
       window.location.replace('login.html');
     }

@@ -316,8 +316,17 @@ function showPageLoading(container, message = 'Loading…') {
 }
 
 function initProtectedPage(activeNav, contentSelector = '#page-content') {
+  rememberAndMaskPageUrl();
   renderAppShell(activeNav);
   mountPageContent(contentSelector);
+}
+
+function rememberAndMaskPageUrl() {
+  const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  if (!currentPath || currentPath === '/' || currentPath === '/index.html') return;
+
+  sessionStorage.setItem('tar_resume_path', currentPath);
+  window.history.replaceState({}, document.title, '/');
 }
 
 function unwrapListResult(result, fallbackKeys = []) {
