@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Travel Request Details — CARE TAR</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div id="app-shell"></div>
+
+  <div id="page-content" class="page-content" hidden>
+    <div id="detail-loading"></div>
+    <div id="detail-content" hidden></div>
+
+    <div id="decision-section" class="detail-section" hidden>
+      <h2>Review Decision</h2>
+      <div id="decision-error" class="alert alert--error" hidden role="alert"></div>
+      <div class="form-group">
+        <label for="decision-signature">Approver Signature</label>
+        <canvas class="signature-pad" width="520" height="150" aria-label="Draw approver signature"></canvas>
+        <input type="file" class="signature-upload" accept="image/*" />
+        <button type="button" class="btn btn--ghost btn--sm clear-signature-btn">Clear signature</button>
+        <p class="form-hint">Draw your signature or upload a signature image. A signature is required before approval.</p>
+      </div>
+      <div class="form-group">
+        <label for="decision-comment">Comment</label>
+        <textarea id="decision-comment" rows="3" placeholder="Required for rejection, optional for approval by the assigned admin approver."></textarea>
+      </div>
+      <div class="detail-actions">
+        <button type="button" class="btn btn--success" id="approve-btn">Approve</button>
+        <button type="button" class="btn btn--danger" id="reject-btn">Reject</button>
+      </div>
+    </div>
+
+  <!-- Edit / resubmit form for rejected requests -->
+    <div id="resubmit-section" hidden>
+      <div class="page-header" style="margin-top: 2rem;">
+        <h2>Edit &amp; Resubmit Request</h2>
+      </div>
+      <p class="text-muted">Update the details below and resubmit for approval.</p>
+      <div id="resubmit-error" class="alert alert--error" hidden role="alert"></div>
+
+      <form id="resubmit-form" novalidate>
+        <section class="form-section">
+          <h2>Approver</h2>
+          <div class="form-group">
+            <label for="resubmit-approver-search">Select Approver</label>
+            <div id="resubmit-approver-select"></div>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <h2>Project Information</h2>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="project_name">Project Name</label>
+              <input type="text" id="project_name" name="project_name" required />
+            </div>
+            <div class="form-group">
+              <label for="project_businessUnit">Business Unit</label>
+              <input type="text" id="project_businessUnit" name="project_businessUnit" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="project_fundCode">Fund Code</label>
+              <input type="text" id="project_fundCode" name="project_fundCode" required />
+            </div>
+            <div class="form-group">
+              <label for="project_projectId">Project ID</label>
+              <input type="text" id="project_projectId" name="project_projectId" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="project_departmentId">Department ID</label>
+              <input type="text" id="project_departmentId" name="project_departmentId" required />
+            </div>
+            <div class="form-group">
+              <label for="project_activityId">Activity ID</label>
+              <input type="text" id="project_activityId" name="project_activityId" required />
+            </div>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <h2>Assignment &amp; Purpose</h2>
+          <div class="form-group">
+            <label for="assignedAreaOfOperation">Assigned Area of Operation</label>
+            <input type="text" id="assignedAreaOfOperation" name="assignedAreaOfOperation" required />
+          </div>
+          <div class="form-group">
+            <label for="employeeOffice">Employees Office</label>
+            <input type="text" id="employeeOffice" name="employeeOffice" required />
+          </div>
+          <div class="form-group">
+            <label for="purposeOfTrip">Purpose of Trip</label>
+            <textarea id="purposeOfTrip" name="purposeOfTrip" required></textarea>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <h2>Requester Authorization</h2>
+          <div class="form-group">
+            <label>Requester Signature</label>
+            <canvas class="signature-pad" width="520" height="150" aria-label="Draw requester signature"></canvas>
+            <input type="file" class="signature-upload" accept="image/*" />
+            <input type="hidden" name="requesterSignature" class="signature-value" />
+            <button type="button" class="btn btn--ghost btn--sm clear-signature-btn">Clear signature</button>
+            <p class="form-hint">Draw your signature or upload a signature image before resubmitting.</p>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <h2>Mode of Travel</h2>
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" name="mode_careVehicle" />
+              CARE Vehicle
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="mode_publicTransport" />
+              Public Transport
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="mode_aircraft" />
+              Aircraft
+            </label>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <h2>Itinerary</h2>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="itinerary_dateFrom">Date From</label>
+              <input type="date" id="itinerary_dateFrom" name="itinerary_dateFrom" required />
+            </div>
+            <div class="form-group">
+              <label for="itinerary_dateTo">Date To</label>
+              <input type="date" id="itinerary_dateTo" name="itinerary_dateTo" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="itinerary_destination">Destination</label>
+            <input type="text" id="itinerary_destination" name="itinerary_destination" required />
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" name="itinerary_accommodationNeeded" />
+              Accommodation needed
+            </label>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <h2>Passengers</h2>
+          <p class="form-hint">Search and select the employees traveling on this request.</p>
+          <div id="passengers-list"></div>
+        </section>
+
+        <div class="btn-group">
+          <button type="submit" class="btn btn--primary" id="resubmit-btn">Resubmit Request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api/http.js"></script>
+  <script src="js/api/users.js"></script>
+  <script src="js/api/requests.js"></script>
+  <script src="js/api/notifications.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/requests.js"></script>
+  <script src="js/notifications.js"></script>
+  <script>
+    if (!requireAuth()) throw new Error('auth');
+
+    const requestId = new URLSearchParams(window.location.search).get('id');
+    if (!requestId) {
+      window.location.href = 'requests.html';
+      throw new Error('no id');
+    }
+
+    const user = getUser();
+    const activeNav =
+      user.role === 'superadmin' ? 'all-requests' : isAdmin() ? 'team-requests' : 'my-requests';
+    initProtectedPage(activeNav);
+
+    const loadingEl = document.getElementById('detail-loading');
+    const contentEl = document.getElementById('detail-content');
+    const decisionSection = document.getElementById('decision-section');
+    const decisionError = document.getElementById('decision-error');
+    const commentEl = document.getElementById('decision-comment');
+    const getDecisionSignature = initSignaturePad(decisionSection);
+    const approveBtn = document.getElementById('approve-btn');
+    const rejectBtn = document.getElementById('reject-btn');
+    const resubmitSection = document.getElementById('resubmit-section');
+    const resubmitForm = document.getElementById('resubmit-form');
+    const resubmitError = document.getElementById('resubmit-error');
+    const resubmitBtn = document.getElementById('resubmit-btn');
+    const resubmitApproverContainer = document.getElementById('resubmit-approver-select');
+    let resubmitApproverSelect = null;
+    let currentRequest = null;
+
+    async function loadApprovers(selectedId) {
+      const excludeIds = [user.id || user._id, ...getSelectedPassengerIds(resubmitForm)];
+      resubmitApproverSelect = await loadApproverSelect(resubmitApproverContainer, {
+        selectedId,
+        excludeIds,
+      });
+    }
+
+    function isRequester(request) {
+      const uid = String(user.id || user._id);
+      const requesterId = request.requestedBy?._id || request.requestedBy?.id || request.requestedBy;
+      return (
+        String(requesterId) === uid ||
+        request.requestedBy?.email === user.email
+      );
+    }
+
+    async function loadRequest() {
+      showPageLoading(loadingEl);
+
+      try {
+        const result = await fetchRequest(requestId);
+        currentRequest = result.data || result;
+
+        loadingEl.innerHTML = '';
+        contentEl.innerHTML = renderRequestDetail(currentRequest);
+        const canDownloadSignedTar =
+          currentRequest.status === 'approved' &&
+          Boolean(currentRequest.requesterSignature) &&
+          Boolean(currentRequest.decision?.signature);
+        contentEl.innerHTML += `
+          <div class="detail-actions">
+            <button type="button" class="btn btn--secondary" id="download-request-preview">Download Filled TAR Preview</button>
+            ${canDownloadSignedTar ? '<button type="button" class="btn btn--primary" id="download-request-pdf">Download Signed TAR</button>' : ''}
+          </div>`;
+        contentEl.hidden = false;
+        document.getElementById('download-request-preview')?.addEventListener('click', async () => {
+          try {
+            await fetchTravelRequestPdf(requestId, { preview: true });
+          } catch (err) {
+            showToast(err.message || 'Failed to download TAR preview.', 'error');
+          }
+        });
+        document.getElementById('download-request-pdf')?.addEventListener('click', async () => {
+          try {
+            await fetchTravelRequestPdf(requestId);
+          } catch (err) {
+            showToast(err.message || 'Failed to download PDF.', 'error');
+          }
+        });
+
+        decisionSection.hidden = !canApproveTravelRequest(currentRequest);
+
+        if (currentRequest.status === 'rejected' && isRequester(currentRequest) && canCreateRequests()) {
+          resubmitSection.hidden = false;
+          await populateRequestForm(resubmitForm, currentRequest);
+          initSignaturePad(resubmitForm);
+          await loadApprovers(getSelectedApproverId(currentRequest));
+        } else {
+          resubmitSection.hidden = true;
+        }
+      } catch (err) {
+        loadingEl.innerHTML = '';
+        showToast(err.message || 'Failed to load request.', 'error');
+      }
+    }
+
+    async function submitDecision(status, button) {
+      decisionError.hidden = true;
+      const comment = commentEl.value.trim();
+      const signature = getDecisionSignature();
+
+      if (status === 'approved' && !signature) {
+        renderApiErrors(decisionError, { message: 'Your signature is required before approval.' });
+        return;
+      }
+
+      if (status === 'rejected' && !comment) {
+        renderApiErrors(decisionError, { message: 'A rejection comment is required.' });
+        return;
+      }
+
+      const confirmMessages = {
+        approved: 'Approve this travel request?',
+        rejected: 'Reject this travel request?',
+      };
+
+      if (!confirmAction(confirmMessages[status])) return;
+      setLoading(button, true, status === 'approved' ? 'Approving…' : 'Rejecting…');
+
+      try {
+        if (status === 'approved') {
+          await approveRequest(requestId, { signature, comment: comment || undefined });
+        } else {
+          await rejectRequest(requestId, comment);
+        }
+        showToast(status === 'approved' ? 'Travel request approved.' : 'Travel request rejected.', 'success');
+        commentEl.value = '';
+        if (typeof refreshApprovalBadges === 'function') refreshApprovalBadges();
+        loadRequest();
+      } catch (err) {
+        renderApiErrors(decisionError, err);
+      } finally {
+        setLoading(button, false);
+      }
+    }
+
+    approveBtn.addEventListener('click', () => submitDecision('approved', approveBtn));
+    rejectBtn.addEventListener('click', () => submitDecision('rejected', rejectBtn));
+
+    resubmitForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      resubmitError.hidden = true;
+
+      const payload = buildRequestPayload(resubmitForm);
+
+      if (!requireSelectedApprover(resubmitError, payload.selected_approver_id)) return;
+      if (!requireSelectedTravelMode(resubmitError, payload.modeOfTravel)) return;
+
+      if (!payload.passengers.length) {
+        renderApiErrors(resubmitError, { message: 'Please select at least one passenger.' });
+        return;
+      }
+
+      if (!confirmAction('Resubmit this travel request for approval?')) return;
+
+      try {
+        await withLoading(resubmitBtn, 'Resubmitting…', () => updateRequest(requestId, payload));
+        showToast('Request resubmitted successfully.', 'success');
+        window.location.reload();
+      } catch (err) {
+        renderApiErrors(resubmitError, err);
+      }
+    });
+
+    loadRequest();
+  </script>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Approvals — Reimbursement Requests — CARE TAR</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div id="app-shell"></div>
+
+  <div id="page-content" class="page-content" hidden>
+    <div class="page-header">
+      <h1>Approvals</h1>
+    </div>
+    <div id="approvals-subnav"></div>
+    <p class="text-muted">Review reimbursement requests assigned to you and take action.</p>
+
+    <div id="approvals-loading"></div>
+    <div id="approvals-list"></div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api/http.js"></script>
+  <script src="js/api/reimbursements.js"></script>
+  <script src="js/api/notifications.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/reimbursements.js"></script>
+  <script src="js/notifications.js"></script>
+  <script>
+    if (!requireAuth(['admin'])) throw new Error('auth');
+
+    initProtectedPage('approvals');
+    document.getElementById('approvals-subnav').innerHTML = renderApprovalsSubnav('reimbursement');
+
+    const loadingEl = document.getElementById('approvals-loading');
+    const listEl = document.getElementById('approvals-list');
+    const EMPTY_MESSAGE = 'No pending reimbursement request approvals.';
+
+    function removeApprovalCard(card) {
+      card.remove();
+      if (!listEl.children.length) {
+        showEmptyState(listEl, EMPTY_MESSAGE);
+      }
+      if (typeof refreshApprovalBadges === 'function') refreshApprovalBadges();
+    }
+
+    async function loadApprovals() {
+      showPageLoading(loadingEl);
+      listEl.innerHTML = '';
+
+      try {
+        const result = await fetchPendingReimbursementApprovals();
+        const reports = unwrapListResult(result, ['reports']);
+        loadingEl.innerHTML = '';
+
+        if (!reports.length) {
+          showEmptyState(listEl, EMPTY_MESSAGE);
+        } else {
+          listEl.innerHTML = reports
+            .map((report) => renderReimbursementRow(report, { showApproveActions: true }))
+            .join('');
+          bindReimbursementApprovalActions(listEl, {
+            onSuccess: (card) => removeApprovalCard(card),
+          });
+        }
+        if (typeof refreshApprovalBadges === 'function') refreshApprovalBadges();
+      } catch (err) {
+        loadingEl.innerHTML = '';
+        showToast(err.message || 'Failed to load reimbursement request approvals.', 'error');
+      }
+    }
+
+    loadApprovals();
+  </script>
+</body>
+</html>

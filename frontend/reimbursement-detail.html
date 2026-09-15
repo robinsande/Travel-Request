@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reimbursement Request Details — CARE TAR</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div id="app-shell"></div>
+
+  <div id="page-content" class="page-content" hidden>
+    <div id="detail-loading"></div>
+    <div id="detail-content" hidden></div>
+
+    <div id="decision-section" class="detail-section" hidden>
+      <h2>Review Decision</h2>
+      <div id="decision-error" class="alert alert--error" hidden role="alert"></div>
+      <div class="form-group">
+        <label for="decision-comment">Comment</label>
+        <textarea id="decision-comment" rows="3" placeholder="Required for rejection, optional for approval by the assigned admin approver."></textarea>
+      </div>
+      <div class="detail-actions">
+        <button type="button" class="btn btn--success" id="approve-btn">Approve</button>
+        <button type="button" class="btn btn--danger" id="reject-btn">Reject</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api/http.js"></script>
+  <script src="js/api/reimbursements.js"></script>
+  <script src="js/api/notifications.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/reimbursements.js"></script>
+  <script src="js/notifications.js"></script>
+  <script>
+    if (!requireAuth()) throw new Error('auth');
+
+    const reimbursementId = new URLSearchParams(window.location.search).get('id');
+    if (!reimbursementId) {
+      window.location.href = 'reimbursements.html';
+      throw new Error('no id');
+    }
+
+    const user = getUser();
+    const activeNav =
+      user.role === 'superadmin'
+        ? 'all-reimbursements'
+        : user.role === 'admin'
+          ? 'approvals'
+          : 'my-reimbursements';
+    renderAppShell(activeNav);
+    mountPageContent('#page-content');
+
+    const loadingEl = document.getElementById('detail-loading');
+    const contentEl = document.getElementById('detail-content');
+    const decisionSection = document.getElementById('decision-section');
+    const decisionError = document.getElementById('decision-error');
+    const commentEl = document.getElementById('decision-comment');
+    const approveBtn = document.getElementById('approve-btn');
+    const rejectBtn = document.getElementById('reject-btn');
+
+    let currentReport = null;
+
+    function canReview(report) {
+      return canApproveReimbursement(report, user);
+    }
+
+    async function loadDetail() {
+      showPageLoading(loadingEl);
+
+      try {
+        const result = await fetchReimbursement(reimbursementId);
+        currentReport = result.data || result;
+        loadingEl.innerHTML = '';
+        contentEl.innerHTML = renderReimbursementDetail(currentReport);
+        const extraActions = [];
+        extraActions.push('<button type="button" class="btn btn--secondary" id="download-reimbursement-pdf">Download PDF</button>');
+        if (currentReport.status === 'rejected' && String(currentReport.submittedBy?._id || currentReport.submittedBy?.id) === String(user.id)) {
+          extraActions.push(`<a href="reimbursement-new.html?id=${encodeURIComponent(reimbursementId)}" class="btn btn--primary" id="edit-reimbursement-btn">Edit</a>`);
+        }
+        contentEl.innerHTML += `<div class="detail-actions">${extraActions.join('')}</div>`;
+        contentEl.hidden = false;
+        document.getElementById('download-reimbursement-pdf')?.addEventListener('click', async () => {
+          try {
+            await fetchReimbursementPdf(reimbursementId);
+          } catch (err) {
+            showToast(err.message || 'Failed to download PDF.', 'error');
+          }
+        });
+
+        decisionSection.hidden = !canReview(currentReport);
+      } catch (err) {
+        loadingEl.innerHTML = '';
+        showToast(err.message || 'Failed to load reimbursement request.', 'error');
+      }
+    }
+
+    async function submitDecision(status, button) {
+      decisionError.hidden = true;
+      const comment = commentEl.value.trim();
+
+      if (status === 'rejected' && !comment) {
+        renderApiErrors(decisionError, { message: 'A rejection comment is required.' });
+        return;
+      }
+
+      const confirmMessages = {
+        approved: 'Approve this reimbursement request?',
+        rejected: 'Reject this reimbursement request?',
+      };
+
+      if (!confirmAction(confirmMessages[status])) return;
+      setLoading(button, true, status === 'approved' ? 'Approving…' : 'Rejecting…');
+
+      try {
+        await updateReimbursementStatus(reimbursementId, {
+          status,
+          comment: comment || undefined,
+        });
+        showToast(
+          status === 'approved' ? 'Reimbursement request approved.' : 'Reimbursement request rejected.',
+          'success'
+        );
+        commentEl.value = '';
+        if (typeof refreshApprovalBadges === 'function') refreshApprovalBadges();
+        loadDetail();
+      } catch (err) {
+        renderApiErrors(decisionError, err);
+      } finally {
+        setLoading(button, false);
+      }
+    }
+
+    approveBtn.addEventListener('click', () => submitDecision('approved', approveBtn));
+    rejectBtn.addEventListener('click', () => submitDecision('rejected', rejectBtn));
+
+    loadDetail();
+  </script>
+</body>
+</html>

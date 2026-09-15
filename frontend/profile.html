@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Profile — CARE TAR</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div id="app-shell"></div>
+  <div id="page-content" class="page-content profile-page" hidden>
+    <div class="page-header"><h1>My Profile</h1></div>
+    <div id="profile-loading"></div>
+    <section id="profile-card" class="profile-card" hidden></section>
+    <div class="profile-tools">
+    <section class="profile-card profile-edit-card" aria-labelledby="edit-profile-heading">
+      <div class="section-heading-row">
+        <div>
+          <span class="section-kicker">PERSONAL DETAILS</span>
+          <h2 id="edit-profile-heading" class="profile-card__title">Edit profile</h2>
+        </div>
+        <span class="section-mark" aria-hidden="true">✎</span>
+      </div>
+      <div id="profile-error" class="alert alert--error" hidden role="alert"></div>
+      <form id="profile-form" novalidate>
+        <div class="form-grid">
+          <div class="form-group"><label for="profile-name">Full name</label><input id="profile-name" required /></div>
+          <div class="form-group"><label for="profile-employee-number">Employee number</label><input id="profile-employee-number" /></div>
+          <div class="form-group"><label for="profile-position">Position</label><input id="profile-position" /></div>
+          <div class="form-group"><label for="profile-office">Office</label><input id="profile-office" /></div>
+          <div class="form-group"><label for="profile-department">Department</label><input id="profile-department" /></div>
+        </div>
+        <button type="submit" class="btn btn--primary profile-save-button" id="profile-button">Save profile</button>
+      </form>
+    </section>
+    <section class="profile-card profile-password-card" aria-labelledby="password-heading">
+      <h2 id="password-heading" class="profile-card__title">Change password</h2>
+      <p class="text-muted profile-card__intro">Enter your current password, then choose a new one.</p>
+      <div id="password-error" class="alert alert--error" hidden role="alert"></div>
+      <form id="password-form" novalidate>
+        <div class="form-group"><label for="current-password">Current password</label><input id="current-password" type="password" required autocomplete="current-password" /></div>
+        <div class="form-group"><label for="new-password">New password</label><input id="new-password" type="password" minlength="8" required autocomplete="new-password" /></div>
+        <div class="form-group"><label for="confirm-password">Confirm new password</label><input id="confirm-password" type="password" minlength="8" required autocomplete="new-password" /></div>
+        <button type="submit" class="btn btn--primary" id="password-button">Update password</button>
+      </form>
+    </section>
+    </div>
+  </div>
+  <script src="js/config.js"></script>
+  <script src="js/api/http.js"></script>
+  <script src="js/api/auth.js"></script>
+  <script src="js/api/users.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/notifications.js"></script>
+  <script>
+    if (!requireAuth()) throw new Error('auth');
+    renderAppShell('profile');
+    mountPageContent('#page-content');
+    const loading = document.getElementById('profile-loading');
+    const card = document.getElementById('profile-card');
+    const form = document.getElementById('password-form');
+    const error = document.getElementById('password-error');
+    const button = document.getElementById('password-button');
+    const profileForm = document.getElementById('profile-form');
+    const profileError = document.getElementById('profile-error');
+    const profileButton = document.getElementById('profile-button');
+
+    async function loadProfile() {
+      showPageLoading(loading);
+      try {
+        const profile = await fetchCurrentUser();
+        card.innerHTML = `<dl class="detail-grid"><dt>Full Name</dt><dd>${escapeHtml(profile.name)}</dd><dt>Email</dt><dd>${escapeHtml(profile.email)}</dd><dt>Role</dt><dd><span class="badge badge--role">${escapeHtml(profile.role)}</span></dd><dt>Department</dt><dd>${escapeHtml(profile.department || '—')}</dd><dt>Office</dt><dd>${escapeHtml(profile.office || '—')}</dd></dl>`;
+        card.hidden = false;
+        loading.innerHTML = '';
+        document.getElementById('profile-name').value = profile.name || '';
+        document.getElementById('profile-employee-number').value = profile.employeeNumber || '';
+        document.getElementById('profile-position').value = profile.position || '';
+        document.getElementById('profile-office').value = profile.office || '';
+        document.getElementById('profile-department').value = profile.department || '';
+        setAuth(getToken(), { ...getUser(), ...profile });
+      } catch (err) {
+        loading.innerHTML = '';
+        showToast(err.message || 'Failed to load profile.', 'error');
+      }
+    }
+
+    profileForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      profileError.hidden = true;
+      setLoading(profileButton, true, 'Saving…');
+      try {
+        const updated = await updateCurrentUser({
+          name: document.getElementById('profile-name').value.trim(),
+          employeeNumber: document.getElementById('profile-employee-number').value.trim(),
+          position: document.getElementById('profile-position').value.trim(),
+          office: document.getElementById('profile-office').value.trim(),
+          department: document.getElementById('profile-department').value.trim(),
+        });
+        setAuth(getToken(), { ...getUser(), ...updated });
+        showToast('Profile updated.', 'success');
+      } catch (err) {
+        renderApiErrors(profileError, err);
+      } finally {
+        setLoading(profileButton, false);
+      }
+    });
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      error.hidden = true;
+      const newPassword = form.elements['new-password'].value;
+      if (newPassword.length < 8 || newPassword !== form.elements['confirm-password'].value) {
+        renderApiErrors(error, { message: newPassword.length < 8 ? 'Password must be at least 8 characters.' : 'Passwords do not match.' });
+        return;
+      }
+      setLoading(button, true, 'Updating…');
+      try {
+        await setPassword(getUser().email, form.elements['current-password'].value, newPassword);
+        form.reset();
+        showToast('Password updated successfully.', 'success');
+      } catch (err) {
+        renderApiErrors(error, err);
+      } finally {
+        setLoading(button, false);
+      }
+    });
+    loadProfile();
+  </script>
+</body>
+</html>

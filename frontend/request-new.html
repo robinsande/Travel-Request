@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New Travel Request — CARE TAR</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div id="app-shell"></div>
+
+  <div id="page-content" class="page-content" hidden>
+    <div class="page-header">
+      <div>
+        <a href="requests.html" class="back-link">← My Travel Requests</a>
+        <h1>New Travel Request</h1>
+      </div>
+    </div>
+
+    <p class="text-muted">
+      Select the travelers (passengers) for this trip and the admin who should approve it.
+      You can include yourself and/or colleagues.
+    </p>
+
+    <div id="form-error" class="alert alert--error" hidden role="alert"></div>
+
+    <form id="request-form" novalidate>
+      <section class="form-section">
+        <h2>Approver</h2>
+        <div class="form-group">
+          <label for="selected-approver-search">Select Approver</label>
+          <div id="approver-select"></div>
+          <p class="form-hint">Choose an admin who is not traveling on this travel request. Managers cannot approve their own trip.</p>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>Project Information</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="project_name">Project Name</label>
+            <input type="text" id="project_name" name="project_name" required />
+          </div>
+          <div class="form-group">
+            <label for="project_businessUnit">Business Unit</label>
+            <input type="text" id="project_businessUnit" name="project_businessUnit" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="project_fundCode">Fund Code</label>
+            <input type="text" id="project_fundCode" name="project_fundCode" required />
+          </div>
+          <div class="form-group">
+            <label for="project_projectId">Project ID</label>
+            <input type="text" id="project_projectId" name="project_projectId" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="project_departmentId">Department ID</label>
+            <input type="text" id="project_departmentId" name="project_departmentId" required />
+          </div>
+          <div class="form-group">
+            <label for="project_activityId">Activity ID</label>
+            <input type="text" id="project_activityId" name="project_activityId" required />
+          </div>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>Assignment &amp; Purpose</h2>
+        <div class="form-group">
+          <label for="assignedAreaOfOperation">Assigned Area of Operation</label>
+          <input type="text" id="assignedAreaOfOperation" name="assignedAreaOfOperation" required />
+        </div>
+        <div class="form-group">
+          <label for="employeeOffice">Employees Office</label>
+          <input type="text" id="employeeOffice" name="employeeOffice" required />
+        </div>
+        <div class="form-group">
+          <label for="purposeOfTrip">Purpose of Trip</label>
+          <textarea id="purposeOfTrip" name="purposeOfTrip" required placeholder="Describe the business purpose of this travel…"></textarea>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>Requester Authorization</h2>
+        <div class="form-group">
+          <label for="requesterSignature">Requester Signature</label>
+          <canvas class="signature-pad" width="520" height="150" aria-label="Draw requester signature"></canvas>
+          <input type="file" class="signature-upload" accept="image/*" />
+          <input type="hidden" name="requesterSignature" class="signature-value" />
+          <button type="button" class="btn btn--ghost btn--sm clear-signature-btn">Clear signature</button>
+          <p class="form-hint">Draw your signature or upload a signature image. This is printed in the Requested by section of the TAR.</p>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>Mode of Travel</h2>
+        <div class="checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" name="mode_careVehicle" id="mode_careVehicle" />
+            CARE Vehicle
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" name="mode_publicTransport" id="mode_publicTransport" />
+            Public Transport
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" name="mode_aircraft" id="mode_aircraft" />
+            Aircraft
+          </label>
+        </div>
+        <p class="form-hint">Select all modes that apply.</p>
+      </section>
+
+      <section class="form-section">
+        <h2>Itinerary</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="itinerary_dateFrom">Date From</label>
+            <input type="date" id="itinerary_dateFrom" name="itinerary_dateFrom" required />
+          </div>
+          <div class="form-group">
+            <label for="itinerary_dateTo">Date To</label>
+            <input type="date" id="itinerary_dateTo" name="itinerary_dateTo" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="itinerary_destination">Destination</label>
+          <input type="text" id="itinerary_destination" name="itinerary_destination" required />
+        </div>
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" name="itinerary_accommodationNeeded" id="itinerary_accommodationNeeded" />
+            Accommodation needed
+          </label>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>Passengers</h2>
+        <p class="form-hint">Search and select the employees listed on this travel request. Passengers receive status notifications and can claim reimbursement after approval.</p>
+        <div id="passengers-list"></div>
+      </section>
+
+      <div class="btn-group">
+        <button type="submit" class="btn btn--primary" id="submit-btn">Submit Travel Request</button>
+        <button type="button" class="btn btn--secondary" id="download-template-btn">Download Blank TAR Template</button>
+        <a href="requests.html" class="btn btn--ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api/http.js"></script>
+  <script src="js/api/users.js"></script>
+  <script src="js/api/requests.js"></script>
+  <script src="js/api/notifications.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/requests.js"></script>
+  <script src="js/notifications.js"></script>
+  <script>
+    if (!requireAuth()) throw new Error('auth');
+    if (!canCreateRequests()) {
+      window.location.href = 'dashboard.html';
+      throw new Error('forbidden');
+    }
+
+    initProtectedPage('my-requests');
+
+    const form = document.getElementById('request-form');
+    const errorEl = document.getElementById('form-error');
+    const submitBtn = document.getElementById('submit-btn');
+    const downloadTemplateBtn = document.getElementById('download-template-btn');
+    const passengersList = document.getElementById('passengers-list');
+    const approverSelectContainer = document.getElementById('approver-select');
+    initSignaturePad(form);
+    const sessionUser = getUser() || {};
+    let approverSelect = null;
+
+    async function loadApprovers() {
+      const excludeIds = [sessionUser.id || sessionUser._id, ...getSelectedPassengerIds(form)];
+      approverSelect = await loadApproverSelect(approverSelectContainer, {
+        errorContainer: errorEl,
+        excludeIds,
+        selectedId: approverSelect?.getValue?.() || '',
+      });
+    }
+
+    async function bootstrapForm() {
+      const options = await initPassengerList(passengersList);
+      const me = options.find(
+        (option) => String(option.value) === String(sessionUser.id || sessionUser._id)
+      );
+      if (me) {
+        const firstRow = passengersList.querySelector('.passenger-row');
+        const hidden = firstRow?.querySelector('[data-passenger-user]');
+        const input = firstRow?.querySelector('.searchable-select__input');
+        const nameInput = firstRow?.querySelector('[data-passenger-name]');
+        const empInput = firstRow?.querySelector('[data-passenger-employee]');
+        if (hidden && input) {
+          hidden.value = me.value;
+          input.value = me.label;
+          if (nameInput) nameInput.value = me.name || '';
+          if (empInput) empInput.value = me.employeeNumber || '';
+        }
+      }
+      await loadApprovers();
+    }
+
+    bootstrapForm();
+
+    downloadTemplateBtn.addEventListener('click', async () => {
+      try {
+        await withLoading(downloadTemplateBtn, 'Preparing…', fetchTravelRequestTemplatePdf);
+      } catch (err) {
+        showToast(err.message || 'Failed to download TAR template.', 'error');
+      }
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorEl.hidden = true;
+
+      const payload = buildRequestPayload(form);
+
+      if (!requireSelectedApprover(errorEl, payload.selected_approver_id)) return;
+      if (!requireSelectedTravelMode(errorEl, payload.modeOfTravel)) return;
+
+      if (!payload.passengers.length) {
+        renderApiErrors(errorEl, { message: 'Please select at least one passenger.' });
+        return;
+      }
+
+      try {
+        const result = await withLoading(submitBtn, 'Submitting…', () => createRequest(payload));
+        showToast('Travel request submitted successfully.', 'success');
+        const id = getRequestId(result);
+        window.location.href = id ? `request-detail.html?id=${encodeURIComponent(id)}` : 'requests.html';
+      } catch (err) {
+        renderApiErrors(errorEl, buildManagerAssignmentError(err) || err);
+      }
+    });
+  </script>
+</body>
+</html>

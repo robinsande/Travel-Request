@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reimbursement Requests — CARE TAR</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div id="app-shell"></div>
+
+  <div id="page-content" class="page-content" hidden>
+    <div class="page-header">
+      <h1 id="page-title">My Reimbursement Requests</h1>
+      <a href="reimbursement-new.html" class="btn btn--primary" id="new-reimbursement-btn" hidden>New Reimbursement Request</a>
+    </div>
+    <p class="text-muted" id="page-subtitle">Reimbursement requests you have submitted.</p>
+
+    <div id="filters-bar" class="filters-bar">
+      <div class="form-group">
+        <label for="filter-status">Status</label>
+        <select id="filter-status">
+          <option value="">All statuses</option>
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="filter-search">Search</label>
+        <input type="text" id="filter-search" placeholder="Trip, base location…" autocomplete="off" />
+      </div>
+      <div class="form-group" id="filter-email-group" hidden>
+        <label for="filter-email">Submitted by</label>
+        <input type="text" id="filter-email" placeholder="name or email…" autocomplete="off" />
+      </div>
+      <button type="button" class="btn btn--ghost" id="clear-filters">Clear</button>
+    </div>
+
+    <div id="reimbursements-loading"></div>
+    <div id="reimbursements-list" class="request-list"></div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api/http.js"></script>
+  <script src="js/api/reimbursements.js"></script>
+  <script src="js/api/notifications.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/reimbursements.js"></script>
+  <script src="js/notifications.js"></script>
+  <script>
+    if (!requireAuth()) throw new Error('auth');
+
+    const user = getUser();
+    const params = new URLSearchParams(window.location.search);
+    const isSuperadminView = user?.role === 'superadmin' || params.get('scope') === 'all';
+    const activeNav = isSuperadminView ? 'all-reimbursements' : 'my-reimbursements';
+
+    initProtectedPage(activeNav);
+
+    document.getElementById('page-title').textContent = isSuperadminView
+      ? 'All Reimbursement Requests'
+      : 'My Reimbursement Requests';
+    document.title = isSuperadminView
+      ? 'All Reimbursement Requests — CARE TAR'
+      : 'My Reimbursement Requests — CARE TAR';
+
+    const subtitleEl = document.getElementById('page-subtitle');
+    if (subtitleEl) {
+      subtitleEl.textContent = isSuperadminView
+        ? 'All reimbursement requests across the organization.'
+        : 'Reimbursement requests you have submitted.';
+    }
+
+    if (isSuperadminView) {
+      document.getElementById('filter-email-group').hidden = false;
+      document.getElementById('filter-search').placeholder = 'Trip, base location, requester…';
+    }
+
+    const newReimbursementBtn = document.getElementById('new-reimbursement-btn');
+    if (newReimbursementBtn) {
+      newReimbursementBtn.hidden = !(canCreateRequests() && !isSuperadminView);
+    }
+
+    const loadingEl = document.getElementById('reimbursements-loading');
+    const listEl = document.getElementById('reimbursements-list');
+
+    function getReimbursementFilterParams() {
+      const filters = {};
+      const status = document.getElementById('filter-status')?.value || '';
+      const search = (document.getElementById('filter-search')?.value || '').trim();
+      const email = (document.getElementById('filter-email')?.value || '').trim();
+
+      if (status) filters.status = status;
+      if (search) filters.search = search;
+      if (email && isSuperadminView) filters.submittedByEmail = email;
+
+      return filters;
+    }
+
+    function matchesLocalFilters(report) {
+      const status = document.getElementById('filter-status')?.value || '';
+      const search = (document.getElementById('filter-search')?.value || '').trim().toLowerCase();
+      const email = (document.getElementById('filter-email')?.value || '').trim().toLowerCase();
+
+      if (status && String(report.status || '').toLowerCase() !== status.toLowerCase()) {
+        return false;
+      }
+
+      const tripLabel = (getTravelRequestLabel(report) || '').toLowerCase();
+      const base = (report.baseLocation || '').toLowerCase();
+      const requesterEmail = (report.submittedBy?.email || '').toLowerCase();
+      const requesterName = (report.submittedBy?.name || '').toLowerCase();
+      const haystack = `${tripLabel} ${base} ${requesterName} ${requesterEmail}`;
+
+      if (search && !haystack.includes(search)) return false;
+      if (email && !requesterEmail.includes(email) && !requesterName.includes(email)) {
+        return false;
+      }
+
+      return true;
+    }
+
+    async function loadReimbursements() {
+      showPageLoading(loadingEl);
+      listEl.innerHTML = '';
+
+      try {
+        const filterParams = getReimbursementFilterParams();
+        const result = await fetchMyReimbursements(filterParams);
+        let reports = unwrapListResult(result, ['reports']);
+        if (Object.keys(filterParams).length) {
+          reports = reports.filter(matchesLocalFilters);
+        }
+        loadingEl.innerHTML = '';
+
+        if (!reports.length) {
+          const hasFilters = Object.keys(filterParams).length > 0;
+          showEmptyState(
+            listEl,
+            hasFilters
+              ? 'No reimbursement requests match your filters.'
+              : isSuperadminView
+                ? 'No reimbursement requests found.'
+                : 'No reimbursement requests submitted yet.',
+            hasFilters || isSuperadminView || !canCreateRequests()
+              ? ''
+              : '<a href="reimbursement-new.html" class="btn btn--primary">Create your first reimbursement request</a>'
+          );
+        } else {
+          listEl.innerHTML = reports.map(renderReimbursementRow).join('');
+        }
+      } catch (err) {
+        loadingEl.innerHTML = '';
+        showToast(err.message || 'Failed to load reimbursement requests.', 'error');
+      }
+    }
+
+    const triggerFilter = debounce(() => loadReimbursements(), 300);
+
+    ['filter-status', 'filter-search', 'filter-email'].forEach((id) => {
+      document.getElementById(id)?.addEventListener('input', triggerFilter);
+      document.getElementById(id)?.addEventListener('change', triggerFilter);
+    });
+
+    document.getElementById('clear-filters')?.addEventListener('click', () => {
+      document.getElementById('filter-status').value = '';
+      document.getElementById('filter-search').value = '';
+      document.getElementById('filter-email').value = '';
+      loadReimbursements();
+    });
+
+    loadReimbursements();
+  </script>
+</body>
+</html>

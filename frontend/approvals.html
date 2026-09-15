@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Approvals — Travel Requests — CARE TAR</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div id="app-shell"></div>
+
+  <div id="page-content" class="page-content" hidden>
+    <div class="page-header">
+      <h1>Approvals</h1>
+    </div>
+    <div id="approvals-subnav"></div>
+    <p class="text-muted">Review pending travel requests. Assigned admins can approve or reject; super admins can view all pending approvals.</p>
+
+    <div id="approvals-loading"></div>
+    <div id="approvals-list"></div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api/http.js"></script>
+  <script src="js/api/requests.js"></script>
+  <script src="js/api/notifications.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/requests.js"></script>
+  <script src="js/notifications.js"></script>
+  <script>
+    if (!requireAuth(['admin', 'superadmin'])) throw new Error('auth');
+
+    initProtectedPage('approvals');
+    document.getElementById('approvals-subnav').innerHTML = renderApprovalsSubnav('travel');
+
+    const loadingEl = document.getElementById('approvals-loading');
+    const listEl = document.getElementById('approvals-list');
+    const EMPTY_MESSAGE = 'No pending travel request approvals.';
+
+    function removeApprovalCard(card) {
+      card.remove();
+      if (!listEl.children.length) {
+        showEmptyState(listEl, EMPTY_MESSAGE);
+      }
+      if (typeof refreshApprovalBadges === 'function') refreshApprovalBadges();
+    }
+
+    async function loadApprovals() {
+      showPageLoading(loadingEl);
+      listEl.innerHTML = '';
+
+      try {
+        const result = await fetchPendingApprovals();
+        const requests = unwrapListResult(result, ['requests']);
+
+        loadingEl.innerHTML = '';
+
+        if (!requests.length) {
+          showEmptyState(listEl, EMPTY_MESSAGE);
+        } else {
+          listEl.innerHTML = requests
+            .map((request) => renderRequestRow(request, { showApproveActions: true }))
+            .join('');
+          bindTravelApprovalActions(listEl, {
+            onSuccess: (card) => removeApprovalCard(card),
+          });
+        }
+        if (typeof refreshApprovalBadges === 'function') refreshApprovalBadges();
+      } catch (err) {
+        loadingEl.innerHTML = '';
+        showToast(err.message || 'Failed to load travel request approvals.', 'error');
+      }
+    }
+
+    loadApprovals();
+  </script>
+</body>
+</html>

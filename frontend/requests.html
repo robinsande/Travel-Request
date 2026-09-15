@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Travel Requests — CARE TAR</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div id="app-shell"></div>
+
+  <div id="page-content" class="page-content" hidden>
+    <div class="page-header">
+      <h1 id="page-title">My Travel Requests</h1>
+      <a href="request-new.html" class="btn btn--primary" id="new-request-btn" hidden>Create New TAR</a>
+    </div>
+    <div id="team-subnav" hidden></div>
+    <p class="text-muted" id="page-subtitle">Trips you raised or are listed on as a passenger.</p>
+
+    <div id="filters-bar" class="filters-bar" hidden>
+      <div class="form-group">
+        <label for="filter-status">Status</label>
+        <select id="filter-status">
+          <option value="">All statuses</option>
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="filter-search">Search</label>
+        <input type="text" id="filter-search" placeholder="Purpose, destination…" />
+      </div>
+      <div class="form-group" id="filter-destination-group">
+        <label for="filter-destination">Destination</label>
+        <input type="text" id="filter-destination" placeholder="e.g. Nairobi" />
+      </div>
+      <div class="form-group" id="filter-email-group" hidden>
+        <label for="filter-email" id="filter-email-label">Requested by</label>
+        <input type="text" id="filter-email" placeholder="Name or email…" autocomplete="off" />
+      </div>
+      <button type="button" class="btn btn--ghost" id="clear-filters">Clear</button>
+    </div>
+
+    <div id="travel-panel">
+      <div id="requests-loading"></div>
+      <div id="requests-list" class="request-list"></div>
+      <div id="pagination" hidden></div>
+    </div>
+
+    <div id="reimbursement-panel" hidden>
+      <div id="reimbursements-loading"></div>
+      <div id="reimbursements-list" class="request-list"></div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api/http.js"></script>
+  <script src="js/api/requests.js"></script>
+  <script src="js/api/reimbursements.js"></script>
+  <script src="js/api/notifications.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/requests.js"></script>
+  <script src="js/reimbursements.js"></script>
+  <script src="js/notifications.js"></script>
+  <script>
+    if (!requireAuth()) throw new Error('auth');
+
+    const params = new URLSearchParams(window.location.search);
+    const scope = params.get('scope') || 'mine';
+    const user = getUser();
+    const isTeamView = scope === 'team' && isAdmin();
+    const teamType = params.get('type') === 'reimbursement' ? 'reimbursement' : 'travel';
+    const isTeamReimbursementView = isTeamView && teamType === 'reimbursement';
+
+    let activeNav = 'my-requests';
+    let pageTitle = 'My Travel Requests';
+    let showFilters = false;
+    let showNewBtn = canCreateRequests();
+    let currentPage = 1;
+
+    if (user.role === 'superadmin' || scope === 'all') {
+      activeNav = 'all-requests';
+      pageTitle = 'All Travel Requests';
+      showFilters = true;
+      showNewBtn = false;
+    } else if (isTeamView) {
+      activeNav = 'team-requests';
+      pageTitle = 'Team';
+      showFilters = true;
+      showNewBtn = false;
+    }
+
+    renderAppShell(activeNav);
+    mountPageContent('#page-content');
+
+    document.getElementById('page-title').textContent = pageTitle;
+    document.title = isTeamReimbursementView
+      ? 'Team — Reimbursement Requests — CARE TAR'
+      : isTeamView
+        ? 'Team — Travel Requests — CARE TAR'
+        : user.role === 'superadmin' || scope === 'all'
+          ? 'All Travel Requests — CARE TAR'
+          : 'Travel Requests — CARE TAR';
+
+    const subtitleEl = document.getElementById('page-subtitle');
+    if (subtitleEl) {
+      if (user.role === 'superadmin' || scope === 'all') {
+        subtitleEl.textContent = 'All travel requests across the organization.';
+      } else if (isTeamReimbursementView) {
+        subtitleEl.textContent =
+          'Reimbursement requests from your team or assigned to you for approval.';
+      } else if (isTeamView) {
+        subtitleEl.textContent =
+          'Travel requests from your team, passengers you manage, and trips assigned to you for approval.';
+      } else {
+        subtitleEl.textContent = 'Trips you raised or are listed on as a passenger.';
+      }
+    }
+
+    const newBtn = document.getElementById('new-request-btn');
+    if (newBtn) newBtn.hidden = !showNewBtn;
+
+    const teamSubnav = document.getElementById('team-subnav');
+    if (isTeamView) {
+      teamSubnav.hidden = false;
+      teamSubnav.innerHTML = renderTeamSubnav(teamType);
+    }
+
+    const filtersBar = document.getElementById('filters-bar');
+    if (showFilters) {
+      filtersBar.hidden = false;
+      if (scope === 'team' || user.role === 'superadmin') {
+        document.getElementById('filter-email-group').hidden = false;
+      }
+      if (isTeamReimbursementView) {
+        document.getElementById('filter-destination-group').hidden = true;
+        document.getElementById('filter-search').placeholder = 'Trip, base location, requester…';
+        document.getElementById('filter-email-label').textContent = 'Submitted by';
+        document.getElementById('filter-email').placeholder = 'Name or email…';
+      } else if (scope === 'team' || user.role === 'superadmin') {
+        document.getElementById('filter-search').placeholder = 'Purpose, destination, requester…';
+      }
+    }
+
+    const travelPanel = document.getElementById('travel-panel');
+    const reimbursementPanel = document.getElementById('reimbursement-panel');
+    const listEl = document.getElementById('requests-list');
+    const loadingEl = document.getElementById('requests-loading');
+    const paginationEl = document.getElementById('pagination');
+    const reimbLoadingEl = document.getElementById('reimbursements-loading');
+    const reimbListEl = document.getElementById('reimbursements-list');
+
+    if (isTeamReimbursementView) {
+      travelPanel.hidden = true;
+      reimbursementPanel.hidden = false;
+    }
+
+    function getFilterParams() {
+      const filters = { page: currentPage, limit: 20 };
+
+      if (scope === 'team') filters.scope = 'team';
+      else if (scope === 'all' || user.role === 'superadmin') filters.scope = 'all';
+      else filters.scope = 'mine';
+
+      if (!showFilters) return filters;
+
+      const status = document.getElementById('filter-status').value;
+      const search = document.getElementById('filter-search').value.trim();
+      const destination = document.getElementById('filter-destination').value.trim();
+      const email = document.getElementById('filter-email').value.trim();
+
+      if (status) filters.status = status;
+      if (search) filters.search = search;
+      if (destination) filters.destination = destination;
+      if (email) filters.requestedByEmail = email;
+
+      return filters;
+    }
+
+    function getReimbursementFilterParams() {
+      const filters = {};
+      if (!showFilters) return filters;
+
+      const status = document.getElementById('filter-status')?.value || '';
+      const search = (document.getElementById('filter-search')?.value || '').trim();
+      const email = (document.getElementById('filter-email')?.value || '').trim();
+
+      if (status) filters.status = status;
+      if (search) filters.search = search;
+      if (email) filters.submittedByEmail = email;
+
+      return filters;
+    }
+
+    function matchesTeamFilters(report) {
+      const status = document.getElementById('filter-status')?.value || '';
+      const search = (document.getElementById('filter-search')?.value || '').trim().toLowerCase();
+      const email = (document.getElementById('filter-email')?.value || '').trim().toLowerCase();
+
+      if (status && String(report.status || '').toLowerCase() !== status.toLowerCase()) {
+        return false;
+      }
+
+      const tripLabel = (getTravelRequestLabel(report) || '').toLowerCase();
+      const base = (report.baseLocation || '').toLowerCase();
+      const department = (report.department || '').toLowerCase();
+      const position = (report.position || '').toLowerCase();
+      const employeeNumber = (report.employeeNumber || '').toLowerCase();
+      const requesterEmail = (report.submittedBy?.email || '').toLowerCase();
+      const requesterName = (report.submittedBy?.name || '').toLowerCase();
+      const haystack = `${tripLabel} ${base} ${department} ${position} ${employeeNumber} ${requesterName} ${requesterEmail}`;
+
+      if (search && !haystack.includes(search)) return false;
+      if (email && !requesterEmail.includes(email) && !requesterName.includes(email)) {
+        return false;
+      }
+
+      return true;
+    }
+
+    function removeListCard(card, emptyMessage, listNode) {
+      card.remove();
+      if (!listNode.children.length) {
+        showEmptyState(listNode, emptyMessage);
+      }
+    }
+
+    async function loadTeamReimbursements() {
+      showPageLoading(reimbLoadingEl);
+      reimbListEl.innerHTML = '';
+
+      try {
+        const result = await fetchTeamReimbursements(getReimbursementFilterParams());
+        let reports = unwrapListResult(result, ['reports']);
+        // Client-side fallback if API ignores query params (older backends)
+        if (showFilters && Object.keys(getReimbursementFilterParams()).length) {
+          reports = reports.filter(matchesTeamFilters);
+        }
+
+        reimbLoadingEl.innerHTML = '';
+
+        if (!reports.length) {
+          const hasFilters = Object.keys(getReimbursementFilterParams()).length > 0;
+          showEmptyState(
+            reimbListEl,
+            hasFilters
+              ? 'No team reimbursement requests match your filters.'
+              : 'No team reimbursement requests found.'
+          );
+        } else {
+          reimbListEl.innerHTML = reports
+            .map((report) => renderReimbursementRow(report, { showApproveActions: true }))
+            .join('');
+          bindReimbursementApprovalActions(reimbListEl, {
+            onSuccess: (card) =>
+              removeListCard(card, 'No team reimbursement requests match your filters.', reimbListEl),
+          });
+        }
+      } catch (err) {
+        reimbLoadingEl.innerHTML = '';
+        showToast(err.message || 'Failed to load team reimbursement requests.', 'error');
+      }
+    }
+
+    async function loadRequests() {
+      showPageLoading(loadingEl);
+      listEl.innerHTML = '';
+
+      try {
+        const result = await fetchMyRequests(getFilterParams());
+        const requests = result.data || result.requests || result || [];
+        const pagination = result.pagination;
+
+        loadingEl.innerHTML = '';
+
+        if (!requests.length) {
+          const emptyMsg =
+            scope === 'team' ? 'No team travel requests match your filters.'
+            : user.role === 'superadmin' ? 'No travel requests found.'
+            : 'No travel requests yet.';
+          const action =
+            showNewBtn ? '<a href="request-new.html" class="btn btn--primary">Create New TAR</a>' : '';
+          showEmptyState(listEl, emptyMsg, action);
+        } else {
+          listEl.innerHTML = requests
+            .map((request) =>
+              renderRequestRow(request, {
+                showApproveActions: isTeamView,
+              })
+            )
+            .join('');
+
+          if (isTeamView) {
+            bindTravelApprovalActions(listEl, {
+              onSuccess: (card) =>
+                removeListCard(card, 'No team travel requests match your filters.', listEl),
+            });
+          }
+        }
+
+        renderPagination(paginationEl, pagination, (page) => {
+          currentPage = page;
+          loadRequests();
+        });
+      } catch (err) {
+        loadingEl.innerHTML = '';
+        showToast(err.message || 'Failed to load travel requests.', 'error');
+      }
+    }
+
+    async function loadPage() {
+      if (isTeamReimbursementView) {
+        await loadTeamReimbursements();
+      } else {
+        await loadRequests();
+      }
+    }
+
+    const triggerFilter = debounce(() => {
+      currentPage = 1;
+      loadPage();
+    }, 300);
+
+    ['filter-status', 'filter-search', 'filter-destination', 'filter-email'].forEach((id) => {
+      document.getElementById(id)?.addEventListener('input', triggerFilter);
+      document.getElementById(id)?.addEventListener('change', triggerFilter);
+    });
+
+    document.getElementById('clear-filters')?.addEventListener('click', () => {
+      document.getElementById('filter-status').value = '';
+      document.getElementById('filter-search').value = '';
+      document.getElementById('filter-destination').value = '';
+      document.getElementById('filter-email').value = '';
+      currentPage = 1;
+      loadPage();
+    });
+
+    loadPage();
+  </script>
+</body>
+</html>

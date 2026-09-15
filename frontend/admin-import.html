@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Users — Import — CARE TAR</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div id="app-shell"></div>
+
+  <div id="page-content" class="page-content" hidden>
+    <div class="page-header">
+      <h1>Users</h1>
+    </div>
+    <div id="admin-subnav"></div>
+    <p class="text-muted">
+      Upload an Excel file (.xlsx or .xls) to import or update employee records.
+      New users will receive activation email invites.
+    </p>
+
+    <div id="import-error" class="alert alert--error" hidden role="alert"></div>
+
+    <form id="import-form" class="form-section" style="max-width: 500px;">
+      <div class="form-group">
+        <label for="file">Employee spreadsheet</label>
+        <input type="file" id="file" name="file" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" required />
+        <p class="form-hint">Accepted formats: .xlsx, .xls</p>
+      </div>
+      <button type="submit" class="btn btn--primary" id="import-btn">Upload &amp; Import</button>
+    </form>
+
+    <div id="import-summary" hidden></div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api/http.js"></script>
+  <script src="js/api/admin.js"></script>
+  <script src="js/api/notifications.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/admin.js"></script>
+  <script src="js/notifications.js"></script>
+  <script>
+    if (!requireAuth(['superadmin'])) throw new Error('auth');
+
+    renderAppShell('admin-users');
+    mountPageContent('#page-content');
+    document.getElementById('admin-subnav').innerHTML = renderAdminUsersSubnav('import');
+
+    const form = document.getElementById('import-form');
+    const errorEl = document.getElementById('import-error');
+    const summaryEl = document.getElementById('import-summary');
+    const importBtn = document.getElementById('import-btn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorEl.hidden = true;
+      summaryEl.hidden = true;
+
+      const fileInput = form.file;
+      if (!fileInput.files?.length) {
+        renderApiErrors(errorEl, { message: 'Please select a file to upload.' });
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      if (ext !== 'xlsx' && ext !== 'xls') {
+        renderApiErrors(errorEl, { message: 'Please upload an Excel file (.xlsx or .xls).' });
+        return;
+      }
+
+      if (!confirmAction(`Import employees from "${file.name}"?`)) return;
+
+      setLoading(importBtn, true, 'Importing…');
+
+      try {
+        const result = await importEmployees(file);
+        renderImportSummary(result, summaryEl);
+        showToast('Import completed.', 'success');
+        fileInput.value = '';
+      } catch (err) {
+        renderApiErrors(errorEl, err);
+      } finally {
+        setLoading(importBtn, false);
+      }
+    });
+  </script>
+</body>
+</html>

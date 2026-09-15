@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Users — CARE TAR</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div id="app-shell"></div>
+
+  <div id="page-content" class="page-content users-admin-page" hidden>
+    <div class="page-header">
+      <h1>Users</h1>
+    </div>
+    <div id="admin-subnav"></div>
+    <p class="text-muted">Create staff accounts with a password, without an activation link.</p>
+
+    <div class="form-section create-account-panel">
+      <div class="section-heading-row">
+        <div>
+          <span class="section-kicker">SUPERADMIN CONTROL</span>
+          <h2>Create Account</h2>
+        </div>
+        <span class="section-mark" aria-hidden="true">+</span>
+      </div>
+      <p class="section-intro">Create a ready-to-use staff or line-manager account with a secure initial password.</p>
+      <div id="create-user-error" class="alert alert--error" hidden role="alert"></div>
+      <form id="create-user-form" novalidate>
+        <div class="form-grid">
+          <div class="form-group"><label for="new-name">Full name</label><input id="new-name" required /></div>
+          <div class="form-group"><label for="new-email">Email address</label><input id="new-email" type="email" required /></div>
+          <div class="form-group"><label for="new-password">Initial password</label><input id="new-password" type="password" minlength="8" required /></div>
+          <div class="form-group"><label for="new-position">Position</label><input id="new-position" /></div>
+          <div class="form-group"><label for="new-department">Department</label><input id="new-department" /></div>
+          <div class="form-group"><label for="new-role">Role</label><select id="new-role"><option value="user">Staff user</option><option value="admin">Admin / line manager / approver</option></select></div>
+        </div>
+        <button type="submit" class="btn btn--primary create-account-button" id="create-user-btn">Create account</button>
+      </form>
+    </div>
+
+    <section class="role-management-panel" aria-labelledby="role-management-title">
+      <div class="section-heading-row">
+        <div>
+          <span class="section-kicker">ACCESS MANAGEMENT</span>
+          <h2 id="role-management-title">Manage User Roles</h2>
+        </div>
+        <span class="section-mark section-mark--dark" aria-hidden="true">↕</span>
+      </div>
+      <p class="section-intro">Superadmins can change access levels. Admins are line managers and TAR approvers.</p>
+      <div class="role-guide" aria-label="Role descriptions">
+        <div class="role-guide__item"><strong>Staff user</strong><span>Creates and tracks personal TARs.</span></div>
+        <div class="role-guide__item"><strong>Admin / approver</strong><span>Reviews, approves, or declines assigned TARs.</span></div>
+        <div class="role-guide__item"><strong>Superadmin</strong><span>Manages users, roles, and system access.</span></div>
+      </div>
+    </section>
+
+    <div id="users-loading"></div>
+    <div id="users-empty"></div>
+    <div class="data-table-wrap role-users-table" id="users-table-wrap" hidden>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Manager</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="users-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api/http.js"></script>
+  <script src="js/api/users.js"></script>
+  <script src="js/api/notifications.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/admin.js"></script>
+  <script src="js/notifications.js"></script>
+  <script>
+    if (!requireAuth(['admin', 'superadmin'])) throw new Error('auth');
+
+    renderAppShell('admin-users');
+    mountPageContent('#page-content');
+    document.getElementById('admin-subnav').innerHTML = renderAdminUsersSubnav('users');
+
+    const loadingEl = document.getElementById('users-loading');
+    const tableWrap = document.getElementById('users-table-wrap');
+    const tbody = document.getElementById('users-tbody');
+    const currentUser = getUser();
+    const createForm = document.getElementById('create-user-form');
+    const createError = document.getElementById('create-user-error');
+    const createButton = document.getElementById('create-user-btn');
+    if (currentUser.role !== 'superadmin') {
+      document.getElementById('new-role').value = 'user';
+      document.getElementById('new-role').disabled = true;
+      tableWrap.hidden = true;
+    }
+
+    createForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      createError.hidden = true;
+      setLoading(createButton, true, 'Creating…');
+      try {
+        await createUser({
+          name: document.getElementById('new-name').value.trim(),
+          email: document.getElementById('new-email').value.trim(),
+          password: document.getElementById('new-password').value,
+          position: document.getElementById('new-position').value.trim(),
+          department: document.getElementById('new-department').value.trim(),
+          role: document.getElementById('new-role').value,
+        });
+        createForm.reset();
+        showToast('Account created successfully.', 'success');
+      } catch (error) {
+        renderApiErrors(createError, error);
+      } finally {
+        setLoading(createButton, false);
+      }
+    });
+
+    async function loadUsers() {
+      if (currentUser.role !== 'superadmin') return;
+      showPageLoading(loadingEl);
+
+      try {
+        const result = await fetchAllUsers();
+        const users = result.data || result.users || result || [];
+
+        loadingEl.innerHTML = '';
+
+        if (!users.length) {
+          showEmptyState(document.getElementById('users-empty'), 'No users found.');
+        } else {
+          tbody.innerHTML = users.map(renderUserRow).join('');
+          tableWrap.hidden = false;
+          tbody.querySelectorAll('.user-role-select').forEach((select) => {
+            select.addEventListener('change', async () => {
+              const originalRole = select.dataset.previousRole || select.value;
+              select.disabled = true;
+              try {
+                await updateUserRole(select.dataset.userId, select.value);
+                select.dataset.previousRole = select.value;
+                showToast('Role updated.', 'success');
+              } catch (error) {
+                select.value = originalRole;
+                showToast(error.message || 'Failed to update role.', 'error');
+              } finally {
+                select.disabled = false;
+              }
+            });
+          });
+        }
+      } catch (err) {
+        loadingEl.innerHTML = '';
+        showToast(err.message || 'Failed to load users.', 'error');
+      }
+    }
+
+    loadUsers();
+  </script>
+</body>
+</html>

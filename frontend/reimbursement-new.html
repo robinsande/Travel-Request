@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New Reimbursement Request — CARE TAR</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div id="app-shell"></div>
+
+  <div id="page-content" class="page-content" hidden>
+    <div class="page-header">
+      <div>
+        <a href="reimbursements.html" class="back-link">← My Reimbursement Requests</a>
+        <h1>New Reimbursement Request</h1>
+      </div>
+    </div>
+
+    <p class="text-muted">
+      Submit expenses for an approved trip where you are listed as a passenger, and select the admin approver who should review it.
+    </p>
+
+    <div id="form-error" class="alert alert--error" hidden role="alert"></div>
+
+    <form id="reimbursement-form" novalidate>
+      <section class="form-section">
+        <h2>Approver</h2>
+        <div class="form-group">
+          <label for="reimbursement-approver-search">Select Approver</label>
+          <div id="approver-select"></div>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>Approved Travel</h2>
+        <div class="form-group">
+          <label for="travelRequestId">Approved Travel Request</label>
+          <select id="travelRequestId" name="travelRequestId" required>
+            <option value="">Select an approved trip</option>
+          </select>
+          <p class="form-hint">Only approved trips where you are a passenger can be claimed.</p>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>Employee Details</h2>
+        <p class="form-hint">These fields are filled from your profile and cannot be edited here.</p>
+        <div class="readonly-grid">
+          <div class="readonly-field">
+            <span class="readonly-field__label">Employee Name</span>
+            <div class="readonly-field__value" id="employee-name">—</div>
+          </div>
+          <div class="readonly-field">
+            <span class="readonly-field__label">Email</span>
+            <div class="readonly-field__value" id="employee-email">—</div>
+          </div>
+          <div class="readonly-field">
+            <span class="readonly-field__label">Employee Number</span>
+            <div class="readonly-field__value" id="employee-number-display">—</div>
+          </div>
+          <div class="readonly-field">
+            <span class="readonly-field__label">Department</span>
+            <div class="readonly-field__value" id="department-display">—</div>
+          </div>
+          <div class="readonly-field">
+            <span class="readonly-field__label">Position</span>
+            <div class="readonly-field__value" id="position-display">—</div>
+          </div>
+          <div class="readonly-field">
+            <span class="readonly-field__label">Base Location</span>
+            <div class="readonly-field__value" id="base-location-display">—</div>
+          </div>
+        </div>
+        <input type="hidden" id="employeeNumber" name="employeeNumber" />
+        <input type="hidden" id="department" name="department" />
+        <input type="hidden" id="position" name="position" />
+        <input type="hidden" id="baseLocation" name="baseLocation" />
+      </section>
+
+      <section class="form-section">
+        <h2>Expense Line Items</h2>
+        <div class="line-items-table-wrap">
+          <table class="line-items-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Amount (KSH)</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="line-items-body"></tbody>
+          </table>
+        </div>
+        <button type="button" class="btn btn--secondary btn--sm" id="add-line-item-btn">+ Add Line Item</button>
+      </section>
+
+      <section class="form-section">
+        <h2>Summary</h2>
+        <div class="total-card">
+          <div>
+            <p class="total-card__label">Total in KSH</p>
+          </div>
+          <p class="total-card__value" data-total-amount>KSH 0.00</p>
+        </div>
+      </section>
+
+      <div class="btn-group">
+        <button type="submit" class="btn btn--primary" id="submit-btn">Submit Reimbursement Request</button>
+        <a href="reimbursements.html" class="btn btn--ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api/http.js"></script>
+  <script src="js/api/users.js"></script>
+  <script src="js/api/requests.js"></script>
+  <script src="js/api/reimbursements.js"></script>
+  <script src="js/api/notifications.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/requests.js"></script>
+  <script src="js/reimbursements.js"></script>
+  <script src="js/notifications.js"></script>
+  <script>
+    if (!requireAuth()) throw new Error('auth');
+    if (!canCreateRequests()) {
+      window.location.href = 'dashboard.html';
+      throw new Error('forbidden');
+    }
+
+    initProtectedPage('my-reimbursements');
+
+    const form = document.getElementById('reimbursement-form');
+    const errorEl = document.getElementById('form-error');
+    const submitBtn = document.getElementById('submit-btn');
+    const lineItemsBody = document.getElementById('line-items-body');
+    const travelSelect = document.getElementById('travelRequestId');
+    const approverSelectContainer = document.getElementById('approver-select');
+    const reimbursementId = new URLSearchParams(window.location.search).get('id');
+    let approverSelect = null;
+
+    function setEmployeeDetails(details = {}) {
+      const name = details.name || '—';
+      const email = details.email || '—';
+      const employeeNumber = details.employeeNumber || '';
+      const department = details.department || '';
+      const position = details.position || '';
+      const baseLocation = details.baseLocation || details.office || '';
+
+      document.getElementById('employee-name').textContent = name;
+      document.getElementById('employee-email').textContent = email;
+      document.getElementById('employee-number-display').textContent = employeeNumber || '—';
+      document.getElementById('department-display').textContent = department || '—';
+      document.getElementById('position-display').textContent = position || '—';
+      document.getElementById('base-location-display').textContent = baseLocation || '—';
+
+      form.employeeNumber.value = employeeNumber;
+      form.department.value = department;
+      form.position.value = position;
+      form.baseLocation.value = baseLocation;
+    }
+
+    async function loadProfileDefaults() {
+      const sessionUser = getUser() || {};
+      setEmployeeDetails(sessionUser);
+
+      try {
+        const profile = await fetchCurrentUser();
+        setEmployeeDetails({ ...sessionUser, ...profile });
+
+        const token = getToken();
+        if (token) setAuth(token, { ...sessionUser, ...profile });
+      } catch {
+        setEmployeeDetails(sessionUser);
+      }
+    }
+
+    async function loadApprovedTravelRequests(selectedTravelRequestId = '') {
+      try {
+        const result = await fetchMyRequests({ status: 'approved', limit: 100 });
+        const sessionId = String(getUser()?.id || getUser()?._id || '');
+        const requests = (result.data || []).filter((request) =>
+          isUserPassengerOnRequest(request, sessionId)
+        );
+        if (!requests.length) {
+          travelSelect.innerHTML = '<option value="">No approved passenger trips available</option>';
+          return;
+        }
+
+        travelSelect.innerHTML =
+          '<option value="">Select an approved trip</option>' +
+          requests.map(renderApprovedTravelOption).join('');
+        if (selectedTravelRequestId) {
+          travelSelect.value = selectedTravelRequestId;
+        }
+      } catch (err) {
+        renderApiErrors(errorEl, err);
+      }
+    }
+
+    async function loadApprovers(selectedId) {
+      const sessionUser = getUser() || {};
+      approverSelect = await loadApproverSelect(approverSelectContainer, {
+        selectedId,
+        errorContainer: errorEl,
+        excludeIds: [sessionUser.id || sessionUser._id],
+      });
+    }
+
+    async function loadExistingReport() {
+      if (!reimbursementId) return;
+      try {
+        const report = await fetchReimbursement(reimbursementId);
+        const data = report.data || report;
+        if (data.status !== 'rejected') {
+          window.location.href = `reimbursement-detail.html?id=${encodeURIComponent(reimbursementId)}`;
+          return;
+        }
+        const selectedTravelRequestId = getLinkedTravelId(data.travelRequest);
+        await loadApprovedTravelRequests(selectedTravelRequestId);
+        const sessionUser = getUser() || {};
+        setEmployeeDetails({
+          name: sessionUser.name,
+          email: sessionUser.email,
+          employeeNumber: data.employeeNumber || sessionUser.employeeNumber,
+          department: data.department || sessionUser.department,
+          position: data.position || sessionUser.position,
+          baseLocation: data.baseLocation || sessionUser.office,
+        });
+        await initReimbursementLineItems(lineItemsBody, data.lineItems || []);
+        await loadApprovers(getSelectedApproverId(data));
+        submitBtn.textContent = 'Update Reimbursement';
+      } catch (err) {
+        renderApiErrors(errorEl, err);
+      }
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorEl.hidden = true;
+
+      const payload = buildReimbursementPayload(form);
+
+      if (!requireSelectedApprover(errorEl, payload.selected_approver_id)) return;
+
+      if (!payload.travelRequestId) {
+        renderApiErrors(errorEl, { message: 'Please select an approved travel request.' });
+        return;
+      }
+
+      if (payload.lineItems.some((item) => !item.location)) {
+        renderApiErrors(errorEl, {
+          message: 'Selected travel request is missing a destination. Choose another approved trip or update the travel request.',
+        });
+        return;
+      }
+
+      if (!payload.baseLocation) {
+        renderApiErrors(errorEl, {
+          message: 'Base location is missing from your profile. Ask an administrator to set your office location, then try again.',
+        });
+        return;
+      }
+
+      if (!payload.lineItems.length) {
+        renderApiErrors(errorEl, { message: 'Please add at least one expense line item.' });
+        return;
+      }
+
+      const hasInvalidLine = payload.lineItems.some(
+        (item) => !item.expenseDate || !item.category || !(Number(item.amount) > 0)
+      );
+      if (hasInvalidLine) {
+        renderApiErrors(errorEl, {
+          message: 'Each line item requires a date, category, and amount greater than zero.',
+        });
+        return;
+      }
+
+      try {
+        const result = await withLoading(submitBtn, 'Submitting…', () =>
+          reimbursementId
+            ? updateReimbursement(reimbursementId, payload)
+            : createReimbursement(payload)
+        );
+        showToast(reimbursementId ? 'Reimbursement request updated successfully.' : 'Reimbursement request submitted successfully.', 'success');
+        const id = getReimbursementId(result);
+        window.location.href = id ? `reimbursement-detail.html?id=${encodeURIComponent(id)}` : 'reimbursements.html';
+      } catch (err) {
+        renderApiErrors(errorEl, buildManagerAssignmentError(err) || err);
+      }
+    });
+
+    async function initForm() {
+      try {
+        await initReimbursementLineItems(lineItemsBody);
+      } catch (err) {
+        renderApiErrors(errorEl, err);
+      }
+      await loadProfileDefaults();
+      await loadApprovers('');
+      if (reimbursementId) {
+        await loadExistingReport();
+      } else {
+        await loadApprovedTravelRequests();
+      }
+    }
+
+    initForm();
+  </script>
+</body>
+</html>

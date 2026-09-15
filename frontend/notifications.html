@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notifications — CARE TAR</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div id="app-shell"></div>
+
+  <div id="page-content" class="page-content" hidden>
+    <div class="page-header">
+      <h1>Notifications</h1>
+      <div class="btn-group">
+        <button type="button" class="btn btn--secondary btn--sm" id="mark-all-read-btn">Mark all as read</button>
+        <button type="button" class="btn btn--secondary btn--sm" id="refresh-btn">Refresh</button>
+      </div>
+    </div>
+
+    <div id="notifications-loading"></div>
+    <div id="notifications-list" class="notification-list"></div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api/http.js"></script>
+  <script src="js/api/notifications.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/notifications.js"></script>
+  <script>
+    if (!requireAuth()) throw new Error('auth');
+
+    renderAppShell('notifications');
+    mountPageContent('#page-content');
+
+    const loadingEl = document.getElementById('notifications-loading');
+    const listEl = document.getElementById('notifications-list');
+    const markAllReadBtn = document.getElementById('mark-all-read-btn');
+
+    async function loadNotifications() {
+      showPageLoading(loadingEl);
+      listEl.innerHTML = '';
+
+      try {
+        const result = await fetchNotifications();
+        const notifications = Array.isArray(result) ? result : result.data || result.notifications || [];
+
+        loadingEl.innerHTML = '';
+
+        if (!notifications.length) {
+          showEmptyState(listEl, 'No notifications.');
+        } else {
+          listEl.innerHTML = notifications.map(renderNotificationItem).join('');
+          bindMarkRead();
+        }
+
+        refreshNotificationBadge();
+      } catch (err) {
+        loadingEl.innerHTML = '';
+        showToast(err.message || 'Failed to load notifications.', 'error');
+      }
+    }
+
+    function bindMarkRead() {
+      listEl.querySelectorAll('.notification-item').forEach((item) => {
+        const btn = item.querySelector('.mark-read-btn');
+        const targetHref = item.dataset.targetHref;
+
+        item.querySelector('.notification-item__content')?.addEventListener('click', () => {
+          if (targetHref) window.location.href = targetHref;
+        });
+
+        if (!btn) return;
+
+        btn.addEventListener('click', async () => {
+          const id = item.dataset.id;
+          setLoading(btn, true, '…');
+          try {
+            await markNotificationRead(id);
+            item.classList.add('notification-item--read');
+            btn.remove();
+            refreshNotificationBadge();
+          } catch (err) {
+            showToast(err.message || 'Failed to mark as read.', 'error');
+            setLoading(btn, false);
+          }
+        });
+      });
+    }
+
+    markAllReadBtn.addEventListener('click', async () => {
+      setLoading(markAllReadBtn, true, 'Updating…');
+      try {
+        await markAllNotificationsRead();
+        listEl.querySelectorAll('.notification-item').forEach((item) => {
+          item.classList.add('notification-item--read');
+          item.querySelector('.mark-read-btn')?.remove();
+        });
+        refreshNotificationBadge();
+        showToast('All notifications marked as read.', 'success');
+      } catch (err) {
+        showToast(err.message || 'Failed to mark all as read.', 'error');
+      } finally {
+        setLoading(markAllReadBtn, false);
+      }
+    });
+
+    document.getElementById('refresh-btn').addEventListener('click', loadNotifications);
+    loadNotifications();
+  </script>
+</body>
+</html>

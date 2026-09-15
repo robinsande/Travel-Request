@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Activate Account — CARE TAR</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="auth-page">
+  <div class="auth-card">
+    <div class="auth-card__brand">
+      <span class="auth-card__logo">CARE</span>
+      <span class="auth-card__title">Kenya Travel Authority Request</span>
+    </div>
+
+    <h1>Activate Account</h1>
+    <p class="text-muted">Set your password to complete account activation.</p>
+
+    <div id="backend-status" class="alert alert--error" hidden role="alert"></div>
+
+    <div id="activate-error" class="alert alert--error" hidden role="alert"></div>
+
+    <form id="activate-form" novalidate>
+      <div class="form-group">
+        <label for="email">Email address</label>
+        <input type="email" id="email" name="email" required autocomplete="email" />
+      </div>
+      <input type="hidden" id="token" name="token" />
+      <div class="form-group">
+        <label for="newPassword">New password</label>
+        <input type="password" id="newPassword" name="newPassword" required minlength="8" autocomplete="new-password" />
+        <p class="form-hint">Minimum 8 characters.</p>
+      </div>
+      <div class="form-group">
+        <label for="confirmPassword">Confirm password</label>
+        <input type="password" id="confirmPassword" name="confirmPassword" required minlength="8" autocomplete="new-password" />
+      </div>
+      <button type="submit" class="btn btn--primary btn--block" id="activate-btn">Activate &amp; Sign In</button>
+    </form>
+
+    <p class="form-hint" style="margin-top: 1.5rem; text-align: center;">
+      Already activated? <a href="login.html">Sign in</a>
+    </p>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api/http.js"></script>
+  <script src="js/api/auth.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ui.js"></script>
+  <script>
+    redirectIfAuthenticated();
+    showBackendConnectionStatus('backend-status');
+
+    const params = new URLSearchParams(window.location.search);
+    const form = document.getElementById('activate-form');
+    const errorEl = document.getElementById('activate-error');
+    const activateBtn = document.getElementById('activate-btn');
+
+    form.email.value = params.get('email') || '';
+    form.token.value = params.get('token') || '';
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorEl.hidden = true;
+
+      const email = form.email.value.trim();
+      const token = form.token.value.trim();
+      const newPassword = form.newPassword.value;
+      const confirmPassword = form.confirmPassword.value;
+
+      if (!email || !token) {
+        renderApiErrors(errorEl, { message: 'Please use the activation link from your email.' });
+        return;
+      }
+
+      if (newPassword.length < 8) {
+        renderApiErrors(errorEl, { message: 'Password must be at least 8 characters.' });
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        renderApiErrors(errorEl, { message: 'Passwords do not match.' });
+        return;
+      }
+
+      setLoading(activateBtn, true, 'Activating…');
+
+      try {
+        await activateAccount(email, token, newPassword);
+        showToast('Account activated successfully.', 'success');
+        window.location.href = 'dashboard.html';
+      } catch (err) {
+        renderApiErrors(errorEl, err);
+      } finally {
+        setLoading(activateBtn, false);
+      }
+    });
+  </script>
+</body>
+</html>

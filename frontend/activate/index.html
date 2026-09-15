@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Redirecting…</title>
+  <script>
+    // Support /activate and /frontend/activate — always land on activate.html in the same folder as this app
+    const qs = window.location.search;
+    const basePath = window.location.pathname.replace(/\/?activate\/?$/, '/');
+    window.location.replace(basePath + 'activate.html' + qs);
+  </script>
+</head>
+<body>
+  <p>Redirecting to activation page…</p>
+</body>
+</html>
