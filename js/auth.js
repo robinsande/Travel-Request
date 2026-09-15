@@ -82,9 +82,9 @@ function isSuperadmin() {
 
 function isUserOrAdmin() {
   const user = getUser();
-  return user && (user.role === 'user' || user.role === 'admin');
+  return user && (user.role === 'user' || user.role === 'admin' || user.role === 'superadmin');
 }
 
 function canCreateRequests() {
-  return isUserOrAdmin() && !isSuperadmin();
+  return isUserOrAdmin();
 }
