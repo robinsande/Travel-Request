@@ -415,7 +415,10 @@ function initSignaturePad(root) {
     context.lineTo(point.x, point.y);
     context.stroke();
   });
-  canvas.addEventListener('pointerup', () => { drawing = false; });
+  canvas.addEventListener('pointerup', () => {
+    drawing = false;
+    if (valueInput && hasSignature) valueInput.value = canvas.toDataURL('image/png');
+  });
   canvas.addEventListener('pointercancel', () => { drawing = false; });
 
   upload?.addEventListener('change', () => {
