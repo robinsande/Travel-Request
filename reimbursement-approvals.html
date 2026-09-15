@@ -30,6 +30,8 @@
   <script src="js/notifications.js"></script>
   <script>
     if (!requireAuth(['admin'])) throw new Error('auth');
+    window.location.replace('dashboard.html');
+    throw new Error('removed');
 
     initProtectedPage('approvals');
     document.getElementById('approvals-subnav').innerHTML = renderApprovalsSubnav('reimbursement');

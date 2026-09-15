@@ -35,7 +35,6 @@
   <script src="js/api/auth.js"></script>
   <script src="js/api/users.js"></script>
   <script src="js/api/requests.js"></script>
-  <script src="js/api/reimbursements.js"></script>
   <script src="js/api/notifications.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/ui.js"></script>
@@ -64,7 +63,6 @@
       const isSuperadmin = dashboardUser?.role === 'superadmin';
       const requests = Array.isArray(data.requests?.data) ? data.requests.data : Array.isArray(data.requests) ? data.requests : [];
       const pending = Array.isArray(data.pending?.data) ? data.pending.data : Array.isArray(data.pending) ? data.pending : [];
-      const reimbursements = Array.isArray(data.reimbursements?.data) ? data.reimbursements.data : Array.isArray(data.reimbursements) ? data.reimbursements : [];
       const users = Array.isArray(data.users?.data) ? data.users.data : Array.isArray(data.users) ? data.users : [];
       const approved = requests.filter((request) => request.status === 'approved').length;
       const pendingCount = isSuperadmin ? requests.filter((request) => request.status === 'pending').length : pending.length;
@@ -72,11 +70,11 @@
 
       metricsEl.innerHTML = isSuperadmin
         ? metricCard('Total users', usersCount, 'users', 'admin-users.html') + metricCard('All TARs', requests.length, 'requests', 'requests.html?scope=all') + metricCard('Pending TARs', pendingCount, 'pending', 'requests.html?scope=all&status=pending') + metricCard('Approved TARs', approved, 'approved', 'requests.html?scope=all&status=approved')
-        : metricCard('Team TARs', requests.length, 'requests', 'requests.html?scope=team') + metricCard('Awaiting approval', pendingCount, 'pending', 'approvals.html') + metricCard('Approved TARs', approved, 'approved', 'requests.html?scope=team&status=approved') + metricCard('Reimbursements', reimbursements.length, 'finance', 'reimbursement-approvals.html');
+        : metricCard('Team TARs', requests.length, 'requests', 'requests.html?scope=team') + metricCard('Awaiting approval', pendingCount, 'pending', 'approvals.html') + metricCard('Approved TARs', approved, 'approved', 'requests.html?scope=team&status=approved');
 
       actionsEl.innerHTML = isSuperadmin
         ? actionLink('Manage users and roles', 'admin-users.html', '♙') + actionLink('Import employees', 'admin-import.html', '⇧') + actionLink('Review all TARs', 'requests.html?scope=all', '▣')
-        : actionLink('Review TAR approvals', 'approvals.html', '✓') + actionLink('View team requests', 'requests.html?scope=team', '♧') + actionLink('Review reimbursements', 'reimbursement-approvals.html', '◇');
+        : actionLink('Review TAR approvals', 'approvals.html', '✓') + actionLink('View team requests', 'requests.html?scope=team', '♧');
 
       const activity = (isSuperadmin ? requests : pending).slice(0, 5);
       activityEl.innerHTML = activity.length
@@ -101,7 +99,7 @@
             })
           : Promise.resolve([]);
 
-        const [requestsResult, pendingResult, reimbursementsResult] = await Promise.all([
+        const [requestsResult, pendingResult] = await Promise.all([
           fetchMyRequests(isSuperadmin ? { scope: 'all', limit: 100 } : { scope: 'team', limit: 100 }).catch((error) => {
             console.warn('Dashboard requests failed to load:', error);
             return [];
@@ -110,20 +108,12 @@
             console.warn('Dashboard pending approvals failed to load:', error);
             return [];
           }),
-          isSuperadmin ? fetchMyReimbursements({ limit: 100 }).catch((error) => {
-            console.warn('Dashboard reimbursements failed to load:', error);
-            return [];
-          }) : fetchPendingReimbursementApprovals().catch((error) => {
-            console.warn('Dashboard reimbursements approvals failed to load:', error);
-            return [];
-          }),
         ]);
 
         const usersResult = await userListCall;
         renderDashboard({
           requests: requestsResult,
           pending: pendingResult,
-          reimbursements: reimbursementsResult,
           users: usersResult,
         });
       } catch (error) {

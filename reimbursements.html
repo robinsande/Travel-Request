@@ -51,6 +51,8 @@
   <script src="js/notifications.js"></script>
   <script>
     if (!requireAuth()) throw new Error('auth');
+    window.location.replace('dashboard.html');
+    throw new Error('removed');
 
     const user = getUser();
     const params = new URLSearchParams(window.location.search);

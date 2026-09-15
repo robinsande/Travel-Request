@@ -547,10 +547,7 @@ function renderPageSubnav(tabs, activeId, ariaLabel = 'Section') {
 
 function renderApprovalsSubnav(activeTab) {
   return renderPageSubnav(
-    [
-      { id: 'travel', href: 'approvals.html', label: 'Travel Requests' },
-      { id: 'reimbursement', href: 'reimbursement-approvals.html', label: 'Reimbursement Requests' },
-    ],
+    [{ id: 'travel', href: 'approvals.html', label: 'Travel Requests' }],
     activeTab,
     'Approval type'
   );
@@ -558,14 +555,7 @@ function renderApprovalsSubnav(activeTab) {
 
 function renderTeamSubnav(activeTab) {
   return renderPageSubnav(
-    [
-      { id: 'travel', href: 'requests.html?scope=team', label: 'Travel Requests' },
-      {
-        id: 'reimbursement',
-        href: 'requests.html?scope=team&type=reimbursement',
-        label: 'Reimbursement Requests',
-      },
-    ],
+    [{ id: 'travel', href: 'requests.html?scope=team', label: 'Travel Requests' }],
     activeTab,
     'Team request type'
   );

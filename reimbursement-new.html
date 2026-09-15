@@ -127,6 +127,8 @@
   <script src="js/notifications.js"></script>
   <script>
     if (!requireAuth()) throw new Error('auth');
+    window.location.replace('dashboard.html');
+    throw new Error('removed');
     if (!canCreateRequests()) {
       window.location.href = 'dashboard.html';
       throw new Error('forbidden');
