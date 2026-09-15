@@ -58,6 +58,10 @@ async function login(email, password) {
   return data;
 }
 
+async function register(name, email, password) {
+  return registerRequest(name, email, password);
+}
+
 async function activateAccount(email, token, newPassword) {
   const data = await activateAccountRequest(email, token, newPassword);
   if (data.token) setAuth(data.token, data.user);

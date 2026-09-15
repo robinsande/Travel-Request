@@ -19,10 +19,6 @@
     <div id="backend-status" class="alert alert--error" hidden role="alert"></div>
 
     <div id="login-error" class="alert alert--error" hidden role="alert"></div>
-    <div id="activation-notice" class="alert alert--info" hidden role="status">
-      Your account has not been activated. Please check your email for the activation link, or
-      <a href="activate.html">activate your account</a>.
-    </div>
 
     <form id="login-form" autocomplete="off" novalidate>
       <div class="form-group">
@@ -36,10 +32,7 @@
       <button type="submit" class="btn btn--primary btn--block" id="login-btn">Sign In</button>
     </form>
 
-    <p class="form-hint" style="margin-top: 1.5rem; text-align: center;">
-      Need to set your password?
-      <a href="activate.html">Activate your account</a>
-    </p>
+    <p class="form-hint" style="margin-top: 1.5rem; text-align: center;">Need an account? <a href="register.html">Create an account</a></p>
   </div>
 
   <script src="js/config.js"></script>
@@ -53,13 +46,11 @@
 
     const form = document.getElementById('login-form');
     const errorEl = document.getElementById('login-error');
-    const activationNotice = document.getElementById('activation-notice');
     const loginBtn = document.getElementById('login-btn');
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       errorEl.hidden = true;
-      activationNotice.hidden = true;
 
       const email = form.email.value.trim();
       const password = form.password.value;
@@ -76,11 +67,7 @@
         form.reset();
         window.location.href = 'dashboard.html';
       } catch (err) {
-        if (err instanceof ApiError && err.status === 403 && err.body?.details?.code === 'ACCOUNT_NOT_ACTIVATED') {
-          activationNotice.hidden = false;
-        } else {
-          renderApiErrors(errorEl, err);
-        }
+        renderApiErrors(errorEl, err);
       } finally {
         setLoading(loginBtn, false);
       }
