@@ -58,6 +58,12 @@ function renderUserRow(user) {
         </select>
       </td>
       <td data-label="Manager">${escapeHtml(formatManagerLabel(user) || '—')}</td>
-      <td data-label="Status">${user.isActive === false ? 'Inactive' : 'Active'}</td>
+      <td data-label="Status">
+        ${user.isActive === false ? 'Inactive' : 'Active'}
+        <div class="user-actions">
+          <button type="button" class="btn btn--secondary user-status-button" data-user-id="${escapeHtml(user._id || user.id)}" data-active="${user.isActive !== false}">${user.isActive === false ? 'Activate' : 'Deactivate'}</button>
+          <button type="button" class="btn btn--danger user-delete-button" data-user-id="${escapeHtml(user._id || user.id)}">Delete</button>
+        </div>
+      </td>
     </tr>`;
 }

@@ -20,6 +20,14 @@ async function updateUserRole(userId, role) {
   return api.patch(`/users/${userId}/role`, { role });
 }
 
+async function updateUserStatus(userId, isActive) {
+  return api.patch(`/users/${userId}/status`, { isActive });
+}
+
+async function deleteUser(userId) {
+  return api.delete(`/users/${userId}`);
+}
+
 async function fetchApprovers() {
   return api.get('/users/approvers');
 }

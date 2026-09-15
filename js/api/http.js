@@ -135,6 +135,7 @@ const api = {
   get: (path) => apiRequest(path),
   post: (path, body) => apiRequest(path, { method: 'POST', body }),
   patch: (path, body) => apiRequest(path, { method: 'PATCH', body }),
+  delete: (path) => apiRequest(path, { method: 'DELETE' }),
 };
 
 async function downloadFile(path, filenameFallback = 'download.pdf') {

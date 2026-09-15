@@ -27,11 +27,11 @@
       <p class="section-intro">Create a ready-to-use staff or line-manager account with a secure initial password.</p>
       <button type="button" class="btn btn--primary" id="show-create-user-form">Create account</button>
       <div id="create-user-error" class="alert alert--error" hidden role="alert"></div>
+      <div id="temporary-password-result" class="alert alert--success" hidden role="status"></div>
       <form id="create-user-form" novalidate hidden>
         <div class="form-grid">
           <div class="form-group"><label for="new-name">Full name</label><input id="new-name" required /></div>
           <div class="form-group"><label for="new-email">Email address</label><input id="new-email" type="email" required /></div>
-          <div class="form-group"><label for="new-password">Initial password</label><input id="new-password" type="password" minlength="8" required /></div>
           <div class="form-group"><label for="new-employee-number">Employee number</label><input id="new-employee-number" /></div>
           <div class="form-group"><label for="new-position">Position</label><input id="new-position" /></div>
           <div class="form-group"><label for="new-office">Office</label><input id="new-office" /></div>
@@ -110,19 +110,50 @@
       createError.hidden = true;
       setLoading(createButton, true, 'Creating…');
       try {
-        await createUser({
+        const createdUser = await createUser({
           name: document.getElementById('new-name').value.trim(),
           email: document.getElementById('new-email').value.trim(),
-          password: document.getElementById('new-password').value,
           employeeNumber: document.getElementById('new-employee-number').value.trim(),
           position: document.getElementById('new-position').value.trim(),
           office: document.getElementById('new-office').value.trim(),
           department: document.getElementById('new-department').value.trim(),
           role: document.getElementById('new-role').value,
         });
+        tbody.querySelectorAll('.user-status-button').forEach((button) => {
+          button.addEventListener('click', async () => {
+            const isActive = button.dataset.active === 'true';
+            button.disabled = true;
+            try {
+              await updateUserStatus(button.dataset.userId, !isActive);
+              await loadUsers();
+              showToast(isActive ? 'User deactivated.' : 'User activated.', 'success');
+            } catch (error) {
+              showToast(error.message || 'Failed to update user status.', 'error');
+              button.disabled = false;
+            }
+          });
+        });
+        tbody.querySelectorAll('.user-delete-button').forEach((button) => {
+          button.addEventListener('click', async () => {
+            if (!window.confirm('Permanently delete this user account? This cannot be undone.')) return;
+            button.disabled = true;
+            try {
+              await deleteUser(button.dataset.userId);
+              await loadUsers();
+              showToast('User account deleted.', 'success');
+            } catch (error) {
+              showToast(error.message || 'Failed to delete user.', 'error');
+              button.disabled = false;
+            }
+          });
+        });
         createForm.reset();
         createForm.hidden = true;
         createFormToggle.hidden = false;
+        const expires = new Date(createdUser.passwordExpiresAt).toLocaleDateString();
+        const passwordResult = document.getElementById('temporary-password-result');
+        passwordResult.innerHTML = `Temporary password for <strong>${escapeHtml(createdUser.email)}</strong>: <code>${escapeHtml(createdUser.temporaryPassword)}</code><br>Expires: ${escapeHtml(expires)}. Copy it now; it will not be shown again.`;
+        passwordResult.hidden = false;
         showToast('Account created successfully.', 'success');
       } catch (error) {
         renderApiErrors(createError, error);
