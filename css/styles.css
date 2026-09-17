@@ -224,13 +224,13 @@ p { margin: 0 0 var(--spacing-md); max-width: 72ch; }
 .auth-hole {
   position: fixed;
   top: 50%;
-  left: 50%;
+  right: 8vw;
   display: flex;
-  width: 240px;
-  height: 240px;
+  width: 300px;
+  height: 300px;
   align-items: center;
   justify-content: center;
-  transform: translate(-50%, -50%);
+  transform: translateY(-50%);
   pointer-events: none;
   z-index: 0;
 }
@@ -264,7 +264,14 @@ p { margin: 0 0 var(--spacing-md); max-width: 72ch; }
 }
 
 @media (max-width: 560px) {
-  .auth-hole { width: 180px; height: 180px; }
+  .auth-hole {
+    top: 12vh;
+    right: auto;
+    left: 50%;
+    width: 180px;
+    height: 180px;
+    transform: translateX(-50%);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
