@@ -61,11 +61,15 @@
     <div id="users-loading"></div>
     <div id="users-empty"></div>
     <div class="bulk-invite-toolbar" id="bulk-invite-toolbar" hidden>
-      <label for="user-search">Search employees</label>
-      <input type="search" id="user-search" placeholder="Name, email, department..." autocomplete="off" />
-      <label><input type="checkbox" id="select-all-users" /> Select all active users</label>
-      <button type="button" class="btn btn--primary" id="send-bulk-invites" disabled>Send to selected</button>
-      <button type="button" class="btn btn--secondary" id="send-all-invites">Send to all active users</button>
+      <div class="employee-search-field">
+        <label for="user-search">Find a user</label>
+        <input type="search" id="user-search" placeholder="Name, email, department, role..." autocomplete="off" />
+      </div>
+      <div class="bulk-invite-actions">
+        <label class="select-all-users"><input type="checkbox" id="select-all-users" /> Select all active users</label>
+        <button type="button" class="btn btn--primary" id="send-bulk-invites" disabled>Send to selected</button>
+        <button type="button" class="btn btn--secondary" id="send-all-invites">Send to all active users</button>
+      </div>
       <span class="form-hint">Each user receives a unique temporary password valid for 30 days and must choose a new password after signing in.</span>
     </div>
     <section id="edit-user-panel" class="form-section" hidden>
