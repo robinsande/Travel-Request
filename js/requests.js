@@ -461,20 +461,19 @@ function renderRequestDetail(request) {
   const it = request.itinerary || {};
   const approver = getRequestApproverLabel(request);
   const requester = getRequesterLabel(request);
+  const passengerNames = (request.passengers || []).map((pass) => {
+    const user = pass.user && typeof pass.user === 'object' ? pass.user : null;
+    return user?.name || pass.name || '—';
+  });
+  const passengerNumbers = (request.passengers || []).map((pass) => {
+    const user = pass.user && typeof pass.user === 'object' ? pass.user : null;
+    return user?.employeeNumber || pass.employeeNumber || '—';
+  });
+  const office = request.employeeOffice || request.requestedBy?.office || request.requestedBy?.department || '—';
 
-  let passengersHtml = '<p class="text-muted">No passengers listed</p>';
-  if (request.passengers?.length) {
-    passengersHtml = `<ul class="detail-list">${request.passengers
-      .map((pass) => {
-        const user = pass.user && typeof pass.user === 'object' ? pass.user : null;
-        const name = user?.name || pass.name || '—';
-        const emp = user?.employeeNumber || pass.employeeNumber;
-        const email = user?.email;
-        const bits = [emp ? `(${emp})` : null, email || null].filter(Boolean).join(' ');
-        return `<li>${escapeHtml(name)}${bits ? ` ${escapeHtml(bits)}` : ''}</li>`;
-      })
-      .join('')}</ul>`;
-  }
+  const signatureImage = (src, alt) => src
+    ? `<img src="${src}" alt="${escapeHtml(alt)}" style="max-width: 220px; max-height: 90px; border: 1px solid #d0d7de; border-radius: 8px; background: #fff; margin-top: .5rem; padding: 0.5rem;" />`
+    : '<div class="text-muted" style="margin-top: .5rem;">No signature captured</div>';
 
   const rejectionComment = request.decision?.comment;
   let rejectionHtml = '';
@@ -497,44 +496,93 @@ function renderRequestDetail(request) {
 
     ${rejectionHtml}
 
-    <section class="detail-section">
-      <h2>Project Information</h2>
-      <dl class="detail-grid">
-        <dt>Project Name</dt><dd>${escapeHtml(p.name)}</dd>
-        <dt>Business Unit</dt><dd>${escapeHtml(p.businessUnit)}</dd>
-        <dt>Fund Code</dt><dd>${escapeHtml(p.fundCode)}</dd>
-        <dt>Project ID</dt><dd>${escapeHtml(p.projectId)}</dd>
-        <dt>Department ID</dt><dd>${escapeHtml(p.departmentId)}</dd>
-        <dt>Activity ID</dt><dd>${escapeHtml(p.activityId)}</dd>
-      </dl>
-    </section>
+    <section class="detail-section" style="background:#fff; border:1px solid #d9e2ec; border-radius:12px; padding:1.25rem;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; border-bottom:1px solid #d9e2ec; padding-bottom:0.75rem; margin-bottom:1rem;">
+        <div>
+          <div style="font-size:0.72rem; letter-spacing:0.08em; color:#52607a; text-transform:uppercase; font-weight:700;">CARE Kenya</div>
+          <div style="font-size:1.05rem; font-weight:700; margin-top:0.2rem;">TRAVEL AUTHORITY REQUEST</div>
+        </div>
+        <div style="text-align:right; font-size:0.8rem; color:#374151;">
+          <div><strong>Status:</strong> ${escapeHtml(String(request.status || 'pending').toUpperCase())}</div>
+          <div><strong>Request ID:</strong> ${escapeHtml(String(request._id || ''))}</div>
+        </div>
+      </div>
 
-    <section class="detail-section">
-      <h2>Trip Details</h2>
-      <dl class="detail-grid">
-        <dt>Area of Operation</dt><dd>${escapeHtml(request.assignedAreaOfOperation)}</dd>
-        <dt>Employees Office</dt><dd>${escapeHtml(request.employeeOffice || request.requestedBy?.office || '—')}</dd>
-        <dt>Purpose of Trip</dt><dd>${escapeHtml(request.purposeOfTrip)}</dd>
-        <dt>Mode of Travel</dt><dd>${escapeHtml(formatModeOfTravel(request.modeOfTravel))}</dd>
-        <dt>Destination</dt><dd>${escapeHtml(it.destination)}</dd>
-        <dt>Travel Dates</dt><dd>${formatDate(it.dateFrom)} – ${formatDate(it.dateTo)}</dd>
-        <dt>Accommodation Needed</dt><dd>${it.accommodationNeeded ? 'Yes' : 'No'}</dd>
-      </dl>
-      ${(request.travelSegments || []).length ? `<h3>Additional Travel Segments</h3><div class="detail-grid">${request.travelSegments.map((segment) => `<dt>Route</dt><dd>${escapeHtml(segment.from)} → ${escapeHtml(segment.to)}: ${escapeHtml(segment.destination)} (${formatDate(segment.dateFrom)} – ${formatDate(segment.dateTo)})</dd>`).join('')}</div>` : ''}
-    </section>
+      <div class="detail-grid" style="grid-template-columns: repeat(2, minmax(180px, 1fr)); gap: 0.75rem 1rem;">
+        <div><strong>Employee Name</strong><div>${escapeHtml(passengerNames.join(', ') || requester || '—')}</div></div>
+        <div><strong>Employee Number</strong><div>${escapeHtml(passengerNumbers.join(', ') || '—')}</div></div>
+        <div><strong>Project Name</strong><div>${escapeHtml(p.name || '—')}</div></div>
+        <div><strong>Business Unit</strong><div>${escapeHtml(p.businessUnit || '—')}</div></div>
+        <div><strong>Fund Code</strong><div>${escapeHtml(p.fundCode || '—')}</div></div>
+        <div><strong>Project ID</strong><div>${escapeHtml(p.projectId || '—')}</div></div>
+        <div><strong>Department ID</strong><div>${escapeHtml(p.departmentId || '—')}</div></div>
+        <div><strong>Activity ID</strong><div>${escapeHtml(p.activityId || '—')}</div></div>
+        <div style="grid-column: 1 / -1;"><strong>Assigned Area of Operation</strong><div>${escapeHtml(request.assignedAreaOfOperation || '—')}</div></div>
+        <div><strong>Employee Office</strong><div>${escapeHtml(office)}</div></div>
+        <div><strong>Travel Dates</strong><div>${formatDate(it.dateFrom)} – ${formatDate(it.dateTo)}</div></div>
+        <div style="grid-column: 1 / -1;"><strong>Purpose of Trip</strong><div>${escapeHtml(request.purposeOfTrip || '—')}</div></div>
+        <div style="grid-column: 1 / -1;"><strong>Mode of Travel</strong><div>${escapeHtml(formatModeOfTravel(request.modeOfTravel))}</div></div>
+        <div style="grid-column: 1 / -1;"><strong>Destination</strong><div>${escapeHtml(it.destination || '—')}</div></div>
+      </div>
 
-    <section class="detail-section">
-      <h2>Passengers</h2>
-      ${passengersHtml}
-    </section>
+      ${(request.travelSegments || []).length ? `
+        <div style="margin-top:1rem; border-top:1px solid #d9e2ec; padding-top:1rem;">
+          <h3 style="margin:0 0 .75rem;">Additional Travel Segments</h3>
+          <div class="detail-grid" style="grid-template-columns: repeat(5, minmax(120px, 1fr));">
+            <div><strong>Arrival</strong></div>
+            <div><strong>Departure</strong></div>
+            <div><strong>From</strong></div>
+            <div><strong>To</strong></div>
+            <div><strong>Destination</strong></div>
+            ${request.travelSegments.map((segment) => `
+              <div>${formatDate(segment.dateFrom)}</div>
+              <div>${formatDate(segment.dateTo)}</div>
+              <div>${escapeHtml(segment.from || '—')}</div>
+              <div>${escapeHtml(segment.to || '—')}</div>
+              <div>${escapeHtml(segment.destination || '—')}</div>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
 
-    <section class="detail-section">
-      <h2>Workflow</h2>
-      <dl class="detail-grid">
-        <dt>Requested By</dt><dd>${escapeHtml(requester)}</dd>
-        <dt>Selected Approver</dt><dd>${escapeHtml(approver)}</dd>
-        <dt>Submitted</dt><dd>${formatDateTime(request.submittedAt || request.createdAt)}</dd>
-        ${request.updatedAt ? `<dt>Last Updated</dt><dd>${formatDateTime(request.updatedAt)}</dd>` : ''}
-      </dl>
+      <div style="margin-top:1rem; border-top:1px solid #d9e2ec; padding-top:1rem;">
+        <h3 style="margin:0 0 .75rem;">Passengers</h3>
+        ${(request.passengers || []).length ? `
+          <ul class="detail-list">
+            ${request.passengers.map((pass) => {
+              const user = pass.user && typeof pass.user === 'object' ? pass.user : null;
+              const name = user?.name || pass.name || '—';
+              const emp = user?.employeeNumber || pass.employeeNumber;
+              const email = user?.email;
+              const bits = [emp ? `(${emp})` : null, email || null].filter(Boolean).join(' ');
+              return `<li>${escapeHtml(name)}${bits ? ` ${escapeHtml(bits)}` : ''}</li>`;
+            }).join('')}
+          </ul>
+        ` : '<p class="text-muted">No passengers listed</p>'}
+      </div>
+
+      <div style="margin-top:1.25rem; display:grid; grid-template-columns: repeat(2, minmax(240px, 1fr)); gap: 1rem; border-top:1px solid #d9e2ec; padding-top:1rem;">
+        <div>
+          <strong>Requester Signature</strong>
+          ${signatureImage(request.requesterSignature, 'Requester signature')}
+          <div style="margin-top:.5rem;"><strong>Requester:</strong> ${escapeHtml(requester)}</div>
+        </div>
+        <div>
+          <strong>Approver Signature</strong>
+          ${signatureImage(request.decision?.signature, 'Approver signature')}
+          <div style="margin-top:.5rem;"><strong>Approver:</strong> ${escapeHtml(approver)}</div>
+        </div>
+      </div>
+
+      <div style="margin-top:1rem; border-top:1px solid #d9e2ec; padding-top:1rem;">
+        <h3 style="margin:0 0 .75rem;">Workflow</h3>
+        <div class="detail-grid" style="grid-template-columns: repeat(2, minmax(180px, 1fr)); gap: 0.75rem 1rem;">
+          <div><strong>Requested By</strong><div>${escapeHtml(requester)}</div></div>
+          <div><strong>Selected Approver</strong><div>${escapeHtml(approver)}</div></div>
+          <div><strong>Submitted</strong><div>${formatDateTime(request.submittedAt || request.createdAt)}</div></div>
+          ${request.updatedAt ? `<div><strong>Last Updated</strong><div>${formatDateTime(request.updatedAt)}</div></div>` : ''}
+          ${request.decision?.decidedAt ? `<div><strong>Decision Date</strong><div>${formatDateTime(request.decision.decidedAt)}</div></div>` : ''}
+        </div>
+      </div>
     </section>`;
 }
