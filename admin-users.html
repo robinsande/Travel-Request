@@ -64,6 +64,7 @@
       <div class="employee-search-field">
         <label for="user-search">Find a user</label>
         <input type="search" id="user-search" placeholder="Name, email, department, role..." autocomplete="off" />
+        <button type="button" class="btn btn--ghost btn--sm" id="clear-user-filters">Clear filters</button>
       </div>
       <div class="bulk-invite-actions">
         <label class="select-all-users"><input type="checkbox" id="select-all-users" /> Select all active users</label>
@@ -83,8 +84,8 @@
           <div class="form-group"><label for="edit-user-position">Position</label><input id="edit-user-position" /></div>
           <div class="form-group"><label for="edit-user-office">Office</label><input id="edit-user-office" /></div>
           <div class="form-group"><label for="edit-user-department">Department</label><input id="edit-user-department" /></div>
-          <div class="form-group"><label for="edit-user-manager">Line manager</label><select id="edit-user-manager"><option value="">No line manager</option></select></div>
-          <div class="form-group"><label for="edit-user-alternates">Alternative line managers</label><select id="edit-user-alternates" multiple></select><p class="form-hint">Select active admins who can approve this user when the designated line manager is unavailable.</p></div>
+          <div class="form-group"><label for="edit-user-manager">Line manager / approver</label><select id="edit-user-manager"><option value="">No line manager</option></select><p class="form-hint">Each option includes the approver's exact email address.</p></div>
+          <div class="form-group"><label for="edit-user-alternates">Alternative approvers</label><select id="edit-user-alternates" multiple></select><p class="form-hint">Select active admins who can approve this user when the designated approver is unavailable. Each option includes the exact email address.</p></div>
         </div>
         <button type="submit" class="btn btn--primary" id="edit-user-button">Save profile</button>
         <button type="button" class="btn btn--secondary" id="cancel-edit-user">Cancel</button>
@@ -128,6 +129,7 @@
     const currentUser = getUser();
     const bulkToolbar = document.getElementById('bulk-invite-toolbar');
     const userSearch = document.getElementById('user-search');
+    const clearUserFilters = document.getElementById('clear-user-filters');
     const selectAllUsers = document.getElementById('select-all-users');
     const sendBulkInvitesButton = document.getElementById('send-bulk-invites');
     const sendAllInvitesButton = document.getElementById('send-all-invites');
@@ -229,6 +231,11 @@
             });
           };
           userSearch.oninput = filterUsers;
+          clearUserFilters.onclick = () => {
+            userSearch.value = '';
+            filterUsers();
+            userSearch.focus();
+          };
           const updateBulkInviteState = () => {
             const selected = tbody.querySelectorAll('.bulk-user-select:checked');
             sendBulkInvitesButton.disabled = selected.length === 0;
@@ -326,7 +333,7 @@
                 .map((candidate) => {
                   const candidateId = String(candidate._id || candidate.id);
                   const selected = String(user.managerId?._id || user.managerId || '') === candidateId;
-                  return `<option value="${escapeHtml(candidateId)}" ${selected ? 'selected' : ''}>${escapeHtml(candidate.name)}${candidate.department ? ` (${escapeHtml(candidate.department)})` : ''}</option>`;
+                  return `<option value="${escapeHtml(candidateId)}" ${selected ? 'selected' : ''}>${escapeHtml(candidate.name)} (${escapeHtml(candidate.email || 'No email')})</option>`;
                 }).join('');
               const alternateSelect = document.getElementById('edit-user-alternates');
               alternateSelect.innerHTML = users
@@ -334,7 +341,7 @@
                 .map((candidate) => {
                   const candidateId = String(candidate._id || candidate.id);
                   const selected = (user.alternateApproverIds || []).some((id) => String(id?._id || id) === candidateId);
-                  return `<option value="${escapeHtml(candidateId)}" ${selected ? 'selected' : ''}>${escapeHtml(candidate.name)} (${escapeHtml(candidate.department || 'No department')})</option>`;
+                  return `<option value="${escapeHtml(candidateId)}" ${selected ? 'selected' : ''}>${escapeHtml(candidate.name)} (${escapeHtml(candidate.email || 'No email')})</option>`;
                 }).join('');
               editPanel.hidden = false;
               document.getElementById('edit-user-name').focus();
