@@ -117,5 +117,5 @@ See `.env.example` for documentation only (the browser does not load `.env` file
 - JWT is stored in `localStorage` after login or activation.
 - Protected pages redirect to `login.html` when no token is present.
 - `401` responses clear the session and redirect to login.
-- Logout clears `localStorage` and returns to the login page.
+- Logout clears `localStorage` and returns to the landing page.
 - Request list scopes: `?scope=mine|team|all` are sent to `GET /api/requests` so admin “My Requests” and “Team Requests” stay distinct.

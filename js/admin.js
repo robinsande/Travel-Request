@@ -17,6 +17,8 @@ function renderImportSummary(result, container) {
               ? item
               : item.email
                 ? `${item.email}: ${item.message}`
+                : item.name
+                  ? `${item.name}: ${item.message}`
                 : item.message || JSON.stringify(item);
             return `<li>${escapeHtml(text)}</li>`;
           })

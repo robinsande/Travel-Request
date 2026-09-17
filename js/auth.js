@@ -25,7 +25,7 @@ function clearAuth() {
 
 function logout() {
   clearAuth();
-  window.location.href = 'login.html';
+  window.location.href = 'index.html';
 }
 
 function requireAuth(allowedRoles) {
