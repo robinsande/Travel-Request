@@ -39,6 +39,10 @@ async function rejectRequest(id, commentOrPayload) {
   return api.patch(`/requests/${id}/reject`, payload);
 }
 
+async function remindApprover(id) {
+  return api.post(`/requests/${id}/remind-approver`, {});
+}
+
 async function fetchTravelRequestPdf(id, { preview = false } = {}) {
   const query = preview ? '?preview=true' : '';
   const filename = preview ? `travel-request-${id}-preview.pdf` : `travel-request-${id}.pdf`;

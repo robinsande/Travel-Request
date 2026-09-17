@@ -254,6 +254,7 @@
         contentEl.innerHTML += `
           <div class="detail-actions">
             <button type="button" class="btn btn--secondary" id="download-request-preview">Download Filled TAR Preview</button>
+            ${currentRequest.status === 'pending' && isRequester(currentRequest) ? '<button type="button" class="btn btn--secondary" id="remind-approver-btn">Remind Approver</button>' : ''}
             ${canDownloadSignedTar ? '<button type="button" class="btn btn--primary" id="download-request-pdf">Download Signed TAR</button>' : ''}
           </div>`;
         contentEl.hidden = false;
@@ -269,6 +270,19 @@
             await fetchTravelRequestPdf(requestId);
           } catch (err) {
             showToast(err.message || 'Failed to download PDF.', 'error');
+          }
+        });
+        document.getElementById('remind-approver-btn')?.addEventListener('click', async (event) => {
+          const button = event.currentTarget;
+          if (!confirmAction('Send an email reminder to the assigned approver?')) return;
+          setLoading(button, true, 'Sending…');
+          try {
+            await remindApprover(requestId);
+            showToast('Reminder sent to the assigned approver.', 'success');
+          } catch (err) {
+            showToast(err.message || 'Failed to send reminder.', 'error');
+          } finally {
+            setLoading(button, false);
           }
         });
 
