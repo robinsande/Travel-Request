@@ -487,8 +487,7 @@ function renderRequestDetail(request) {
     <div class="tar-preview-wrap">
       <a href="javascript:history.back()" class="back-link">&larr; Back</a>
       <article class="tar-preview">
-        <div class="tar-preview__revision">Revised Version:<br><strong>25th January, 2023</strong></div>
-        <div class="tar-preview__logo">care<small>CARE KENYA</small></div>
+        <div class="tar-preview__logo"><img src="assets/care-logo.jpg" alt="CARE logo" /><small>CARE KENYA</small></div>
         <h1>COUNTRY OFFICES FLEET POLICIES</h1>
         <h2>3.5.7 &nbsp; TRAVEL AUTHORITY REQUEST</h2>
         <table>
