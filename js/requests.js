@@ -470,45 +470,26 @@ function renderRequestDetail(request) {
     return user?.employeeNumber || pass.employeeNumber || '—';
   });
   const office = request.employeeOffice || request.requestedBy?.office || request.requestedBy?.department || '—';
+  const status = String(request.status || 'pending').toUpperCase();
+  const requestId = String(request._id || '');
 
-  const signatureImage = (src, alt) => src
-    ? `<img src="${src}" alt="${escapeHtml(alt)}" style="max-width: 220px; max-height: 90px; border: 1px solid #d0d7de; border-radius: 8px; background: #fff; margin-top: .5rem; padding: 0.5rem;" />`
-    : '<div class="text-muted" style="margin-top: .5rem;">No signature captured</div>';
-
-  const rejectionComment = request.decision?.comment;
-  let rejectionHtml = '';
-  if (request.status === 'rejected' && rejectionComment) {
-    rejectionHtml = `
-      <section class="detail-section detail-section--rejected">
-        <h3>Rejection Reason</h3>
-        <p>${escapeHtml(rejectionComment)}</p>
-      </section>`;
-  }
+  const renderSignature = (src, label) => src
+    ? `<img src="${src}" alt="${escapeHtml(label)}" style="max-width: 180px; max-height: 62px; border: 1px solid #d0d7de; border-radius: 8px; background: #fff; padding: 0.35rem; margin-top: 0.25rem;" />`
+    : '<div class="text-muted" style="margin-top: 0.25rem;">No signature captured</div>';
 
   return `
-    <div class="page-header">
-      <div>
-        <a href="javascript:history.back()" class="back-link">← Back</a>
-        <h1>Travel Request Details</h1>
-      </div>
-      ${statusBadge(request.status)}
-    </div>
-
-    ${rejectionHtml}
-
-    <section class="detail-section" style="background:#fff; border:1px solid #d9e2ec; border-radius:12px; padding:1.25rem;">
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; border-bottom:1px solid #d9e2ec; padding-bottom:0.75rem; margin-bottom:1rem;">
-        <div>
-          <div style="font-size:0.72rem; letter-spacing:0.08em; color:#52607a; text-transform:uppercase; font-weight:700;">CARE Kenya</div>
-          <div style="font-size:1.05rem; font-weight:700; margin-top:0.2rem;">TRAVEL AUTHORITY REQUEST</div>
-        </div>
-        <div style="text-align:right; font-size:0.8rem; color:#374151;">
-          <div><strong>Status:</strong> ${escapeHtml(String(request.status || 'pending').toUpperCase())}</div>
-          <div><strong>Request ID:</strong> ${escapeHtml(String(request._id || ''))}</div>
+    <div class="tar-form-view" style="background:#fff; border:1px solid #d9e2ec; border-radius:10px; padding:1.3rem 1.5rem; box-shadow:0 2px 12px rgba(17,24,39,0.05);">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; margin-bottom:0.8rem; padding-bottom:0.75rem; border-bottom:1px solid #d9e2ec;">
+        <div style="font-size:0.72rem; letter-spacing:0.08em; color:#5a4a34; text-transform:uppercase; font-weight:700;">CARE KENYA</div>
+        <div style="text-align:right; font-size:0.8rem; color:#374151; line-height:1.5;">
+          <div><strong>Status:</strong> ${escapeHtml(status)}</div>
+          <div><strong>Request ID:</strong> ${escapeHtml(requestId)}</div>
         </div>
       </div>
 
-      <div class="detail-grid" style="grid-template-columns: repeat(2, minmax(180px, 1fr)); gap: 0.75rem 1rem;">
+      <div style="font-size:1.2rem; font-weight:700; letter-spacing:0.02em; margin:0.5rem 0 1rem; color:#1f2937;">TRAVEL AUTHORITY REQUEST</div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem 1.5rem; margin-bottom:0.6rem;">
         <div><strong>Employee Name</strong><div>${escapeHtml(passengerNames.join(', ') || requester || '—')}</div></div>
         <div><strong>Employee Number</strong><div>${escapeHtml(passengerNumbers.join(', ') || '—')}</div></div>
         <div><strong>Project Name</strong><div>${escapeHtml(p.name || '—')}</div></div>
@@ -517,38 +498,38 @@ function renderRequestDetail(request) {
         <div><strong>Project ID</strong><div>${escapeHtml(p.projectId || '—')}</div></div>
         <div><strong>Department ID</strong><div>${escapeHtml(p.departmentId || '—')}</div></div>
         <div><strong>Activity ID</strong><div>${escapeHtml(p.activityId || '—')}</div></div>
-        <div style="grid-column: 1 / -1;"><strong>Assigned Area of Operation</strong><div>${escapeHtml(request.assignedAreaOfOperation || '—')}</div></div>
+        <div style="grid-column:1 / -1;"><strong>Assigned Area of Operation</strong><div>${escapeHtml(request.assignedAreaOfOperation || '—')}</div></div>
         <div><strong>Employee Office</strong><div>${escapeHtml(office)}</div></div>
         <div><strong>Travel Dates</strong><div>${formatDate(it.dateFrom)} – ${formatDate(it.dateTo)}</div></div>
-        <div style="grid-column: 1 / -1;"><strong>Purpose of Trip</strong><div>${escapeHtml(request.purposeOfTrip || '—')}</div></div>
-        <div style="grid-column: 1 / -1;"><strong>Mode of Travel</strong><div>${escapeHtml(formatModeOfTravel(request.modeOfTravel))}</div></div>
-        <div style="grid-column: 1 / -1;"><strong>Destination</strong><div>${escapeHtml(it.destination || '—')}</div></div>
+        <div style="grid-column:1 / -1;"><strong>Purpose of Trip</strong><div>${escapeHtml(request.purposeOfTrip || '—')}</div></div>
+        <div style="grid-column:1 / -1;"><strong>Mode of Travel</strong><div>${escapeHtml(formatModeOfTravel(request.modeOfTravel))}</div></div>
+        <div style="grid-column:1 / -1;"><strong>Destination</strong><div>${escapeHtml(it.destination || '—')}</div></div>
       </div>
 
       ${(request.travelSegments || []).length ? `
-        <div style="margin-top:1rem; border-top:1px solid #d9e2ec; padding-top:1rem;">
-          <h3 style="margin:0 0 .75rem;">Additional Travel Segments</h3>
-          <div class="detail-grid" style="grid-template-columns: repeat(5, minmax(120px, 1fr));">
-            <div><strong>Arrival</strong></div>
-            <div><strong>Departure</strong></div>
-            <div><strong>From</strong></div>
-            <div><strong>To</strong></div>
-            <div><strong>Destination</strong></div>
+        <div style="margin-top:1rem; border-top:1px solid #d9e2ec; padding-top:0.75rem;">
+          <div style="font-weight:700; margin-bottom:0.4rem;">Additional Travel Destinations</div>
+          <div style="display:grid; grid-template-columns:repeat(5, minmax(120px,1fr)); gap:0.5rem; border:1px solid #d9e2ec; border-bottom:none;">
+            <div style="font-weight:700; padding:0.35rem; border-bottom:1px solid #d9e2ec;">Arrival</div>
+            <div style="font-weight:700; padding:0.35rem; border-bottom:1px solid #d9e2ec;">Departure</div>
+            <div style="font-weight:700; padding:0.35rem; border-bottom:1px solid #d9e2ec;">From</div>
+            <div style="font-weight:700; padding:0.35rem; border-bottom:1px solid #d9e2ec;">To</div>
+            <div style="font-weight:700; padding:0.35rem; border-bottom:1px solid #d9e2ec;">Destination</div>
             ${request.travelSegments.map((segment) => `
-              <div>${formatDate(segment.dateFrom)}</div>
-              <div>${formatDate(segment.dateTo)}</div>
-              <div>${escapeHtml(segment.from || '—')}</div>
-              <div>${escapeHtml(segment.to || '—')}</div>
-              <div>${escapeHtml(segment.destination || '—')}</div>
+              <div style="padding:0.35rem; border-bottom:1px solid #d9e2ec;">${formatDate(segment.dateFrom)}</div>
+              <div style="padding:0.35rem; border-bottom:1px solid #d9e2ec;">${formatDate(segment.dateTo)}</div>
+              <div style="padding:0.35rem; border-bottom:1px solid #d9e2ec;">${escapeHtml(segment.from || '—')}</div>
+              <div style="padding:0.35rem; border-bottom:1px solid #d9e2ec;">${escapeHtml(segment.to || '—')}</div>
+              <div style="padding:0.35rem; border-bottom:1px solid #d9e2ec;">${escapeHtml(segment.destination || '—')}</div>
             `).join('')}
           </div>
         </div>
       ` : ''}
 
-      <div style="margin-top:1rem; border-top:1px solid #d9e2ec; padding-top:1rem;">
-        <h3 style="margin:0 0 .75rem;">Passengers</h3>
+      <div style="margin-top:1rem; border-top:1px solid #d9e2ec; padding-top:0.8rem;">
+        <div style="font-weight:700; margin-bottom:0.5rem;">Passengers</div>
         ${(request.passengers || []).length ? `
-          <ul class="detail-list">
+          <ul style="margin:0; padding-left:1.2rem;">
             ${request.passengers.map((pass) => {
               const user = pass.user && typeof pass.user === 'object' ? pass.user : null;
               const name = user?.name || pass.name || '—';
@@ -561,28 +542,17 @@ function renderRequestDetail(request) {
         ` : '<p class="text-muted">No passengers listed</p>'}
       </div>
 
-      <div style="margin-top:1.25rem; display:grid; grid-template-columns: repeat(2, minmax(240px, 1fr)); gap: 1rem; border-top:1px solid #d9e2ec; padding-top:1rem;">
+      <div style="margin-top:1.2rem; display:grid; grid-template-columns:1fr 1fr; gap:1rem; border-top:1px solid #d9e2ec; padding-top:0.8rem;">
         <div>
-          <strong>Requester Signature</strong>
-          ${signatureImage(request.requesterSignature, 'Requester signature')}
-          <div style="margin-top:.5rem;"><strong>Requester:</strong> ${escapeHtml(requester)}</div>
+          <div style="font-weight:700; margin-bottom:0.3rem;">Requester Signature</div>
+          ${renderSignature(request.requesterSignature, 'Requester signature')}
+          <div style="margin-top:0.35rem;"><strong>Requested by:</strong> ${escapeHtml(requester)}</div>
         </div>
         <div>
-          <strong>Approver Signature</strong>
-          ${signatureImage(request.decision?.signature, 'Approver signature')}
-          <div style="margin-top:.5rem;"><strong>Approver:</strong> ${escapeHtml(approver)}</div>
+          <div style="font-weight:700; margin-bottom:0.3rem;">Approver Signature</div>
+          ${renderSignature(request.decision?.signature, 'Approver signature')}
+          <div style="margin-top:0.35rem;"><strong>Travel Authorized by:</strong> ${escapeHtml(approver)}</div>
         </div>
       </div>
-
-      <div style="margin-top:1rem; border-top:1px solid #d9e2ec; padding-top:1rem;">
-        <h3 style="margin:0 0 .75rem;">Workflow</h3>
-        <div class="detail-grid" style="grid-template-columns: repeat(2, minmax(180px, 1fr)); gap: 0.75rem 1rem;">
-          <div><strong>Requested By</strong><div>${escapeHtml(requester)}</div></div>
-          <div><strong>Selected Approver</strong><div>${escapeHtml(approver)}</div></div>
-          <div><strong>Submitted</strong><div>${formatDateTime(request.submittedAt || request.createdAt)}</div></div>
-          ${request.updatedAt ? `<div><strong>Last Updated</strong><div>${formatDateTime(request.updatedAt)}</div></div>` : ''}
-          ${request.decision?.decidedAt ? `<div><strong>Decision Date</strong><div>${formatDateTime(request.decision.decidedAt)}</div></div>` : ''}
-        </div>
-      </div>
-    </section>`;
+    </div>`;
 }
