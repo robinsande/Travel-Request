@@ -7,10 +7,18 @@
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body class="auth-page">
-  <video class="auth-bg-video" autoplay muted loop playsinline poster="https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=1600&q=80">
-    <source src="https://static.shaders.com/demo-clips/v3_demo_6.webm" type="video/webm" />
-  </video>
-
+  <div class="auth-hole" aria-hidden="true">
+    <i></i>
+    <i></i>
+    <i></i>
+    <i></i>
+    <i></i>
+    <i></i>
+    <i></i>
+    <i></i>
+    <i></i>
+    <i></i>
+  </div>
   <div class="auth-card">
     <div class="auth-card__brand">
       <span class="auth-card__logo">CARE</span>
@@ -51,6 +59,17 @@
     const form = document.getElementById('login-form');
     const errorEl = document.getElementById('login-error');
     const loginBtn = document.getElementById('login-btn');
+    const bgVideo = document.querySelector('.auth-bg-video');
+
+    const enableVideoAudio = () => {
+      if (!bgVideo) return;
+      bgVideo.muted = false;
+      bgVideo.volume = 0.25;
+      bgVideo.play().catch(() => {});
+    };
+
+    document.addEventListener('pointerdown', enableVideoAudio, { once: true });
+    document.addEventListener('keydown', enableVideoAudio, { once: true });
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
