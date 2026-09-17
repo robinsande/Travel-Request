@@ -461,98 +461,56 @@ function renderRequestDetail(request) {
   const it = request.itinerary || {};
   const approver = getRequestApproverLabel(request);
   const requester = getRequesterLabel(request);
-  const passengerNames = (request.passengers || []).map((pass) => {
+  const passengers = (request.passengers || []).map((pass) => {
     const user = pass.user && typeof pass.user === 'object' ? pass.user : null;
-    return user?.name || pass.name || '—';
-  });
-  const passengerNumbers = (request.passengers || []).map((pass) => {
-    const user = pass.user && typeof pass.user === 'object' ? pass.user : null;
-    return user?.employeeNumber || pass.employeeNumber || '—';
+    return {
+      name: user?.name || pass.name || '—',
+      employeeNumber: user?.employeeNumber || pass.employeeNumber || '—',
+    };
   });
   const office = request.employeeOffice || request.requestedBy?.office || request.requestedBy?.department || '—';
+  const signatureCell = (signature, label) => signature
+    ? `<img class="tar-preview__signature" src="${signature}" alt="${escapeHtml(label)}" />`
+    : '<span class="tar-preview__missing">No signature captured</span>';
+  const passengerNames = passengers.map((passenger) => passenger.name).join(', ') || requester;
+  const passengerNumbers = passengers.map((passenger) => passenger.employeeNumber).join(', ') || '—';
+  const mode = request.modeOfTravel || {};
+  const travelMode = [
+    `${mode.careVehicle ? '[X]' : '[ ]'} CARE Vehicle`,
+    `${mode.publicTransport ? '[X]' : '[ ]'} Public Transport`,
+    `${mode.aircraft ? '[X]' : '[ ]'} Aircraft`,
+  ].join('   ');
   const status = String(request.status || 'pending').toUpperCase();
-  const requestId = String(request._id || '');
-
-  const renderSignature = (src, label) => src
-    ? `<img src="${src}" alt="${escapeHtml(label)}" style="max-width: 180px; max-height: 62px; border: 1px solid #d0d7de; border-radius: 8px; background: #fff; padding: 0.35rem; margin-top: 0.25rem;" />`
-    : '<div class="text-muted" style="margin-top: 0.25rem;">No signature captured</div>';
+  const statusLabel = status === 'APPROVED' ? 'APPROVED' : status === 'REJECTED' ? 'DECLINED' : 'PENDING APPROVAL';
 
   return `
-    <div class="tar-form-view" style="background:#fff; border:1px solid #d9e2ec; border-radius:10px; padding:1.3rem 1.5rem; box-shadow:0 2px 12px rgba(17,24,39,0.05);">
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; margin-bottom:0.8rem; padding-bottom:0.75rem; border-bottom:1px solid #d9e2ec;">
-        <div style="font-size:0.72rem; letter-spacing:0.08em; color:#5a4a34; text-transform:uppercase; font-weight:700;">CARE KENYA</div>
-        <div style="text-align:right; font-size:0.8rem; color:#374151; line-height:1.5;">
-          <div><strong>Status:</strong> ${escapeHtml(status)}</div>
-          <div><strong>Request ID:</strong> ${escapeHtml(requestId)}</div>
-        </div>
-      </div>
-
-      <div style="font-size:1.2rem; font-weight:700; letter-spacing:0.02em; margin:0.5rem 0 1rem; color:#1f2937;">TRAVEL AUTHORITY REQUEST</div>
-
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem 1.5rem; margin-bottom:0.6rem;">
-        <div><strong>Employee Name</strong><div>${escapeHtml(passengerNames.join(', ') || requester || '—')}</div></div>
-        <div><strong>Employee Number</strong><div>${escapeHtml(passengerNumbers.join(', ') || '—')}</div></div>
-        <div><strong>Project Name</strong><div>${escapeHtml(p.name || '—')}</div></div>
-        <div><strong>Business Unit</strong><div>${escapeHtml(p.businessUnit || '—')}</div></div>
-        <div><strong>Fund Code</strong><div>${escapeHtml(p.fundCode || '—')}</div></div>
-        <div><strong>Project ID</strong><div>${escapeHtml(p.projectId || '—')}</div></div>
-        <div><strong>Department ID</strong><div>${escapeHtml(p.departmentId || '—')}</div></div>
-        <div><strong>Activity ID</strong><div>${escapeHtml(p.activityId || '—')}</div></div>
-        <div style="grid-column:1 / -1;"><strong>Assigned Area of Operation</strong><div>${escapeHtml(request.assignedAreaOfOperation || '—')}</div></div>
-        <div><strong>Employee Office</strong><div>${escapeHtml(office)}</div></div>
-        <div><strong>Travel Dates</strong><div>${formatDate(it.dateFrom)} – ${formatDate(it.dateTo)}</div></div>
-        <div style="grid-column:1 / -1;"><strong>Purpose of Trip</strong><div>${escapeHtml(request.purposeOfTrip || '—')}</div></div>
-        <div style="grid-column:1 / -1;"><strong>Mode of Travel</strong><div>${escapeHtml(formatModeOfTravel(request.modeOfTravel))}</div></div>
-        <div style="grid-column:1 / -1;"><strong>Destination</strong><div>${escapeHtml(it.destination || '—')}</div></div>
-      </div>
-
-      ${(request.travelSegments || []).length ? `
-        <div style="margin-top:1rem; border-top:1px solid #d9e2ec; padding-top:0.75rem;">
-          <div style="font-weight:700; margin-bottom:0.4rem;">Additional Travel Destinations</div>
-          <div style="display:grid; grid-template-columns:repeat(5, minmax(120px,1fr)); gap:0.5rem; border:1px solid #d9e2ec; border-bottom:none;">
-            <div style="font-weight:700; padding:0.35rem; border-bottom:1px solid #d9e2ec;">Arrival</div>
-            <div style="font-weight:700; padding:0.35rem; border-bottom:1px solid #d9e2ec;">Departure</div>
-            <div style="font-weight:700; padding:0.35rem; border-bottom:1px solid #d9e2ec;">From</div>
-            <div style="font-weight:700; padding:0.35rem; border-bottom:1px solid #d9e2ec;">To</div>
-            <div style="font-weight:700; padding:0.35rem; border-bottom:1px solid #d9e2ec;">Destination</div>
-            ${request.travelSegments.map((segment) => `
-              <div style="padding:0.35rem; border-bottom:1px solid #d9e2ec;">${formatDate(segment.dateFrom)}</div>
-              <div style="padding:0.35rem; border-bottom:1px solid #d9e2ec;">${formatDate(segment.dateTo)}</div>
-              <div style="padding:0.35rem; border-bottom:1px solid #d9e2ec;">${escapeHtml(segment.from || '—')}</div>
-              <div style="padding:0.35rem; border-bottom:1px solid #d9e2ec;">${escapeHtml(segment.to || '—')}</div>
-              <div style="padding:0.35rem; border-bottom:1px solid #d9e2ec;">${escapeHtml(segment.destination || '—')}</div>
-            `).join('')}
-          </div>
-        </div>
-      ` : ''}
-
-      <div style="margin-top:1rem; border-top:1px solid #d9e2ec; padding-top:0.8rem;">
-        <div style="font-weight:700; margin-bottom:0.5rem;">Passengers</div>
-        ${(request.passengers || []).length ? `
-          <ul style="margin:0; padding-left:1.2rem;">
-            ${request.passengers.map((pass) => {
-              const user = pass.user && typeof pass.user === 'object' ? pass.user : null;
-              const name = user?.name || pass.name || '—';
-              const emp = user?.employeeNumber || pass.employeeNumber;
-              const email = user?.email;
-              const bits = [emp ? `(${emp})` : null, email || null].filter(Boolean).join(' ');
-              return `<li>${escapeHtml(name)}${bits ? ` ${escapeHtml(bits)}` : ''}</li>`;
-            }).join('')}
-          </ul>
-        ` : '<p class="text-muted">No passengers listed</p>'}
-      </div>
-
-      <div style="margin-top:1.2rem; display:grid; grid-template-columns:1fr 1fr; gap:1rem; border-top:1px solid #d9e2ec; padding-top:0.8rem;">
-        <div>
-          <div style="font-weight:700; margin-bottom:0.3rem;">Requester Signature</div>
-          ${renderSignature(request.requesterSignature, 'Requester signature')}
-          <div style="margin-top:0.35rem;"><strong>Requested by:</strong> ${escapeHtml(requester)}</div>
-        </div>
-        <div>
-          <div style="font-weight:700; margin-bottom:0.3rem;">Approver Signature</div>
-          ${renderSignature(request.decision?.signature, 'Approver signature')}
-          <div style="margin-top:0.35rem;"><strong>Travel Authorized by:</strong> ${escapeHtml(approver)}</div>
-        </div>
-      </div>
+    <div class="tar-preview-wrap">
+      <a href="javascript:history.back()" class="back-link">&larr; Back</a>
+      <article class="tar-preview">
+        <div class="tar-preview__revision">Revised Version:<br><strong>25th January, 2023</strong></div>
+        <div class="tar-preview__logo">care<small>CARE KENYA</small></div>
+        <h1>COUNTRY OFFICES FLEET POLICIES</h1>
+        <h2>3.5.7 &nbsp; TRAVEL AUTHORITY REQUEST</h2>
+        <table>
+          <tbody>
+            <tr><th>Employee<br>Name</th><td>${escapeHtml(passengerNames)}</td><th>Employee<br>Number</th><td>${escapeHtml(passengerNumbers)}</td><th>Project<br>Name</th><td>${escapeHtml(p.name || '—')}</td></tr>
+            <tr><th>Business Unit:</th><td>${escapeHtml(p.businessUnit || '—')}</td><th>Fund Code:</th><td>${escapeHtml(p.fundCode || '—')}</td><th></th><td></td></tr>
+            <tr><th>Project ID:</th><td>${escapeHtml(p.projectId || '—')}</td><th>Department ID:</th><td>${escapeHtml(p.departmentId || '—')}</td><th>Activity ID:</th><td>${escapeHtml(p.activityId || '—')}</td></tr>
+            <tr><th>Assigned Area<br>of Operation</th><td colspan="2">${escapeHtml(request.assignedAreaOfOperation || '—')}</td><th>Employees<br>Office</th><td colspan="2">${escapeHtml(office)}</td></tr>
+            <tr><th>Purpose of the Trip</th><td colspan="5">${escapeHtml(request.purposeOfTrip || '—')}</td></tr>
+            <tr><th>Mode of Travel</th><td colspan="5">${escapeHtml(travelMode)}</td></tr>
+            <tr><th colspan="6" class="tar-preview__section-title">Travel Itinerary (must be completed prior to supervisor authorizing travel)</th></tr>
+            <tr><th>Date From</th><th>Date To</th><th colspan="2">Destination</th><th>Passengers</th><th>Accommodation</th></tr>
+            <tr><td>${formatDate(it.dateFrom)}</td><td>${formatDate(it.dateTo)}</td><td colspan="2">${escapeHtml(it.destination || '—')}</td><td>${passengers.length}</td><td>${it.accommodationNeeded ? 'Yes' : 'No'}</td></tr>
+            ${(request.travelSegments || []).length ? `<tr><th colspan="6" class="tar-preview__section-title">Additional Travel Destinations</th></tr><tr><th>Arrival</th><th>Departure</th><th>From</th><th>To</th><th colspan="2">Destination</th></tr>${request.travelSegments.map((segment) => `<tr><td>${formatDate(segment.dateFrom)}</td><td>${formatDate(segment.dateTo)}</td><td>${escapeHtml(segment.from || '—')}</td><td>${escapeHtml(segment.to || '—')}</td><td colspan="2">${escapeHtml(segment.destination || '—')}</td></tr>`).join('')}` : ''}
+            <tr class="tar-preview__signature-row"><th>Requested by:<br><br>Signature:</th><td colspan="3">${escapeHtml(requester)}<br>${signatureCell(request.requesterSignature, 'Requester signature')}</td><td colspan="2">Date: ${formatDate(request.submittedAt || request.createdAt)}</td></tr>
+            <tr class="tar-preview__signature-row"><th>Travel<br>Authorized<br>by:</th><td>Print Name:<br>${escapeHtml(approver)}</td><td>Position:<br>${escapeHtml(request.decision?.decidedBy?.position || request.selected_approver_id?.position || 'Supervisor / Approver')}</td><td>Signature:<br>${signatureCell(request.decision?.signature, 'Approver signature')}</td><td colspan="2">Date:<br>${formatDate(request.decision?.decidedAt || request.submittedAt)}</td></tr>
+            <tr><td colspan="6" class="tar-preview__center-note">To be signed by supervisor once all is completed</td></tr>
+            <tr><td colspan="6" class="tar-preview__fine-print">Note: This form must be produced in 3 or 4 copies BEFORE travel is undertaken. The signed original is to be submitted to the Finance Unit when seeking an advance or claiming reimbursement, another photocopy provided to the Security Officer and the Fleet Officer if requesting a CARE vehicle for travel, and the third copy for employee's records/file.</td></tr>
+          </tbody>
+        </table>
+        <div class="tar-preview__status">TAR STATUS: ${escapeHtml(statusLabel)}</div>
+        <div class="tar-preview__meta">Request ID: ${escapeHtml(String(request._id || ''))} &nbsp;&nbsp; Approved/Reviewed by: ${escapeHtml(approver)}</div>
+      </article>
     </div>`;
 }

@@ -1,5 +1,130 @@
 /* CARE Kenya TAR — shared styles */
 
+.tar-preview-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.tar-preview {
+  margin: 1rem auto 2rem;
+  padding: 2rem 2.25rem;
+  background: #fff;
+  color: #111827;
+  border: 1px solid #111827;
+  box-shadow: 0 12px 30px rgba(17, 24, 39, 0.12);
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.tar-preview__revision {
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.tar-preview__logo {
+  margin: -1.1rem auto 0.35rem;
+  color: #e87524;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 2.4rem;
+  font-weight: 700;
+  line-height: 0.85;
+  text-align: center;
+}
+
+.tar-preview__logo small {
+  display: block;
+  color: #111827;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  margin-top: 0.35rem;
+}
+
+.tar-preview h1,
+.tar-preview h2 {
+  margin: 0.35rem 0;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.tar-preview h2 {
+  margin-top: 1rem;
+  text-align: left;
+}
+
+.tar-preview table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.72rem;
+  table-layout: fixed;
+}
+
+.tar-preview th,
+.tar-preview td {
+  border: 1px solid #111827;
+  min-height: 2rem;
+  padding: 0.35rem;
+  text-align: left;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+
+.tar-preview th {
+  font-weight: 700;
+}
+
+.tar-preview__section-title,
+.tar-preview__center-note {
+  text-align: center !important;
+}
+
+.tar-preview__signature-row th,
+.tar-preview__signature-row td {
+  min-height: 5rem;
+  vertical-align: top;
+}
+
+.tar-preview__signature {
+  display: block;
+  max-width: 180px;
+  max-height: 65px;
+  margin-top: 0.35rem;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.tar-preview__missing {
+  display: inline-block;
+  margin-top: 0.35rem;
+  color: #6b7280;
+  font-size: 0.68rem;
+}
+
+.tar-preview__fine-print {
+  font-size: 0.62rem;
+}
+
+.tar-preview__status {
+  margin-top: 0.65rem;
+  color: #8a5a00;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.tar-preview__meta {
+  margin-top: 0.25rem;
+  font-size: 0.68rem;
+}
+
+@media (max-width: 720px) {
+  .tar-preview {
+    padding: 1rem;
+    overflow-x: auto;
+  }
+
+  .tar-preview table {
+    min-width: 720px;
+  }
+}
+
 :root {
   --color-primary: #d77d1f;
   --color-primary-dark: #b86110;
