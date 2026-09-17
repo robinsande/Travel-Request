@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CARE Travel Authority Request</title>
+  <title>Traveling for Greater Impact | CARE Kenya</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap');
+
     :root {
       --color-primary: #ea7a1a;
       --color-primary-dark: #d26e10;
@@ -304,8 +306,9 @@
     }
 
     html, body { background: var(--ink); color: var(--paper); }
+    html { scroll-behavior: smooth; }
     body { display: block; overflow-x: hidden; overflow-y: auto; font-family: 'DM Sans', 'Segoe UI', sans-serif; }
-    .landing-hero { position: relative; min-height: min(820px, 100vh); display: flex; align-items: flex-end; overflow: hidden; isolation: isolate; }
+    .landing-hero { position: relative; min-height: min(820px, 100svh); display: flex; align-items: flex-end; overflow: hidden; isolation: isolate; }
     .landing-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: saturate(0.82) contrast(1.05) brightness(0.62); z-index: -2; }
     .landing-hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(23,20,15,.46), rgba(23,20,15,.08) 42%, rgba(23,20,15,.94)); z-index: -1; }
     .landing-hero::after { content: ''; position: absolute; inset: auto 0 0; height: 30%; background: linear-gradient(90deg, rgba(232,98,44,.22), transparent 42%); mix-blend-mode: screen; pointer-events: none; }
@@ -336,6 +339,8 @@
     .locations, .process-grid { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid rgba(243,238,228,.2); border-bottom: 1px solid rgba(243,238,228,.2); }
     .location { min-height: 290px; padding: 1.5rem 1.25rem 1.75rem; border-right: 1px solid rgba(243,238,228,.2); }
     .location:last-child { border-right: 0; }
+    .location--wide { grid-column: span 2; min-height: auto; background: rgba(232,98,44,.08); }
+    .location--wide h3 { margin-top: 1.5rem; }
     .location:nth-child(even) { padding-top: 4rem; }
     .location-number, .process-step span { color: var(--orange); font-size: .75rem; font-weight: 700; letter-spacing: .12em; }
     .location h3 { margin: 4rem 0 .75rem; color: var(--paper); font-size: clamp(1.8rem, 3vw, 2.8rem); }
@@ -365,10 +370,27 @@
       .location:nth-child(even) { padding-top: 1.5rem; }
       .location h3, .location:nth-child(even) h3 { margin-top: 2.5rem; }
       .location:nth-child(2n) { border-right: 0; }
+      .location--wide { grid-column: span 2; }
       .process-step { min-height: 190px; border-bottom: 1px solid rgba(23,20,15,.22); }
       .process-step:nth-child(2n) { border-right: 0; }
       .process-step h3 { margin-top: 2rem; }
       .landing-footer { align-items: flex-start; flex-direction: column; gap: .75rem; }
+    }
+    @media (max-width: 480px) {
+      .brand { font-size: .7rem; letter-spacing: .08em; }
+      .brand-mark { width: 1.75rem; height: 1.75rem; }
+      .nav-link { max-width: 9rem; font-size: .6rem; line-height: 1.4; text-align: right; }
+      .hero-content { padding-top: 7.5rem; }
+      .hero-content h1 { font-size: clamp(3.1rem, 17vw, 4.8rem); }
+      .hero-content p { font-size: .95rem; }
+      .hero-actions { align-items: stretch; flex-direction: column; }
+      .hero-actions .btn { width: 100%; }
+      .locations, .process-grid { grid-template-columns: 1fr; }
+      .location, .location:nth-child(even), .location--wide { min-height: auto; padding: 1.5rem 0; border-right: 0; }
+      .location--wide { grid-column: span 1; }
+      .location h3, .location:nth-child(even) h3 { margin: 1.8rem 0 .5rem; }
+      .process-step, .process-step + .process-step { min-height: auto; padding: 1.5rem 0; border-right: 0; }
+      .process-step h3 { margin: 1.8rem 0 .5rem; }
     }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; } }
   </style>
@@ -383,10 +405,6 @@
   </script>
 </head>
 <body class="travel-bg landing-page">
-  <video class="landing-video" autoplay muted loop playsinline>
-    <source src="file:///C:/Users/RobinSande/Downloads/CARE_Kenya_Travel_Request_Dadaab_Working_Video.mp4" type="video/mp4" />
-  </video>
-
    <section class="landing-hero" aria-label="CARE Kenya travel journey">
      <video class="landing-video" autoplay muted loop playsinline>
        <source src="file:///C:/Users/RobinSande/Downloads/CARE_Kenya_Travel_Request_Dadaab_Working_Video.mp4" type="video/mp4" />
@@ -403,7 +421,7 @@
          <a href="login.html" class="btn btn--primary">Sign in to continue</a>
          <a href="register.html" class="btn btn--secondary">Create account</a>
        </div>
-       <div class="hero-caption">Nairobi / Dadaab / Kisumu / Garissa<br />CARE Kenya field journey</div>
+      <div class="hero-caption">Across Kenya's field operations<br />CARE Kenya journey</div>
      </div>
    </section>
 
@@ -414,10 +432,15 @@
          <p>From the city to the field, CARE teams move across Kenya to turn plans into practical action. This is the journey your travel request helps make possible.</p>
        </div>
        <div class="locations">
-         <article class="location"><div class="location-number">01 / 04</div><h3>Nairobi</h3><p>Where the journey begins: coordination, preparation and the people who make it happen.</p></article>
-         <article class="location"><div class="location-number">02 / 04</div><h3>Dadaab</h3><p>Reaching the field with the clarity and care needed for work that matters.</p></article>
-         <article class="location"><div class="location-number">03 / 04</div><h3>Kisumu</h3><p>Connecting teams, partners and communities through thoughtful movement.</p></article>
-         <article class="location"><div class="location-number">04 / 04</div><h3>Garissa</h3><p>Arriving ready to listen, respond and create greater impact together.</p></article>
+         <article class="location"><div class="location-number">01 / 08</div><h3>Nairobi</h3><p>Where the journey begins: coordination, preparation and the people who make it happen.</p></article>
+         <article class="location"><div class="location-number">02 / 08</div><h3>Dadaab</h3><p>Reaching the field with the clarity and care needed for work that matters.</p></article>
+         <article class="location"><div class="location-number">03 / 08</div><h3>Kisumu</h3><p>Connecting teams, partners and communities through thoughtful movement.</p></article>
+         <article class="location"><div class="location-number">04 / 08</div><h3>Garissa</h3><p>Arriving ready to listen, respond and create greater impact together.</p></article>
+         <article class="location"><div class="location-number">05 / 08</div><h3>Nakuru</h3><p>Supporting resilient communities and partners across the Rift Valley.</p></article>
+         <article class="location"><div class="location-number">06 / 08</div><h3>Mombasa</h3><p>Connecting coastal communities to practical, locally led action.</p></article>
+         <article class="location"><div class="location-number">07 / 08</div><h3>Migori</h3><p>Working alongside communities to strengthen opportunity and wellbeing.</p></article>
+         <article class="location"><div class="location-number">08 / 08</div><h3>Siaya</h3><p>Extending CARE's work through trusted local relationships and partnerships.</p></article>
+         <article class="location location--wide"><div class="location-number">FIELD NETWORK</div><h3>And beyond</h3><p>Every destination is part of a wider CARE Kenya field network, moving people and purpose where they are needed most.</p></article>
        </div>
      </section>
 
