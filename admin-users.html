@@ -86,6 +86,7 @@
           <div class="form-group"><label for="edit-user-department">Department</label><input id="edit-user-department" /></div>
           <div class="form-group"><label for="edit-user-manager">Line manager / approver</label><select id="edit-user-manager"><option value="">No line manager</option></select><p class="form-hint">Each option includes the approver's exact email address.</p></div>
           <div class="form-group"><label for="edit-user-alternates">Alternative approvers</label><select id="edit-user-alternates" multiple></select><p class="form-hint">Select active admins who can approve this user when the designated approver is unavailable. Each option includes the exact email address.</p></div>
+          <div class="form-group" id="edit-user-approver-summary" hidden></div>
         </div>
         <button type="submit" class="btn btn--primary" id="edit-user-button">Save profile</button>
         <button type="button" class="btn btn--secondary" id="cancel-edit-user">Cancel</button>
@@ -335,6 +336,15 @@
                   const selected = String(user.managerId?._id || user.managerId || '') === candidateId;
                   return `<option value="${escapeHtml(candidateId)}" ${selected ? 'selected' : ''}>${escapeHtml(candidate.name)} (${escapeHtml(candidate.email || 'No email')})</option>`;
                 }).join('');
+              const assignedManager = user.managerId && typeof user.managerId === 'object' ? user.managerId : null;
+              const assignedAlternates = (user.alternateApproverIds || []).filter((approver) => approver && typeof approver === 'object');
+              const approverSummary = document.getElementById('edit-user-approver-summary');
+              approverSummary.innerHTML = `
+                <strong>Selected approver details</strong>
+                <div class="form-hint">${assignedManager ? `${escapeHtml(assignedManager.name)} (${escapeHtml(assignedManager.email || 'No email')})` : 'No primary approver selected'}</div>
+                <strong>Selected alternative approvers</strong>
+                <div class="form-hint">${assignedAlternates.length ? assignedAlternates.map((approver) => `${escapeHtml(approver.name)} (${escapeHtml(approver.email || 'No email')})`).join('<br>') : 'No alternative approvers selected'}</div>`;
+              approverSummary.hidden = false;
               const alternateSelect = document.getElementById('edit-user-alternates');
               alternateSelect.innerHTML = users
                 .filter((candidate) => candidate.role === 'admin' && candidate.isActive !== false && String(candidate._id || candidate.id) !== button.dataset.userId)

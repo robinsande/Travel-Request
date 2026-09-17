@@ -104,6 +104,10 @@
         document.getElementById('profile-department').value = profile.department || '';
         document.getElementById('profile-manager-name').value = profile.managerId?.name || profile.managerName || '';
         document.getElementById('profile-manager-email').value = profile.managerId?.email || profile.managerEmail || '';
+        [1, 2, 3].forEach((slot) => {
+          document.getElementById(`profile-alternate-${slot}-name`).value = '';
+          document.getElementById(`profile-alternate-${slot}-email`).value = '';
+        });
         assignedApprovers.forEach((contact, index) => {
           const slot = index + 1;
           if (slot <= 3) {
