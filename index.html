@@ -293,6 +293,84 @@
         justify-self: center;
       }
     }
+
+    /* Editorial landing page */
+    :root {
+      --ink: #17140f;
+      --paper: #f3eee4;
+      --orange: #e8622c;
+      --clay: #8a4a2e;
+      --sand: #c9bba3;
+    }
+
+    html, body { background: var(--ink); color: var(--paper); }
+    body { display: block; overflow-x: hidden; overflow-y: auto; font-family: 'DM Sans', 'Segoe UI', sans-serif; }
+    .landing-hero { position: relative; min-height: min(820px, 100vh); display: flex; align-items: flex-end; overflow: hidden; isolation: isolate; }
+    .landing-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: saturate(0.82) contrast(1.05) brightness(0.62); z-index: -2; }
+    .landing-hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(23,20,15,.46), rgba(23,20,15,.08) 42%, rgba(23,20,15,.94)); z-index: -1; }
+    .landing-hero::after { content: ''; position: absolute; inset: auto 0 0; height: 30%; background: linear-gradient(90deg, rgba(232,98,44,.22), transparent 42%); mix-blend-mode: screen; pointer-events: none; }
+    .landing-nav, .hero-content, .editorial-section, .landing-footer { width: min(1180px, calc(100% - 3rem)); margin: 0 auto; }
+    .landing-nav { position: absolute; top: 0; left: 50%; z-index: 2; display: flex; align-items: center; justify-content: space-between; padding: 1.5rem 0; transform: translateX(-50%); border-bottom: 1px solid rgba(243,238,228,.2); }
+    .brand { display: inline-flex; align-items: center; gap: .7rem; color: var(--paper); font-size: .82rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+    .brand-mark { display: grid; width: 2rem; height: 2rem; place-items: center; border: 2px solid var(--orange); border-radius: 50%; color: var(--orange); font-family: Georgia, serif; font-size: 1.15rem; }
+    .nav-link { color: var(--paper); font-size: .78rem; font-weight: 700; letter-spacing: .1em; text-decoration: none; text-transform: uppercase; }
+    .nav-link:hover { color: var(--orange); }
+    .hero-content { position: relative; z-index: 1; padding: 9rem 0 5rem; }
+    .eyebrow { display: flex; align-items: center; gap: .75rem; color: var(--orange); font-size: .76rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; }
+    .eyebrow::before { content: ''; width: 2.4rem; height: 1px; background: currentColor; }
+    .hero-content h1, .section-intro h2, .location h3, .process-step h3 { font-family: Georgia, 'Times New Roman', serif; font-weight: 600; }
+    .hero-content h1 { max-width: 780px; margin: 1.25rem 0; color: var(--paper); font-size: clamp(4rem, 10vw, 9rem); letter-spacing: -.065em; line-height: .86; }
+    .hero-content p { max-width: 500px; margin: 0; color: rgba(243,238,228,.78); font-size: 1.05rem; line-height: 1.7; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: .8rem; margin-top: 2rem; }
+    .btn { display: inline-flex; min-height: 3.25rem; align-items: center; justify-content: center; padding: .85rem 1.3rem; border: 1px solid transparent; border-radius: 999px; color: var(--paper); font-size: .86rem; font-weight: 700; letter-spacing: .06em; text-decoration: none; text-transform: uppercase; transition: transform 180ms ease, background 180ms ease; }
+    .btn:hover { transform: translateY(-2px); }
+    .btn--primary { background: var(--orange); box-shadow: 0 12px 28px rgba(232,98,44,.28); }
+    .btn--primary:hover { background: #f4773d; }
+    .btn--secondary { border-color: rgba(243,238,228,.35); background: rgba(23,20,15,.18); backdrop-filter: blur(8px); }
+    .btn--secondary:hover { background: rgba(243,238,228,.12); }
+    .hero-caption { position: absolute; right: 0; bottom: 2.2rem; max-width: 190px; color: var(--sand); font-size: .72rem; line-height: 1.5; text-align: right; text-transform: uppercase; }
+    .editorial-section { padding: clamp(5rem, 10vw, 9rem) 0; }
+    .section-intro { display: grid; grid-template-columns: .9fr 1.1fr; gap: clamp(2rem, 8vw, 9rem); align-items: end; padding-bottom: 5rem; }
+    .section-intro h2 { margin: 0; color: var(--paper); font-size: clamp(3rem, 6vw, 6.5rem); letter-spacing: -.06em; line-height: .88; }
+    .section-intro p { max-width: 440px; margin: 0; color: var(--sand); font-size: 1.05rem; line-height: 1.8; }
+    .locations, .process-grid { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid rgba(243,238,228,.2); border-bottom: 1px solid rgba(243,238,228,.2); }
+    .location { min-height: 290px; padding: 1.5rem 1.25rem 1.75rem; border-right: 1px solid rgba(243,238,228,.2); }
+    .location:last-child { border-right: 0; }
+    .location:nth-child(even) { padding-top: 4rem; }
+    .location-number, .process-step span { color: var(--orange); font-size: .75rem; font-weight: 700; letter-spacing: .12em; }
+    .location h3 { margin: 4rem 0 .75rem; color: var(--paper); font-size: clamp(1.8rem, 3vw, 2.8rem); }
+    .location:nth-child(even) h3 { margin-top: 1.5rem; }
+    .location p, .process-step p { margin: 0; color: var(--sand); font-size: .88rem; line-height: 1.65; }
+    .process-section { width: 100%; max-width: none; padding-left: max(1.5rem, calc((100% - 1180px) / 2)); padding-right: max(1.5rem, calc((100% - 1180px) / 2)); background: var(--paper); }
+    .process-section .eyebrow { color: var(--clay); }
+    .process-section h2 { color: var(--ink); }
+    .process-section p { color: #6c6255; }
+    .process-grid { margin-top: 3rem; border-color: rgba(23,20,15,.22); }
+    .process-step { min-height: 220px; padding: 1.5rem 1.5rem 0 0; border-right: 1px solid rgba(23,20,15,.22); }
+    .process-step + .process-step { padding-left: 1.5rem; }
+    .process-step:last-child { border-right: 0; }
+    .process-step h3 { margin: 4rem 0 .7rem; font-size: 1.8rem; }
+    .landing-footer { display: flex; align-items: center; justify-content: space-between; gap: 2rem; padding: 2rem 0; color: var(--sand); font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; }
+    .landing-footer a { color: var(--paper); }
+    @media (max-width: 760px) {
+      .landing-nav, .hero-content, .editorial-section, .landing-footer { width: min(100% - 2rem, 620px); }
+      .landing-nav { padding: 1rem 0; }
+      .nav-link { font-size: .68rem; }
+      .hero-content { padding: 8rem 0 4rem; }
+      .hero-content h1 { font-size: clamp(3.5rem, 18vw, 6rem); }
+      .hero-caption { position: static; margin-top: 3rem; text-align: left; }
+      .section-intro { grid-template-columns: 1fr; gap: 2rem; padding-bottom: 3rem; }
+      .locations, .process-grid { grid-template-columns: 1fr 1fr; }
+      .location { min-height: 230px; border-bottom: 1px solid rgba(243,238,228,.2); }
+      .location:nth-child(even) { padding-top: 1.5rem; }
+      .location h3, .location:nth-child(even) h3 { margin-top: 2.5rem; }
+      .location:nth-child(2n) { border-right: 0; }
+      .process-step { min-height: 190px; border-bottom: 1px solid rgba(23,20,15,.22); }
+      .process-step:nth-child(2n) { border-right: 0; }
+      .process-step h3 { margin-top: 2rem; }
+      .landing-footer { align-items: flex-start; flex-direction: column; gap: .75rem; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; } }
   </style>
   <script src="js/config.js"></script>
   <script src="js/auth.js"></script>
@@ -309,42 +387,53 @@
     <source src="file:///C:/Users/RobinSande/Downloads/CARE_Kenya_Travel_Request_Dadaab_Working_Video.mp4" type="video/mp4" />
   </video>
 
-  <main class="landing-wrap">
-    <section class="landing-panel" aria-label="CARE Travel request landing page">
-      <div class="landing-copy">
-        <div class="hole" aria-hidden="true">
-          <i></i>
-          <i></i>
-          <i></i>
-          <i></i>
-          <i></i>
-          <i></i>
-          <i></i>
-          <i></i>
-          <i></i>
-          <i></i>
-        </div>
+   <section class="landing-hero" aria-label="CARE Kenya travel journey">
+     <video class="landing-video" autoplay muted loop playsinline>
+       <source src="file:///C:/Users/RobinSande/Downloads/CARE_Kenya_Travel_Request_Dadaab_Working_Video.mp4" type="video/mp4" />
+     </video>
+     <nav class="landing-nav" aria-label="Main navigation">
+       <div class="brand"><span class="brand-mark">+</span> CARE Kenya</div>
+       <a class="nav-link" href="login.html">Travel authority portal <span aria-hidden="true">↗</span></a>
+     </nav>
+     <div class="hero-content">
+       <div class="eyebrow">Traveling for greater impact</div>
+       <h1>Move with purpose.</h1>
+       <p>Every journey starts with a request. Every destination brings CARE closer to the communities we serve.</p>
+       <div class="hero-actions">
+         <a href="login.html" class="btn btn--primary">Sign in to continue</a>
+         <a href="register.html" class="btn btn--secondary">Create account</a>
+       </div>
+       <div class="hero-caption">Nairobi / Dadaab / Kisumu / Garissa<br />CARE Kenya field journey</div>
+     </div>
+   </section>
 
-        <div class="landing-badge">CARE Travel Authority</div>
-        <h1>Move faster. Travel smarter.</h1>
-        <p>
-          Request approval, track passenger details, manage reimbursements, and keep every trip aligned with your team’s travel policy in one secure workspace.
-        </p>
+   <main>
+     <section class="editorial-section journey-section" aria-labelledby="journey-title">
+       <div class="section-intro">
+         <div><div class="eyebrow">The journey</div><h2 id="journey-title">Four places.<br />One purpose.</h2></div>
+         <p>From the city to the field, CARE teams move across Kenya to turn plans into practical action. This is the journey your travel request helps make possible.</p>
+       </div>
+       <div class="locations">
+         <article class="location"><div class="location-number">01 / 04</div><h3>Nairobi</h3><p>Where the journey begins: coordination, preparation and the people who make it happen.</p></article>
+         <article class="location"><div class="location-number">02 / 04</div><h3>Dadaab</h3><p>Reaching the field with the clarity and care needed for work that matters.</p></article>
+         <article class="location"><div class="location-number">03 / 04</div><h3>Kisumu</h3><p>Connecting teams, partners and communities through thoughtful movement.</p></article>
+         <article class="location"><div class="location-number">04 / 04</div><h3>Garissa</h3><p>Arriving ready to listen, respond and create greater impact together.</p></article>
+       </div>
+     </section>
 
-        <div class="landing-meta">
-          <span>Secure access</span>
-          <span>Travel approval</span>
-          <span>Expense tracking</span>
-        </div>
-      </div>
-
-      <div class="landing-cta">
-        <div class="landing-cta__header">Welcome</div>
-        <a href="login.html" class="btn btn--primary">Sign in</a>
-        <a href="register.html" class="btn btn--secondary">Create account</a>
-        <div class="landing-note">New to the system? <a href="register.html">Get started</a></div>
-      </div>
-    </section>
-  </main>
+     <section class="editorial-section process-section" aria-labelledby="process-title">
+       <div class="section-intro">
+         <div><div class="eyebrow">Travel authority</div><h2 id="process-title">Ready for<br />the road.</h2></div>
+         <p>The portal keeps every trip clear, accountable and moving. Submit the details once, follow the decision, and stay focused on the work ahead.</p>
+       </div>
+       <div class="process-grid">
+         <article class="process-step"><span>01</span><h3>Request</h3><p>Share your itinerary, passengers and purpose.</p></article>
+         <article class="process-step"><span>02</span><h3>Approval</h3><p>Keep the right people in the loop at every step.</p></article>
+         <article class="process-step"><span>03</span><h3>Travel</h3><p>Move with the confidence of an approved plan.</p></article>
+         <article class="process-step"><span>04</span><h3>Impact</h3><p>Return ready to account for the journey and its work.</p></article>
+       </div>
+     </section>
+   </main>
+   <footer class="landing-footer"><span>CARE Kenya · Travel authority request</span><a href="register.html">Begin your journey ↗</a></footer>
 </body>
 </html>
