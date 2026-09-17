@@ -40,7 +40,7 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      filter: saturate(1.1) contrast(1.08) brightness(0.8);
+      filter: saturate(0.9) contrast(1.02) brightness(0.52);
       z-index: 0;
       pointer-events: none;
     }
@@ -51,8 +51,14 @@
       width: min(1120px, calc(100% - 2rem));
       padding: clamp(1.25rem, 2vw, 2rem);
     }
-      width: min(1120px, calc(100% - 2rem));
-      padding: clamp(1.25rem, 2vw, 2rem);
+
+    .landing-wrap::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(12, 8, 17, 0) 40%, rgba(12, 8, 17, 0.38) 100%);
+      pointer-events: none;
+      z-index: -1;
     }
 
     .landing-panel {
@@ -64,10 +70,10 @@
       gap: clamp(1.5rem, 3vw, 3rem);
       padding: clamp(2rem, 4vw, 4rem);
       border-radius: 28px;
-      background: rgba(17, 12, 25, 0.38);
-      border: 1px solid var(--color-panel-border);
+      background: rgba(17, 12, 25, 0.58);
+      border: 1px solid rgba(255, 255, 255, 0.18);
       backdrop-filter: blur(18px);
-      box-shadow: 0 24px 70px rgba(12, 8, 17, 0.42);
+      box-shadow: 0 30px 80px rgba(9, 6, 13, 0.46);
       min-height: 560px;
     }
 
@@ -116,6 +122,7 @@
       letter-spacing: -0.05em;
       font-weight: 700;
       color: #fff;
+      text-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
     }
 
     .landing-copy p {
@@ -180,6 +187,7 @@
       cursor: pointer;
       border: none;
       font-size: 1rem;
+      text-transform: none;
     }
 
     .btn:hover {
@@ -188,15 +196,15 @@
 
     .btn--primary {
       color: #fff;
-      background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-      box-shadow: 0 18px 34px rgba(234, 122, 26, 0.32);
+      background: linear-gradient(135deg, #f29d3b 0%, #ea7a1a 42%, #d26e10 100%);
+      box-shadow: 0 18px 36px rgba(234, 122, 26, 0.35);
     }
 
     .btn--secondary {
       color: #fff;
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.18);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.2);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 22px rgba(0, 0, 0, 0.16);
     }
 
     .landing-note {
