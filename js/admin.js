@@ -52,6 +52,7 @@ function renderUserRow(user) {
 
   return `
     <tr>
+      <td data-label="Select"><input type="checkbox" class="bulk-user-select" data-user-id="${escapeHtml(user._id || user.id)}" aria-label="Select ${escapeHtml(user.name)} for invitation"${user.isActive === false || user.role === 'superadmin' ? ' disabled' : ''} /></td>
       <td data-label="Name">${escapeHtml(user.name)}</td>
       <td data-label="Email">${escapeHtml(user.email)}</td>
       <td data-label="Role">

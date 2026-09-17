@@ -35,8 +35,14 @@ function requireAuth(allowedRoles) {
     return false;
   }
 
+  const user = getUser();
+  const isProfilePage = window.location.pathname.endsWith('/profile.html') || window.location.pathname.endsWith('profile.html');
+  if (user?.mustSetPassword && !isProfilePage) {
+    window.location.href = 'profile.html';
+    return false;
+  }
+
   if (allowedRoles && allowedRoles.length) {
-    const user = getUser();
     if (!user || !allowedRoles.includes(user.role)) {
       window.location.href = 'dashboard.html';
       return false;
@@ -48,7 +54,7 @@ function requireAuth(allowedRoles) {
 
 function redirectIfAuthenticated() {
   if (getToken()) {
-    window.location.href = 'dashboard.html';
+    window.location.href = getUser()?.mustSetPassword ? 'profile.html' : 'dashboard.html';
   }
 }
 

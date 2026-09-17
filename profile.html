@@ -169,7 +169,8 @@
       }
       setLoading(button, true, 'Updating…');
       try {
-        await setPassword(getUser().email, form.elements['current-password'].value, newPassword);
+        const result = await setPassword(getUser().email, form.elements['current-password'].value, newPassword);
+        setAuth(result.token, result.user);
         form.reset();
         form.hidden = true;
         passwordFormToggle.hidden = false;

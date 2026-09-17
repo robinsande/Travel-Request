@@ -28,6 +28,10 @@ async function resetUserPassword(userId) {
   return api.post(`/users/${userId}/reset-password`, {});
 }
 
+async function sendBulkInvitations(userIds = [], all = false) {
+  return api.post('/users/bulk-invite', { userIds, all });
+}
+
 async function updateUserStatus(userId, isActive) {
   return api.patch(`/users/${userId}/status`, { isActive });
 }

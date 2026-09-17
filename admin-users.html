@@ -60,6 +60,11 @@
 
     <div id="users-loading"></div>
     <div id="users-empty"></div>
+    <div class="bulk-invite-toolbar" id="bulk-invite-toolbar" hidden>
+      <label><input type="checkbox" id="select-all-users" /> Select all active users</label>
+      <button type="button" class="btn btn--primary" id="send-bulk-invites" disabled>Send invitation links</button>
+      <span class="form-hint">Each user receives a unique temporary password valid for 30 days and must choose a new password after signing in.</span>
+    </div>
     <section id="edit-user-panel" class="form-section" hidden>
       <h2>Edit user profile</h2>
       <div id="edit-user-error" class="alert alert--error" hidden role="alert"></div>
@@ -81,6 +86,7 @@
       <table class="data-table">
         <thead>
           <tr>
+            <th>Select</th>
             <th>Name</th>
             <th>Email</th>
             <th>Role</th>
@@ -112,6 +118,9 @@
     const tableWrap = document.getElementById('users-table-wrap');
     const tbody = document.getElementById('users-tbody');
     const currentUser = getUser();
+    const bulkToolbar = document.getElementById('bulk-invite-toolbar');
+    const selectAllUsers = document.getElementById('select-all-users');
+    const sendBulkInvitesButton = document.getElementById('send-bulk-invites');
     const createForm = document.getElementById('create-user-form');
     const createError = document.getElementById('create-user-error');
     const createButton = document.getElementById('create-user-btn');
@@ -201,6 +210,36 @@
         } else {
           tbody.innerHTML = users.map(renderUserRow).join('');
           tableWrap.hidden = false;
+          bulkToolbar.hidden = false;
+          const updateBulkInviteState = () => {
+            const selected = tbody.querySelectorAll('.bulk-user-select:checked');
+            sendBulkInvitesButton.disabled = selected.length === 0;
+            selectAllUsers.checked = selected.length > 0 && selected.length === tbody.querySelectorAll('.bulk-user-select:not(:disabled)').length;
+          };
+          tbody.querySelectorAll('.bulk-user-select').forEach((checkbox) => checkbox.addEventListener('change', updateBulkInviteState));
+          selectAllUsers.addEventListener('change', () => {
+            tbody.querySelectorAll('.bulk-user-select').forEach((checkbox) => { checkbox.checked = selectAllUsers.checked; });
+            updateBulkInviteState();
+          });
+          sendBulkInvitesButton.onclick = async () => {
+            const selectedIds = Array.from(tbody.querySelectorAll('.bulk-user-select:checked')).map((checkbox) => checkbox.dataset.userId);
+            if (!selectedIds.length || !window.confirm(`Send unique temporary passwords to ${selectedIds.length} selected users?`)) return;
+            sendBulkInvitesButton.disabled = true;
+            try {
+              const result = await sendBulkInvitations(selectedIds);
+              showToast(`${result.invited} invitation(s) sent.`, result.errors?.length ? 'warning' : 'success');
+              selectAllUsers.checked = false;
+              tbody.querySelectorAll('.bulk-user-select').forEach((checkbox) => { checkbox.checked = false; });
+              if (result.errors?.length) {
+                document.getElementById('temporary-password-result').innerHTML = result.errors.map((error) => escapeHtml(error.message)).join('<br>');
+                document.getElementById('temporary-password-result').hidden = false;
+              }
+            } catch (error) {
+              showToast(error.message || 'Failed to send invitations.', 'error');
+            } finally {
+              updateBulkInviteState();
+            }
+          };
           tbody.querySelectorAll('.user-role-select').forEach((select) => {
             select.addEventListener('change', async () => {
               const originalRole = select.dataset.previousRole || select.value;

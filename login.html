@@ -86,9 +86,9 @@
       setLoading(loginBtn, true, 'Signing in…');
 
       try {
-        await login(email, password);
+        const result = await login(email, password);
         form.reset();
-        window.location.href = 'dashboard.html';
+        window.location.href = result.user?.mustSetPassword ? 'profile.html' : 'dashboard.html';
       } catch (err) {
         renderApiErrors(errorEl, err);
       } finally {
