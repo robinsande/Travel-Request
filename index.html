@@ -30,12 +30,27 @@
       min-height: 100vh;
       display: grid;
       place-items: center;
-      background:
-        linear-gradient(135deg, rgba(26, 15, 36, 0.82), rgba(97, 53, 23, 0.58)),
-        url('https://i.pinimg.com/236x/c8/07/4c/c8074c51834a1296e1123a7c6dbf91c7.jpg') center/cover no-repeat fixed;
+      background: #170d22;
+      overflow: hidden;
+    }
+
+    .landing-video {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(1.1) contrast(1.08) brightness(0.8);
+      z-index: 0;
+      pointer-events: none;
     }
 
     .landing-wrap {
+      position: relative;
+      z-index: 1;
+      width: min(1120px, calc(100% - 2rem));
+      padding: clamp(1.25rem, 2vw, 2rem);
+    }
       width: min(1120px, calc(100% - 2rem));
       padding: clamp(1.25rem, 2vw, 2rem);
     }
@@ -282,6 +297,10 @@
   </script>
 </head>
 <body class="travel-bg landing-page">
+  <video class="landing-video" autoplay muted loop playsinline>
+    <source src="file:///C:/Users/RobinSande/Downloads/CARE_Kenya_Travel_Request_Dadaab_Working_Video.mp4" type="video/mp4" />
+  </video>
+
   <main class="landing-wrap">
     <section class="landing-panel" aria-label="CARE Travel request landing page">
       <div class="landing-copy">
