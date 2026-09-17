@@ -215,7 +215,10 @@ function buildSearchableSelect(container, options, config = {}) {
     input.setAttribute('aria-expanded', 'true');
 
     menu.querySelectorAll('.searchable-select__option').forEach((button) => {
+      let committed = false;
       const selectOption = () => {
+        if (committed) return;
+        committed = true;
         hidden.value = String(button.dataset.value || '');
         input.value = button.dataset.label || '';
         menu.hidden = true;
@@ -226,13 +229,11 @@ function buildSearchableSelect(container, options, config = {}) {
         }
       };
 
-      button.addEventListener('mousedown', (event) => {
+      button.addEventListener('pointerdown', (event) => {
         event.preventDefault();
         selectOption();
       });
-      button.addEventListener('click', () => {
-        if (!menu.hidden) selectOption();
-      });
+      button.addEventListener('click', selectOption);
     });
   }
 
@@ -244,6 +245,15 @@ function buildSearchableSelect(container, options, config = {}) {
 
     if (typeof onChange === 'function') {
       onChange('', input.value);
+    }
+  });
+
+  input.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') return;
+    const firstOption = menu.querySelector('.searchable-select__option');
+    if (!menu.hidden && firstOption) {
+      event.preventDefault();
+      firstOption.click();
     }
   });
 
