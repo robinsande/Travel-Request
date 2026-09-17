@@ -355,6 +355,14 @@
     .process-step + .process-step { padding-left: 1.5rem; }
     .process-step:last-child { border-right: 0; }
     .process-step h3 { margin: 4rem 0 .7rem; font-size: 1.8rem; }
+    .premium-story { display: grid; grid-template-columns: 1.15fr .85fr; gap: clamp(2rem, 8vw, 8rem); align-items: end; padding-top: 1rem; }
+    .premium-story h2 { max-width: 720px; margin: 0; color: var(--paper); font-family: Georgia, 'Times New Roman', serif; font-size: clamp(3.2rem, 7vw, 7.5rem); font-weight: 600; letter-spacing: -.065em; line-height: .88; }
+    .premium-story h2 em { color: var(--orange); font-style: normal; }
+    .premium-story-copy { max-width: 360px; padding-bottom: .5rem; color: var(--sand); font-size: 1rem; line-height: 1.8; }
+    .premium-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin-top: clamp(4rem, 8vw, 7rem); background: rgba(243,238,228,.2); }
+    .premium-metric { min-height: 180px; padding: 1.5rem; background: var(--ink); }
+    .premium-metric strong { display: block; margin-bottom: 2.5rem; color: var(--orange); font-family: Georgia, 'Times New Roman', serif; font-size: 2.4rem; font-weight: 600; }
+    .premium-metric span { color: var(--sand); font-size: .78rem; letter-spacing: .1em; text-transform: uppercase; }
     .landing-footer { display: flex; align-items: center; justify-content: space-between; gap: 2rem; padding: 2rem 0; color: var(--sand); font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; }
     .landing-footer a { color: var(--paper); }
     @media (max-width: 760px) {
@@ -365,6 +373,7 @@
       .hero-content h1 { font-size: clamp(3.5rem, 18vw, 6rem); }
       .hero-caption { position: static; margin-top: 3rem; text-align: left; }
       .section-intro { grid-template-columns: 1fr; gap: 2rem; padding-bottom: 3rem; }
+      .premium-story { grid-template-columns: 1fr; gap: 2rem; }
       .locations, .process-grid { grid-template-columns: 1fr 1fr; }
       .location { min-height: 230px; border-bottom: 1px solid rgba(243,238,228,.2); }
       .location:nth-child(even) { padding-top: 1.5rem; }
@@ -374,6 +383,9 @@
       .process-step { min-height: 190px; border-bottom: 1px solid rgba(23,20,15,.22); }
       .process-step:nth-child(2n) { border-right: 0; }
       .process-step h3 { margin-top: 2rem; }
+      .premium-metrics { grid-template-columns: 1fr; }
+      .premium-metric { min-height: auto; }
+      .premium-metric strong { margin-bottom: 1rem; }
       .landing-footer { align-items: flex-start; flex-direction: column; gap: .75rem; }
     }
     @media (max-width: 480px) {
@@ -391,6 +403,7 @@
       .location h3, .location:nth-child(even) h3 { margin: 1.8rem 0 .5rem; }
       .process-step, .process-step + .process-step { min-height: auto; padding: 1.5rem 0; border-right: 0; }
       .process-step h3 { margin: 1.8rem 0 .5rem; }
+      .premium-story h2 { font-size: clamp(2.8rem, 15vw, 4.5rem); }
     }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; } }
   </style>
@@ -427,20 +440,17 @@
 
    <main>
      <section class="editorial-section journey-section" aria-labelledby="journey-title">
-       <div class="section-intro">
-         <div><div class="eyebrow">The journey</div><h2 id="journey-title">Four places.<br />One purpose.</h2></div>
-         <p>From the city to the field, CARE teams move across Kenya to turn plans into practical action. This is the journey your travel request helps make possible.</p>
-       </div>
-       <div class="locations">
-         <article class="location"><div class="location-number">01 / 08</div><h3>Nairobi</h3><p>Where the journey begins: coordination, preparation and the people who make it happen.</p></article>
-         <article class="location"><div class="location-number">02 / 08</div><h3>Dadaab</h3><p>Reaching the field with the clarity and care needed for work that matters.</p></article>
-         <article class="location"><div class="location-number">03 / 08</div><h3>Kisumu</h3><p>Connecting teams, partners and communities through thoughtful movement.</p></article>
-         <article class="location"><div class="location-number">04 / 08</div><h3>Garissa</h3><p>Arriving ready to listen, respond and create greater impact together.</p></article>
-         <article class="location"><div class="location-number">05 / 08</div><h3>Nakuru</h3><p>Supporting resilient communities and partners across the Rift Valley.</p></article>
-         <article class="location"><div class="location-number">06 / 08</div><h3>Mombasa</h3><p>Connecting coastal communities to practical, locally led action.</p></article>
-         <article class="location"><div class="location-number">07 / 08</div><h3>Migori</h3><p>Working alongside communities to strengthen opportunity and wellbeing.</p></article>
-         <article class="location"><div class="location-number">08 / 08</div><h3>Siaya</h3><p>Extending CARE's work through trusted local relationships and partnerships.</p></article>
-         <article class="location location--wide"><div class="location-number">FIELD NETWORK</div><h3>And beyond</h3><p>Every destination is part of a wider CARE Kenya field network, moving people and purpose where they are needed most.</p></article>
+      <div class="premium-story">
+        <div>
+          <div class="eyebrow">The work behind every journey</div>
+          <h2 id="journey-title">Every mile<br />carries <em>meaning.</em></h2>
+        </div>
+        <p class="premium-story-copy">Across Kenya, CARE teams move with intention: prepared before departure, supported in the field, and accountable from the first request to the final return.</p>
+      </div>
+      <div class="premium-metrics" aria-label="Travel authority highlights">
+        <div class="premium-metric"><strong>01</strong><span>One clear request flow</span></div>
+        <div class="premium-metric"><strong>∞</strong><span>Field work without limits</span></div>
+        <div class="premium-metric"><strong>100%</strong><span>Purpose behind every trip</span></div>
        </div>
      </section>
 
