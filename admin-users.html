@@ -61,8 +61,11 @@
     <div id="users-loading"></div>
     <div id="users-empty"></div>
     <div class="bulk-invite-toolbar" id="bulk-invite-toolbar" hidden>
+      <label for="user-search">Search employees</label>
+      <input type="search" id="user-search" placeholder="Name, email, department..." autocomplete="off" />
       <label><input type="checkbox" id="select-all-users" /> Select all active users</label>
-      <button type="button" class="btn btn--primary" id="send-bulk-invites" disabled>Send invitation links</button>
+      <button type="button" class="btn btn--primary" id="send-bulk-invites" disabled>Send to selected</button>
+      <button type="button" class="btn btn--secondary" id="send-all-invites">Send to all active users</button>
       <span class="form-hint">Each user receives a unique temporary password valid for 30 days and must choose a new password after signing in.</span>
     </div>
     <section id="edit-user-panel" class="form-section" hidden>
@@ -119,8 +122,10 @@
     const tbody = document.getElementById('users-tbody');
     const currentUser = getUser();
     const bulkToolbar = document.getElementById('bulk-invite-toolbar');
+    const userSearch = document.getElementById('user-search');
     const selectAllUsers = document.getElementById('select-all-users');
     const sendBulkInvitesButton = document.getElementById('send-bulk-invites');
+    const sendAllInvitesButton = document.getElementById('send-all-invites');
     const createForm = document.getElementById('create-user-form');
     const createError = document.getElementById('create-user-error');
     const createButton = document.getElementById('create-user-btn');
@@ -211,6 +216,13 @@
           tbody.innerHTML = users.map(renderUserRow).join('');
           tableWrap.hidden = false;
           bulkToolbar.hidden = false;
+          const filterUsers = () => {
+            const phrase = userSearch.value.trim().toLowerCase();
+            tbody.querySelectorAll('tr').forEach((row) => {
+              row.hidden = phrase && !row.textContent.toLowerCase().includes(phrase);
+            });
+          };
+          userSearch.oninput = filterUsers;
           const updateBulkInviteState = () => {
             const selected = tbody.querySelectorAll('.bulk-user-select:checked');
             sendBulkInvitesButton.disabled = selected.length === 0;
@@ -221,12 +233,13 @@
             tbody.querySelectorAll('.bulk-user-select').forEach((checkbox) => { checkbox.checked = selectAllUsers.checked; });
             updateBulkInviteState();
           });
-          sendBulkInvitesButton.onclick = async () => {
-            const selectedIds = Array.from(tbody.querySelectorAll('.bulk-user-select:checked')).map((checkbox) => checkbox.dataset.userId);
-            if (!selectedIds.length || !window.confirm(`Send unique temporary passwords to ${selectedIds.length} selected users?`)) return;
+          const sendInvitations = async (selectedIds, all = false) => {
+            const targetLabel = all ? 'all active users' : `${selectedIds.length} selected user${selectedIds.length === 1 ? '' : 's'}`;
+            if ((!all && !selectedIds.length) || !window.confirm(`Send unique temporary passwords to ${targetLabel}?`)) return;
             sendBulkInvitesButton.disabled = true;
+            sendAllInvitesButton.disabled = true;
             try {
-              const result = await sendBulkInvitations(selectedIds);
+              const result = await sendBulkInvitations(selectedIds, all);
               showToast(`${result.invited} invitation(s) sent.`, result.errors?.length ? 'warning' : 'success');
               selectAllUsers.checked = false;
               tbody.querySelectorAll('.bulk-user-select').forEach((checkbox) => { checkbox.checked = false; });
@@ -237,9 +250,15 @@
             } catch (error) {
               showToast(error.message || 'Failed to send invitations.', 'error');
             } finally {
+              sendAllInvitesButton.disabled = false;
               updateBulkInviteState();
             }
           };
+          sendBulkInvitesButton.onclick = () => {
+            const selectedIds = Array.from(tbody.querySelectorAll('.bulk-user-select:checked')).map((checkbox) => checkbox.dataset.userId);
+            return sendInvitations(selectedIds);
+          };
+          sendAllInvitesButton.onclick = () => sendInvitations([], true);
           tbody.querySelectorAll('.user-role-select').forEach((select) => {
             select.addEventListener('change', async () => {
               const originalRole = select.dataset.previousRole || select.value;
