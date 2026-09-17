@@ -215,15 +215,23 @@ function buildSearchableSelect(container, options, config = {}) {
     input.setAttribute('aria-expanded', 'true');
 
     menu.querySelectorAll('.searchable-select__option').forEach((button) => {
-      button.addEventListener('click', () => {
-        hidden.value = button.dataset.value;
-        input.value = button.dataset.label;
+      const selectOption = () => {
+        hidden.value = String(button.dataset.value || '');
+        input.value = button.dataset.label || '';
         menu.hidden = true;
         input.setAttribute('aria-expanded', 'false');
 
         if (typeof onChange === 'function') {
           onChange(button.dataset.value, button.dataset.label);
         }
+      };
+
+      button.addEventListener('mousedown', (event) => {
+        event.preventDefault();
+        selectOption();
+      });
+      button.addEventListener('click', () => {
+        if (!menu.hidden) selectOption();
       });
     });
   }
@@ -404,7 +412,7 @@ async function loadApproverSelect(container, config = {}) {
     const options = unwrapListResult(approvers)
       .map(mapApproverOption)
       .filter((option) => !excluded.has(String(option.value)));
-    const selected = options.find((option) => option.value === selectedId);
+    const selected = options.find((option) => String(option.value) === String(selectedId));
 
     const select = buildSearchableSelect(container, options, {
       hiddenInputName,
