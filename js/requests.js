@@ -14,6 +14,33 @@ function parseDateInput(value) {
   return `${match[3]}-${month}-${day}`;
 }
 
+function bindDatePicker(textInput, picker) {
+  if (!textInput || !picker) return;
+
+  const syncPicker = () => {
+    const parsed = parseDateInput(textInput.value);
+    picker.value = /^\d{4}-\d{2}-\d{2}$/.test(parsed) ? parsed : '';
+  };
+
+  textInput.addEventListener('input', syncPicker);
+  picker.addEventListener('change', () => {
+    textInput.value = formatDateInput(picker.value);
+    textInput.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  textInput.parentElement.querySelector('.date-input__button')?.addEventListener('click', () => {
+    syncPicker();
+    if (typeof picker.showPicker === 'function') picker.showPicker();
+    else picker.focus();
+  });
+  syncPicker();
+}
+
+function bindDatePickers(root = document) {
+  root.querySelectorAll('[data-date-text]').forEach((textInput) => {
+    bindDatePicker(textInput, textInput.parentElement.querySelector('[data-date-picker]'));
+  });
+}
+
 function buildRequestPayload(form) {
   const fd = new FormData(form);
 
@@ -127,11 +154,12 @@ function addTravelSegment(container, segment = {}) {
     <div class="form-group"><label>From</label><input type="text" data-segment="from" required value="${escapeHtml(segment.from || '')}" /></div>
     <div class="form-group"><label>To</label><input type="text" data-segment="to" required value="${escapeHtml(segment.to || '')}" /></div>
     <div class="form-group"><label>Destination</label><input type="text" data-segment="destination" required value="${escapeHtml(segment.destination || '')}" /></div>
-    <div class="form-group"><label>Arrival</label><input type="text" inputmode="numeric" data-segment="dateFrom" placeholder="DD/MM/YYYY" pattern="\\d{1,2}/\\d{1,2}/\\d{4}" required value="${escapeHtml(formatDateInput(segment.dateFrom))}" /></div>
-    <div class="form-group"><label>Departure</label><input type="text" inputmode="numeric" data-segment="dateTo" placeholder="DD/MM/YYYY" pattern="\\d{1,2}/\\d{1,2}/\\d{4}" required value="${escapeHtml(formatDateInput(segment.dateTo))}" /></div>
+    <div class="form-group"><label>Arrival</label><div class="date-input"><input type="text" inputmode="numeric" data-segment="dateFrom" data-date-text placeholder="DD/MM/YYYY" pattern="\\d{1,2}/\\d{1,2}/\\d{4}" required value="${escapeHtml(formatDateInput(segment.dateFrom))}" /><button type="button" class="date-input__button" aria-label="Open arrival date picker">&#128197;</button><input type="date" data-date-picker tabindex="-1" aria-hidden="true" /></div></div>
+    <div class="form-group"><label>Departure</label><div class="date-input"><input type="text" inputmode="numeric" data-segment="dateTo" data-date-text placeholder="DD/MM/YYYY" pattern="\\d{1,2}/\\d{1,2}/\\d{4}" required value="${escapeHtml(formatDateInput(segment.dateTo))}" /><button type="button" class="date-input__button" aria-label="Open departure date picker">&#128197;</button><input type="date" data-date-picker tabindex="-1" aria-hidden="true" /></div></div>
     <button type="button" class="btn btn--danger btn--sm remove-travel-segment">Remove</button>`;
   row.querySelector('.remove-travel-segment').addEventListener('click', () => row.remove());
   container.appendChild(row);
+  bindDatePickers(row);
 }
 
 async function loadPassengerOptions() {

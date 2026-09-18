@@ -135,11 +135,11 @@
           <div class="form-row">
             <div class="form-group">
               <label for="itinerary_dateFrom">Date From</label>
-              <input type="text" id="itinerary_dateFrom" name="itinerary_dateFrom" inputmode="numeric" placeholder="DD/MM/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}" autocomplete="off" required />
+              <div class="date-input"><input type="text" id="itinerary_dateFrom" name="itinerary_dateFrom" data-date-text inputmode="numeric" placeholder="DD/MM/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}" autocomplete="off" required /><button type="button" class="date-input__button" aria-label="Open departure date picker">&#128197;</button><input type="date" data-date-picker tabindex="-1" aria-hidden="true" /></div>
             </div>
             <div class="form-group">
               <label for="itinerary_dateTo">Date To</label>
-              <input type="text" id="itinerary_dateTo" name="itinerary_dateTo" inputmode="numeric" placeholder="DD/MM/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}" autocomplete="off" required />
+              <div class="date-input"><input type="text" id="itinerary_dateTo" name="itinerary_dateTo" data-date-text inputmode="numeric" placeholder="DD/MM/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}" autocomplete="off" required /><button type="button" class="date-input__button" aria-label="Open return date picker">&#128197;</button><input type="date" data-date-picker tabindex="-1" aria-hidden="true" /></div>
             </div>
           </div>
           <div class="form-group">
@@ -206,6 +206,7 @@
     const rejectBtn = document.getElementById('reject-btn');
     const resubmitSection = document.getElementById('resubmit-section');
     const resubmitForm = document.getElementById('resubmit-form');
+    bindDatePickers(resubmitForm);
     document.getElementById('add-travel-segment')?.addEventListener('click', () => {
       addTravelSegment(document.getElementById('travel-segments'));
     });

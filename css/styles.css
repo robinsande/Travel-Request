@@ -530,6 +530,49 @@ p { margin: 0 0 var(--spacing-md); max-width: 72ch; }
   transform: translateY(-1px);
 }
 
+
+.date-input {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+.date-input > input[data-date-text] {
+  min-width: 0;
+  flex: 1;
+  padding-right: 2.8rem;
+}
+
+.date-input__button {
+  position: absolute;
+  top: 50%;
+  right: 0.35rem;
+  z-index: 1;
+  width: 2.2rem;
+  min-height: 2.2rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-primary-dark);
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.date-input__button:hover,
+.date-input__button:focus-visible {
+  background: var(--color-primary-light);
+  color: var(--color-heading);
+}
+
+.date-input input[data-date-picker] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
 .form-group input::placeholder,
 .form-group textarea::placeholder {
   color: #6b7280;
