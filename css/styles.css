@@ -70,6 +70,10 @@
   color: #0000FF;
 }
 
+.tar-template-page .tar-preview td {
+  color: #111827;
+}
+
 .tar-preview__fine-print,
 .tar-preview__center-note,
 .tar-preview__meta {
