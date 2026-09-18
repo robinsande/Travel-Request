@@ -668,7 +668,7 @@ function renderAppShell(activeId) {
 
         <div class="app-header__brand">
           <span class="app-header__logo">CARE</span>
-          <span class="app-header__title">Travel Authority Request</span>
+          <span class="app-header__title">Travel Authorization Request</span>
         </div>
       </div>
 

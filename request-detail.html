@@ -41,7 +41,7 @@
       <p class="text-muted">Update the details below and resubmit for approval.</p>
       <div id="resubmit-error" class="alert alert--error" hidden role="alert"></div>
 
-      <form id="resubmit-form" novalidate>
+      <form id="resubmit-form" autocomplete="off" novalidate>
         <section class="form-section">
           <h2>Approver</h2>
           <div class="form-group">
@@ -135,11 +135,11 @@
           <div class="form-row">
             <div class="form-group">
               <label for="itinerary_dateFrom">Date From</label>
-              <input type="date" id="itinerary_dateFrom" name="itinerary_dateFrom" lang="en-GB" required />
+              <input type="text" id="itinerary_dateFrom" name="itinerary_dateFrom" inputmode="numeric" placeholder="DD/MM/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}" autocomplete="off" required />
             </div>
             <div class="form-group">
               <label for="itinerary_dateTo">Date To</label>
-              <input type="date" id="itinerary_dateTo" name="itinerary_dateTo" lang="en-GB" required />
+              <input type="text" id="itinerary_dateTo" name="itinerary_dateTo" inputmode="numeric" placeholder="DD/MM/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}" autocomplete="off" required />
             </div>
           </div>
           <div class="form-group">

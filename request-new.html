@@ -25,7 +25,7 @@
     <div id="form-error" class="alert alert--error" hidden role="alert"></div>
     <button type="button" class="btn btn--primary" id="show-request-form">Create New TAR</button>
 
-    <form id="request-form" novalidate hidden>
+    <form id="request-form" autocomplete="off" novalidate hidden>
       <section class="form-section">
         <h2>Approver</h2>
         <div class="form-group">
@@ -40,31 +40,31 @@
         <div class="form-row">
           <div class="form-group">
             <label for="project_name">Project Name</label>
-            <input type="text" id="project_name" name="project_name" required />
+            <input type="text" id="project_name" name="project_name" autocomplete="off" required />
           </div>
           <div class="form-group">
             <label for="project_businessUnit">Business Unit</label>
-            <input type="text" id="project_businessUnit" name="project_businessUnit" required />
+            <input type="text" id="project_businessUnit" name="project_businessUnit" autocomplete="off" required />
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label for="project_fundCode">Fund Code</label>
-            <input type="text" id="project_fundCode" name="project_fundCode" required />
+            <input type="text" id="project_fundCode" name="project_fundCode" autocomplete="off" required />
           </div>
           <div class="form-group">
             <label for="project_projectId">Project ID</label>
-            <input type="text" id="project_projectId" name="project_projectId" required />
+            <input type="text" id="project_projectId" name="project_projectId" autocomplete="off" required />
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label for="project_departmentId">Department ID</label>
-            <input type="text" id="project_departmentId" name="project_departmentId" required />
+            <input type="text" id="project_departmentId" name="project_departmentId" autocomplete="off" required />
           </div>
           <div class="form-group">
             <label for="project_activityId">Activity ID</label>
-            <input type="text" id="project_activityId" name="project_activityId" required />
+            <input type="text" id="project_activityId" name="project_activityId" autocomplete="off" required />
           </div>
         </div>
       </section>
@@ -128,11 +128,11 @@
         <div class="form-row">
           <div class="form-group">
             <label for="itinerary_dateFrom">Date From</label>
-            <input type="date" id="itinerary_dateFrom" name="itinerary_dateFrom" lang="en-GB" required />
+            <input type="text" id="itinerary_dateFrom" name="itinerary_dateFrom" inputmode="numeric" placeholder="DD/MM/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}" autocomplete="off" required />
           </div>
           <div class="form-group">
             <label for="itinerary_dateTo">Date To</label>
-            <input type="date" id="itinerary_dateTo" name="itinerary_dateTo" lang="en-GB" required />
+            <input type="text" id="itinerary_dateTo" name="itinerary_dateTo" inputmode="numeric" placeholder="DD/MM/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}" autocomplete="off" required />
           </div>
         </div>
         <div class="form-group">
@@ -193,8 +193,8 @@
         <div class="form-group"><label>From</label><input type="text" data-segment="from" required value="${escapeHtml(segment.from || '')}" /></div>
         <div class="form-group"><label>To</label><input type="text" data-segment="to" required value="${escapeHtml(segment.to || '')}" /></div>
         <div class="form-group"><label>Destination</label><input type="text" data-segment="destination" required value="${escapeHtml(segment.destination || '')}" /></div>
-        <div class="form-group"><label>Arrival</label><input type="date" lang="en-GB" data-segment="dateFrom" required value="${escapeHtml(segment.dateFrom ? String(segment.dateFrom).slice(0, 10) : '')}" /></div>
-        <div class="form-group"><label>Departure</label><input type="date" lang="en-GB" data-segment="dateTo" required value="${escapeHtml(segment.dateTo ? String(segment.dateTo).slice(0, 10) : '')}" /></div>
+        <div class="form-group"><label>Arrival</label><input type="text" inputmode="numeric" data-segment="dateFrom" placeholder="DD/MM/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}" required value="${escapeHtml(formatDateInput(segment.dateFrom))}" /></div>
+        <div class="form-group"><label>Departure</label><input type="text" inputmode="numeric" data-segment="dateTo" placeholder="DD/MM/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}" required value="${escapeHtml(formatDateInput(segment.dateTo))}" /></div>
         <button type="button" class="btn btn--danger btn--sm remove-travel-segment">Remove</button>`;
       row.querySelector('.remove-travel-segment').addEventListener('click', () => row.remove());
       travelSegments.appendChild(row);

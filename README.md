@@ -1,6 +1,6 @@
-# CARE Kenya Travel Authority Request — Frontend
+# CARE Kenya Travel Authorization Request — Frontend
 
-Plain HTML, CSS, and vanilla JavaScript frontend for the CARE Kenya Travel Authority Request (TAR) system.
+Plain HTML, CSS, and vanilla JavaScript frontend for the CARE Kenya Travel Authorization Request (TAR) system.
 
 ## Prerequisites
 

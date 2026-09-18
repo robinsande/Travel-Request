@@ -1,3 +1,19 @@
+function formatDateInput(value) {
+  if (!value) return '';
+  const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : String(value);
+}
+
+function parseDateInput(value) {
+  const text = String(value || '').trim();
+  const match = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!match) return text;
+
+  const day = match[1].padStart(2, '0');
+  const month = match[2].padStart(2, '0');
+  return `${match[3]}-${month}-${day}`;
+}
+
 function buildRequestPayload(form) {
   const fd = new FormData(form);
 
@@ -37,8 +53,8 @@ function buildRequestPayload(form) {
     requesterSignature: fd.get('requesterSignature')?.trim() || '',
     modeOfTravel,
     itinerary: {
-      dateFrom: fd.get('itinerary_dateFrom') || '',
-      dateTo: fd.get('itinerary_dateTo') || '',
+      dateFrom: parseDateInput(fd.get('itinerary_dateFrom')),
+      dateTo: parseDateInput(fd.get('itinerary_dateTo')),
       destination: fd.get('itinerary_destination')?.trim() || '',
       accommodationNeeded: fd.get('itinerary_accommodationNeeded') === 'on',
     },
@@ -46,8 +62,8 @@ function buildRequestPayload(form) {
       from: row.querySelector('[data-segment="from"]').value.trim(),
       to: row.querySelector('[data-segment="to"]').value.trim(),
       destination: row.querySelector('[data-segment="destination"]').value.trim(),
-      dateFrom: row.querySelector('[data-segment="dateFrom"]').value,
-      dateTo: row.querySelector('[data-segment="dateTo"]').value,
+      dateFrom: parseDateInput(row.querySelector('[data-segment="dateFrom"]').value),
+      dateTo: parseDateInput(row.querySelector('[data-segment="dateTo"]').value),
     })),
     passengers,
   };
@@ -79,8 +95,8 @@ async function populateRequestForm(form, request, passengerOptions = null) {
   form.elements.mode_aircraft.checked = !!modes.aircraft;
 
   const it = request.itinerary || {};
-  set('itinerary_dateFrom', it.dateFrom ? it.dateFrom.slice(0, 10) : '');
-  set('itinerary_dateTo', it.dateTo ? it.dateTo.slice(0, 10) : '');
+  set('itinerary_dateFrom', formatDateInput(it.dateFrom));
+  set('itinerary_dateTo', formatDateInput(it.dateTo));
   set('itinerary_destination', it.destination);
   const segments = request.travelSegments || [];
   const segmentContainer = form.querySelector('#travel-segments');
@@ -111,8 +127,8 @@ function addTravelSegment(container, segment = {}) {
     <div class="form-group"><label>From</label><input type="text" data-segment="from" required value="${escapeHtml(segment.from || '')}" /></div>
     <div class="form-group"><label>To</label><input type="text" data-segment="to" required value="${escapeHtml(segment.to || '')}" /></div>
     <div class="form-group"><label>Destination</label><input type="text" data-segment="destination" required value="${escapeHtml(segment.destination || '')}" /></div>
-    <div class="form-group"><label>Arrival</label><input type="date" lang="en-GB" data-segment="dateFrom" required value="${escapeHtml(segment.dateFrom ? String(segment.dateFrom).slice(0, 10) : '')}" /></div>
-    <div class="form-group"><label>Departure</label><input type="date" lang="en-GB" data-segment="dateTo" required value="${escapeHtml(segment.dateTo ? String(segment.dateTo).slice(0, 10) : '')}" /></div>
+    <div class="form-group"><label>Arrival</label><input type="text" inputmode="numeric" data-segment="dateFrom" placeholder="DD/MM/YYYY" pattern="\\d{1,2}/\\d{1,2}/\\d{4}" required value="${escapeHtml(formatDateInput(segment.dateFrom))}" /></div>
+    <div class="form-group"><label>Departure</label><input type="text" inputmode="numeric" data-segment="dateTo" placeholder="DD/MM/YYYY" pattern="\\d{1,2}/\\d{1,2}/\\d{4}" required value="${escapeHtml(formatDateInput(segment.dateTo))}" /></div>
     <button type="button" class="btn btn--danger btn--sm remove-travel-segment">Remove</button>`;
   row.querySelector('.remove-travel-segment').addEventListener('click', () => row.remove());
   container.appendChild(row);
@@ -489,7 +505,7 @@ function renderRequestDetail(request) {
       <article class="tar-preview">
         <div class="tar-preview__logo"><img src="assets/care-logo.jpg" alt="CARE logo" /><small>CARE KENYA</small></div>
         <h1>COUNTRY OFFICES FLEET POLICIES</h1>
-        <h2>3.5.7 &nbsp; TRAVEL AUTHORITY REQUEST</h2>
+        <h2>3.5.7 &nbsp; TRAVEL AUTHORIZATION REQUEST</h2>
         <table>
           <tbody>
             <tr><th>Employee<br>Name</th><td>${escapeHtml(passengerNames)}</td><th>Employee<br>Number</th><td>${escapeHtml(passengerNumbers)}</td><th>Project<br>Name</th><td>${escapeHtml(p.name || '—')}</td></tr>
