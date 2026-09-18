@@ -12,7 +12,7 @@ const ApiError = class extends Error {
   }
 };
 
-const MIN_INITIAL_LOAD_MS = 2000;
+const MIN_INITIAL_LOAD_MS = 350;
 const pageScriptStartedAt = performance.now();
 let initialLoadGate = null;
 
