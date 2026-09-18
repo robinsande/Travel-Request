@@ -301,6 +301,8 @@ function renderTravelDecisionButtons(requestId) {
       <input type="text" class="signature-text-input" placeholder="Or type your full name as a digital signature" autocomplete="off" />
       <input type="hidden" class="signature-value approval-signature" />
       <button type="button" class="btn btn--ghost btn--sm clear-signature-btn">Clear signature</button>
+      <label>Approval date</label>
+      <input type="date" class="approval-date" value="${new Date().toISOString().slice(0, 10)}" />
     </div>
     ${renderTravelRejectForm(requestId)}`;
 }
@@ -359,6 +361,7 @@ function bindTravelApprovalCard(card, options = {}) {
   const commentEl = card.querySelector('.reject-comment');
   const approveBtn = card.querySelector('.approve-btn');
   const signatureEl = card.querySelector('.approval-signature');
+  const approvalDateEl = card.querySelector('.approval-date');
   const rejectToggleBtn = card.querySelector('.reject-toggle-btn');
   const confirmRejectBtn = card.querySelector('.confirm-reject-btn');
   const cancelRejectBtn = card.querySelector('.cancel-reject-btn');
@@ -366,6 +369,7 @@ function bindTravelApprovalCard(card, options = {}) {
 
   approveBtn.addEventListener('click', async () => {
     const signature = signatureEl?.value.trim() || '';
+    const decisionDate = approvalDateEl?.value || '';
     if (!signature) {
       showToast('Your signature is required before approval.', 'warning');
       signatureEl?.focus();
@@ -375,7 +379,7 @@ function bindTravelApprovalCard(card, options = {}) {
     await runDecisionAction(approveBtn, {
       confirmMessage: 'Approve this travel request?',
       loadingText: 'Approving…',
-      action: () => approveRequest(id, { signature }),
+      action: () => approveRequest(id, { signature, decisionDate }),
       successMessage: 'Travel request approved.',
       errorMessage: 'Failed to approve travel request.',
       onSuccess: () => {
@@ -434,7 +438,7 @@ function initSignaturePad(root) {
   let hasSignature = false;
   let drawing = false;
 
-  context.strokeStyle = '#123a8c';
+  context.strokeStyle = '#0000FF';
   context.lineWidth = 2.5;
   context.lineCap = 'round';
   context.lineJoin = 'round';

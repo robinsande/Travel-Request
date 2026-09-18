@@ -23,6 +23,8 @@
         <input type="text" class="signature-text-input" placeholder="Or type your full name as a digital signature" autocomplete="off" />
         <input type="hidden" class="signature-value" />
         <button type="button" class="btn btn--ghost btn--sm clear-signature-btn">Clear signature</button>
+        <label for="decision-date">Approval date</label>
+        <input type="date" id="decision-date" value="" />
         <p class="form-hint">Draw your signature or upload a signature image. A signature is required before approval.</p>
       </div>
       <div class="form-group">
@@ -207,6 +209,7 @@
     const getDecisionSignature = initSignaturePad(decisionSection);
     const approveBtn = document.getElementById('approve-btn');
     const rejectBtn = document.getElementById('reject-btn');
+    document.getElementById('decision-date').value = new Date().toISOString().slice(0, 10);
     const resubmitSection = document.getElementById('resubmit-section');
     const resubmitForm = document.getElementById('resubmit-form');
     bindDatePickers(resubmitForm);
@@ -310,6 +313,7 @@
       decisionError.hidden = true;
       const comment = commentEl.value.trim();
       const signature = getDecisionSignature();
+      const decisionDate = document.getElementById('decision-date').value;
 
       if (status === 'approved' && !signature) {
         renderApiErrors(decisionError, { message: 'Your signature is required before approval.' });
@@ -331,7 +335,7 @@
 
       try {
         if (status === 'approved') {
-          await approveRequest(requestId, { signature, comment: comment || undefined });
+          await approveRequest(requestId, { signature, comment: comment || undefined, decisionDate });
         } else {
           await rejectRequest(requestId, comment);
         }
