@@ -659,6 +659,13 @@ p { margin: 0 0 var(--spacing-md); max-width: 72ch; }
   box-shadow: 0 3px 10px rgba(16, 24, 40, 0.08);
 }
 
+.signature-text-input {
+  margin-top: 0.65rem;
+  font-family: "Segoe Script", "Bradley Hand", cursive;
+  font-size: 1.15rem;
+  color: #123a8c;
+}
+
 .users-admin-page .form-grid {
   max-width: 1120px;
 }

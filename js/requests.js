@@ -298,6 +298,8 @@ function renderTravelDecisionButtons(requestId) {
       <label>Approver Signature</label>
       <canvas class="signature-pad" width="520" height="150" aria-label="Draw approver signature"></canvas>
       <input type="file" class="signature-upload" accept="image/*" />
+      <input type="text" class="signature-text-input" placeholder="Or type your full name as a digital signature" autocomplete="off" />
+      <input type="hidden" class="signature-value approval-signature" />
       <button type="button" class="btn btn--ghost btn--sm clear-signature-btn">Clear signature</button>
     </div>
     ${renderTravelRejectForm(requestId)}`;
@@ -423,6 +425,7 @@ function bindTravelApprovalActions(root, options = {}) {
 function initSignaturePad(root) {
   const canvas = root.querySelector('.signature-pad');
   const upload = root.querySelector('.signature-upload');
+  const textInput = root.querySelector('.signature-text-input');
   const valueInput = root.querySelector('.signature-value');
   const clearButton = root.querySelector('.clear-signature-btn');
   if (!canvas) return () => '';
@@ -451,6 +454,7 @@ function initSignaturePad(root) {
     context.beginPath();
     context.moveTo(point.x, point.y);
     hasSignature = true;
+    if (textInput) textInput.value = '';
     if (valueInput) valueInput.value = canvas.toDataURL('image/png');
   });
   canvas.addEventListener('pointermove', (event) => {
@@ -483,6 +487,7 @@ function initSignaturePad(root) {
         const height = image.height * scale;
         context.drawImage(image, (canvas.width - width) / 2, (canvas.height - height) / 2, width, height);
         hasSignature = true;
+        if (textInput) textInput.value = '';
         if (valueInput) valueInput.value = canvas.toDataURL('image/png');
       };
       image.src = reader.result;
@@ -490,11 +495,22 @@ function initSignaturePad(root) {
     reader.readAsDataURL(file);
   });
 
+  textInput?.addEventListener('input', () => {
+    const value = textInput.value.trim();
+    if (value) {
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      hasSignature = false;
+      if (upload) upload.value = '';
+    }
+    if (valueInput) valueInput.value = value;
+  });
+
   clearButton?.addEventListener('click', () => {
     context.clearRect(0, 0, canvas.width, canvas.height);
     hasSignature = false;
     if (valueInput) valueInput.value = '';
     if (upload) upload.value = '';
+    if (textInput) textInput.value = '';
   });
 
   return () => valueInput?.value || (hasSignature ? canvas.toDataURL('image/png') : '');
