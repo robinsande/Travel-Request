@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -128,11 +128,11 @@
         <div class="form-row">
           <div class="form-group">
             <label for="itinerary_dateFrom">Date From</label>
-            <input type="date" id="itinerary_dateFrom" name="itinerary_dateFrom" required />
+            <input type="date" id="itinerary_dateFrom" name="itinerary_dateFrom" lang="en-GB" required />
           </div>
           <div class="form-group">
             <label for="itinerary_dateTo">Date To</label>
-            <input type="date" id="itinerary_dateTo" name="itinerary_dateTo" required />
+            <input type="date" id="itinerary_dateTo" name="itinerary_dateTo" lang="en-GB" required />
           </div>
         </div>
         <div class="form-group">
@@ -193,8 +193,8 @@
         <div class="form-group"><label>From</label><input type="text" data-segment="from" required value="${escapeHtml(segment.from || '')}" /></div>
         <div class="form-group"><label>To</label><input type="text" data-segment="to" required value="${escapeHtml(segment.to || '')}" /></div>
         <div class="form-group"><label>Destination</label><input type="text" data-segment="destination" required value="${escapeHtml(segment.destination || '')}" /></div>
-        <div class="form-group"><label>Arrival</label><input type="date" data-segment="dateFrom" required value="${escapeHtml(segment.dateFrom ? String(segment.dateFrom).slice(0, 10) : '')}" /></div>
-        <div class="form-group"><label>Departure</label><input type="date" data-segment="dateTo" required value="${escapeHtml(segment.dateTo ? String(segment.dateTo).slice(0, 10) : '')}" /></div>
+        <div class="form-group"><label>Arrival</label><input type="date" lang="en-GB" data-segment="dateFrom" required value="${escapeHtml(segment.dateFrom ? String(segment.dateFrom).slice(0, 10) : '')}" /></div>
+        <div class="form-group"><label>Departure</label><input type="date" lang="en-GB" data-segment="dateTo" required value="${escapeHtml(segment.dateTo ? String(segment.dateTo).slice(0, 10) : '')}" /></div>
         <button type="button" class="btn btn--danger btn--sm remove-travel-segment">Remove</button>`;
       row.querySelector('.remove-travel-segment').addEventListener('click', () => row.remove());
       travelSegments.appendChild(row);
@@ -229,6 +229,11 @@
     }
 
     async function bootstrapForm() {
+      const officeInput = form.elements.employeeOffice;
+      const areaInput = form.elements.assignedAreaOfOperation;
+      if (officeInput && !officeInput.value) officeInput.value = sessionUser.office || '';
+      if (areaInput && !areaInput.value) areaInput.value = sessionUser.department || sessionUser.office || '';
+
       const options = await initPassengerList(passengersList);
       const me = options.find(
         (option) => String(option.value) === String(sessionUser.id || sessionUser._id)

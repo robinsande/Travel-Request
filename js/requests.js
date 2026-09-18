@@ -111,8 +111,8 @@ function addTravelSegment(container, segment = {}) {
     <div class="form-group"><label>From</label><input type="text" data-segment="from" required value="${escapeHtml(segment.from || '')}" /></div>
     <div class="form-group"><label>To</label><input type="text" data-segment="to" required value="${escapeHtml(segment.to || '')}" /></div>
     <div class="form-group"><label>Destination</label><input type="text" data-segment="destination" required value="${escapeHtml(segment.destination || '')}" /></div>
-    <div class="form-group"><label>Arrival</label><input type="date" data-segment="dateFrom" required value="${escapeHtml(segment.dateFrom ? String(segment.dateFrom).slice(0, 10) : '')}" /></div>
-    <div class="form-group"><label>Departure</label><input type="date" data-segment="dateTo" required value="${escapeHtml(segment.dateTo ? String(segment.dateTo).slice(0, 10) : '')}" /></div>
+    <div class="form-group"><label>Arrival</label><input type="date" lang="en-GB" data-segment="dateFrom" required value="${escapeHtml(segment.dateFrom ? String(segment.dateFrom).slice(0, 10) : '')}" /></div>
+    <div class="form-group"><label>Departure</label><input type="date" lang="en-GB" data-segment="dateTo" required value="${escapeHtml(segment.dateTo ? String(segment.dateTo).slice(0, 10) : '')}" /></div>
     <button type="button" class="btn btn--danger btn--sm remove-travel-segment">Remove</button>`;
   row.querySelector('.remove-travel-segment').addEventListener('click', () => row.remove());
   container.appendChild(row);
