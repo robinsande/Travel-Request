@@ -89,7 +89,7 @@
       try {
         const result = await login(email, password);
         form.reset();
-        window.location.href = result.user?.mustSetPassword ? 'profile.html' : 'dashboard.html';
+        window.location.replace(result.user?.mustSetPassword ? 'profile.html' : 'dashboard.html');
       } catch (err) {
         renderApiErrors(errorEl, err);
       } finally {

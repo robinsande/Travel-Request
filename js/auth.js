@@ -25,26 +25,26 @@ function clearAuth() {
 
 function logout() {
   clearAuth();
-  window.location.href = 'index.html';
+  window.location.replace('index.html');
 }
 
 function requireAuth(allowedRoles) {
   const token = getToken();
   if (!token) {
-    window.location.href = 'login.html';
+    window.location.replace('login.html');
     return false;
   }
 
   const user = getUser();
   const isProfilePage = window.location.pathname.endsWith('/profile.html') || window.location.pathname.endsWith('profile.html');
   if (user?.mustSetPassword && !isProfilePage) {
-    window.location.href = 'profile.html';
+    window.location.replace('profile.html');
     return false;
   }
 
   if (allowedRoles && allowedRoles.length) {
     if (!user || !allowedRoles.includes(user.role)) {
-      window.location.href = 'dashboard.html';
+      window.location.replace('dashboard.html');
       return false;
     }
   }
@@ -54,7 +54,7 @@ function requireAuth(allowedRoles) {
 
 function redirectIfAuthenticated() {
   if (getToken()) {
-    window.location.href = getUser()?.mustSetPassword ? 'profile.html' : 'dashboard.html';
+    window.location.replace(getUser()?.mustSetPassword ? 'profile.html' : 'dashboard.html');
   }
 }
 
