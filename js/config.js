@@ -6,7 +6,7 @@
  * Hosted deployments can inject window.__CARE_API_BASE__ before this script runs.
  */
 
-const CONFIG_VERSION = '4';
+const CONFIG_VERSION = '5';
 const CONFIG_VERSION_KEY = 'tar_config_version';
 const DEFAULT_API_BASE_URL = 'https://tar-backend.onrender.com/api';
 
