@@ -29,6 +29,16 @@
     </div>
 
     <div id="filters-bar" class="filters-bar" hidden>
+      <div class="form-group" id="all-sort-group" hidden>
+        <label for="all-sort">Arrange list</label>
+        <select id="all-sort">
+          <option value="newest">Newest first</option>
+          <option value="oldest">Oldest first</option>
+          <option value="status">Status</option>
+          <option value="requester">Requester A-Z</option>
+          <option value="destination">Destination A-Z</option>
+        </select>
+      </div>
       <div class="form-group">
         <label for="filter-status">Status</label>
         <select id="filter-status">
@@ -144,6 +154,7 @@
     const filtersBar = document.getElementById('filters-bar');
     if (showFilters) {
       filtersBar.hidden = false;
+      if (scope === 'all') document.getElementById('all-sort-group').hidden = false;
       if (scope === 'team' || user.role === 'superadmin') {
         document.getElementById('filter-email-group').hidden = false;
       }
@@ -190,6 +201,22 @@
       if (email) filters.requestedByEmail = email;
 
       return filters;
+    }
+
+    function arrangeAllRequests(requests) {
+      const sort = document.getElementById('all-sort')?.value || 'newest';
+      const getDate = (request) => new Date(request.submittedAt || request.createdAt || 0).getTime();
+      const getRequester = (request) => String(request.requestedBy?.name || request.requestedBy?.email || '').toLowerCase();
+      const getDestination = (request) => String(request.itinerary?.destination || '').toLowerCase();
+      const statusOrder = { pending: 0, approved: 1, rejected: 2 };
+
+      return [...requests].sort((left, right) => {
+        if (sort === 'oldest') return getDate(left) - getDate(right);
+        if (sort === 'status') return (statusOrder[left.status] ?? 9) - (statusOrder[right.status] ?? 9) || getDate(right) - getDate(left);
+        if (sort === 'requester') return getRequester(left).localeCompare(getRequester(right)) || getDate(right) - getDate(left);
+        if (sort === 'destination') return getDestination(left).localeCompare(getDestination(right)) || getDate(right) - getDate(left);
+        return getDate(right) - getDate(left);
+      });
     }
 
     function getReimbursementFilterParams() {
@@ -283,8 +310,8 @@
 
       try {
         const result = await fetchMyRequests(getFilterParams());
-        const requests = result.data || result.requests || result || [];
-        requests.sort((a, b) => new Date(b.submittedAt || b.createdAt || 0) - new Date(a.submittedAt || a.createdAt || 0));
+        let requests = result.data || result.requests || result || [];
+        requests = scope === 'all' ? arrangeAllRequests(requests) : requests.sort((a, b) => new Date(b.submittedAt || b.createdAt || 0) - new Date(a.submittedAt || a.createdAt || 0));
         const pagination = result.pagination;
 
         if (scope === 'all') {
@@ -347,7 +374,7 @@
       loadPage();
     }, 300);
 
-    ['filter-status', 'filter-search', 'filter-destination', 'filter-email'].forEach((id) => {
+    ['all-sort', 'filter-status', 'filter-search', 'filter-destination', 'filter-email'].forEach((id) => {
       document.getElementById(id)?.addEventListener('input', triggerFilter);
       document.getElementById(id)?.addEventListener('change', triggerFilter);
     });
