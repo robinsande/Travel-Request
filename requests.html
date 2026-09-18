@@ -11,11 +11,22 @@
 
   <div id="page-content" class="page-content" hidden>
     <div class="page-header">
-      <h1 id="page-title">My Travel Requests</h1>
+      <div>
+        <span class="section-kicker" id="page-kicker">TRAVEL WORKSPACE</span>
+        <h1 id="page-title">My Travel Requests</h1>
+        <p class="page-header__subtitle" id="page-header-subtitle">Track travel authorization requests from submission to approval.</p>
+      </div>
       <a href="request-new.html" class="btn btn--primary" id="new-request-btn" hidden>Create New TAR</a>
     </div>
     <div id="team-subnav" hidden></div>
     <p class="text-muted" id="page-subtitle">Trips you raised or are listed on as a passenger.</p>
+
+    <div class="request-overview" id="request-overview" hidden aria-label="Travel request overview">
+      <article class="request-overview__card request-overview__card--total"><span>Total requests</span><strong id="request-total-count">—</strong><small>organization directory</small></article>
+      <article class="request-overview__card request-overview__card--pending"><span>Pending</span><strong id="request-pending-count">—</strong><small>on this page</small></article>
+      <article class="request-overview__card request-overview__card--approved"><span>Approved</span><strong id="request-approved-count">—</strong><small>on this page</small></article>
+      <article class="request-overview__card request-overview__card--rejected"><span>Declined</span><strong id="request-rejected-count">—</strong><small>on this page</small></article>
+    </div>
 
     <div id="filters-bar" class="filters-bar" hidden>
       <div class="form-group">
@@ -85,6 +96,8 @@
       pageTitle = 'All Travel Requests';
       showFilters = true;
       showNewBtn = false;
+      document.getElementById('page-kicker').textContent = 'SUPER ADMIN DIRECTORY';
+      document.getElementById('page-header-subtitle').textContent = 'A complete operational view of every Travel Authorization Request.';
     } else if (isTeamView) {
       activeNav = 'team-requests';
       pageTitle = 'Team';
@@ -273,6 +286,16 @@
         const requests = result.data || result.requests || result || [];
         requests.sort((a, b) => new Date(b.submittedAt || b.createdAt || 0) - new Date(a.submittedAt || a.createdAt || 0));
         const pagination = result.pagination;
+
+        if (scope === 'all') {
+          const overview = document.getElementById('request-overview');
+          const total = pagination?.total ?? requests.length;
+          document.getElementById('request-total-count').textContent = total;
+          document.getElementById('request-pending-count').textContent = requests.filter((request) => request.status === 'pending').length;
+          document.getElementById('request-approved-count').textContent = requests.filter((request) => request.status === 'approved').length;
+          document.getElementById('request-rejected-count').textContent = requests.filter((request) => request.status === 'rejected').length;
+          overview.hidden = false;
+        }
 
         loadingEl.innerHTML = '';
 

@@ -857,6 +857,56 @@ p { margin: 0 0 var(--spacing-md); max-width: 72ch; }
   outline: none;
 }
 
+.page-header__subtitle {
+  max-width: 58ch;
+  margin: 0.4rem 0 0;
+  color: var(--color-text-muted);
+}
+
+.request-overview {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--spacing-md);
+  margin: var(--spacing-lg) 0;
+}
+
+.request-overview__card {
+  display: grid;
+  gap: 0.25rem;
+  min-height: 128px;
+  padding: 1.15rem 1.25rem;
+  border: 1px solid rgba(24, 49, 83, 0.12);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 12px 26px rgba(24, 49, 83, 0.07);
+}
+
+.request-overview__card span {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.request-overview__card strong {
+  color: var(--color-heading);
+  font-family: var(--font-family-heading);
+  font-size: 2.35rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.request-overview__card small {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.request-overview__card--total { border-color: rgba(217, 107, 29, 0.28); background: linear-gradient(145deg, #fff4e6, #fff); }
+.request-overview__card--pending { border-color: rgba(184, 132, 19, 0.3); }
+.request-overview__card--approved { border-color: rgba(24, 121, 78, 0.25); }
+.request-overview__card--rejected { border-color: rgba(155, 61, 53, 0.22); }
+
 .users-overview {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -2685,6 +2735,10 @@ p { margin: 0 0 var(--spacing-md); max-width: 72ch; }
   }
 
   .users-overview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .request-overview {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
