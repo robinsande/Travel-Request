@@ -315,7 +315,7 @@
     .landing-nav, .hero-content, .editorial-section, .landing-footer { width: min(1180px, calc(100% - 3rem)); margin: 0 auto; }
     .landing-nav { position: absolute; top: 0; left: 50%; z-index: 2; display: flex; align-items: center; justify-content: space-between; padding: 1.5rem 0; transform: translateX(-50%); border-bottom: 1px solid rgba(243,238,228,.2); }
     .brand { display: inline-flex; align-items: center; gap: .7rem; color: var(--paper); font-size: .82rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
-    .brand-mark { display: grid; width: 2rem; height: 2rem; place-items: center; border: 2px solid var(--orange); border-radius: 50%; color: var(--orange); font-family: Georgia, serif; font-size: 1.15rem; }
+    .brand-logo { display: block; width: 2.75rem; height: 2.75rem; padding: .2rem; object-fit: contain; background: #fff; border-radius: .35rem; }
     .nav-link { color: var(--paper); font-size: .78rem; font-weight: 700; letter-spacing: .1em; text-decoration: none; text-transform: uppercase; }
     .nav-link:hover { color: var(--orange); }
     .hero-content { position: relative; z-index: 1; padding: 9rem 0 5rem; }
@@ -390,7 +390,7 @@
     }
     @media (max-width: 480px) {
       .brand { font-size: .7rem; letter-spacing: .08em; }
-      .brand-mark { width: 1.75rem; height: 1.75rem; }
+      .brand-logo { width: 2.35rem; height: 2.35rem; }
       .nav-link { max-width: 9rem; font-size: .6rem; line-height: 1.4; text-align: right; }
       .hero-content { padding-top: 7.5rem; }
       .hero-content h1 { font-size: clamp(3.1rem, 17vw, 4.8rem); }
@@ -420,7 +420,7 @@
 <body class="travel-bg landing-page">
    <section class="landing-hero" aria-label="CARE Kenya travel journey">
      <nav class="landing-nav" aria-label="Main navigation">
-       <div class="brand"><span class="brand-mark">+</span> CARE Kenya</div>
+      <div class="brand"><img class="brand-logo" src="assets/care-logo.jpg" alt="CARE logo" /> CARE Kenya</div>
        <a class="nav-link" href="login.html">Travel authority portal <span aria-hidden="true">↗</span></a>
      </nav>
      <div class="hero-content">
