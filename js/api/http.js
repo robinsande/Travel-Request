@@ -33,7 +33,7 @@ function redirectToLogin() {
   window.location.href = loginPath;
 }
 
-async function apiRequest(path, options = {}) {
+async function performApiRequest(path, options = {}) {
   const url = buildApiUrl(path);
   const headers = { ...(options.headers || {}) };
 
@@ -91,6 +91,16 @@ async function apiRequest(path, options = {}) {
   return body;
 }
 
+async function apiRequest(path, options = {}) {
+  if (typeof beginSync === 'function') beginSync();
+
+  try {
+    return await performApiRequest(path, options);
+  } finally {
+    if (typeof endSync === 'function') endSync();
+  }
+}
+
 /** Treat localhost and 127.0.0.1 as the same host for FRONTEND_URL checks */
 function normalizeOriginForCompare(origin) {
   try {
@@ -138,7 +148,7 @@ const api = {
   delete: (path) => apiRequest(path, { method: 'DELETE' }),
 };
 
-async function downloadFile(path, filenameFallback = 'download.pdf') {
+async function performDownloadFile(path, filenameFallback = 'download.pdf') {
   const url = buildApiUrl(path);
   const headers = {};
   const token = typeof getToken === 'function' ? getToken() : null;
@@ -184,4 +194,14 @@ async function downloadFile(path, filenameFallback = 'download.pdf') {
   link.click();
   link.remove();
   URL.revokeObjectURL(objectUrl);
+}
+
+async function downloadFile(path, filenameFallback = 'download.pdf') {
+  if (typeof beginSync === 'function') beginSync('Downloading');
+
+  try {
+    return await performDownloadFile(path, filenameFallback);
+  } finally {
+    if (typeof endSync === 'function') endSync();
+  }
 }

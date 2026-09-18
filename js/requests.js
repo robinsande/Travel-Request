@@ -484,7 +484,7 @@ function renderRequestDetail(request) {
       employeeNumber: user?.employeeNumber || pass.employeeNumber || '—',
     };
   });
-  const office = request.employeeOffice || request.requestedBy?.office || request.requestedBy?.department || '—';
+  const office = request.employeeOffice || request.requestedBy?.office || '—';
   const signatureCell = (signature, label) => signature
     ? `<img class="tar-preview__signature" src="${signature}" alt="${escapeHtml(label)}" />`
     : '<span class="tar-preview__missing">No signature captured</span>';

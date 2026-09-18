@@ -1844,8 +1844,48 @@ p { margin: 0 0 var(--spacing-md); max-width: 72ch; }
   align-items: center;
   justify-content: center;
   gap: var(--spacing-md);
-  padding: var(--spacing-xl);
+  min-height: 180px;
+  padding: var(--spacing-xl) var(--spacing-lg);
   color: var(--color-text-muted);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(255, 247, 238, 0.9));
+  border: 1px solid rgba(215, 122, 42, 0.16);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.page-loading__orb {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  place-items: center;
+  border: 1px solid rgba(215, 122, 42, 0.2);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 8px 22px rgba(168, 86, 21, 0.12);
+  animation: loading-breathe 1.8s ease-in-out infinite;
+}
+
+.page-loading__orb span {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: var(--color-primary);
+  box-shadow: 0 0 0 7px rgba(215, 122, 42, 0.12);
+}
+
+.page-loading__copy {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.page-loading__copy strong {
+  color: var(--color-heading);
+  font-size: 1rem;
+}
+
+.page-loading__copy span {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
 }
 
 .spinner {
@@ -1950,6 +1990,53 @@ p { margin: 0 0 var(--spacing-md); max-width: 72ch; }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+@keyframes loading-breathe {
+  0%, 100% { transform: scale(0.94); opacity: 0.72; }
+  50% { transform: scale(1.04); opacity: 1; }
+}
+
+.sync-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 30px;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid rgba(255, 211, 159, 0.18);
+  border-radius: 999px;
+  color: rgba(255, 239, 220, 0.78);
+  font-size: 0.72rem;
+  white-space: nowrap;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.sync-status__dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: #8bd3a8;
+  box-shadow: 0 0 0 4px rgba(139, 211, 168, 0.12);
+}
+
+.sync-status--syncing {
+  color: #fff1dc;
+  border-color: rgba(255, 211, 159, 0.42);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.sync-status--syncing .sync-status__dot {
+  background: #ffd39f;
+  animation: sync-pulse 0.9s ease-in-out infinite;
+}
+
+.sync-status--idle {
+  opacity: 0.72;
+}
+
+@keyframes sync-pulse {
+  0%, 100% { transform: scale(0.75); opacity: 0.55; }
+  50% { transform: scale(1.15); opacity: 1; }
 }
 
 @keyframes pulse0112 {

@@ -23,9 +23,8 @@
     </p>
 
     <div id="form-error" class="alert alert--error" hidden role="alert"></div>
-    <button type="button" class="btn btn--primary" id="show-request-form">Create New TAR</button>
 
-    <form id="request-form" autocomplete="off" novalidate hidden>
+    <form id="request-form" autocomplete="off" novalidate>
       <section class="form-section">
         <h2>Approver</h2>
         <div class="form-group">
@@ -178,12 +177,6 @@
       throw new Error('forbidden');
     }
 
-    initProtectedPage('my-requests');
-
-    const form = document.getElementById('request-form');
-    const errorEl = document.getElementById('form-error');
-    const submitBtn = document.getElementById('submit-btn');
-    const showRequestFormBtn = document.getElementById('show-request-form');
     const travelSegments = document.getElementById('travel-segments');
 
     function addTravelSegment(segment = {}) {
@@ -230,9 +223,7 @@
 
     async function bootstrapForm() {
       const officeInput = form.elements.employeeOffice;
-      const areaInput = form.elements.assignedAreaOfOperation;
       if (officeInput && !officeInput.value) officeInput.value = sessionUser.office || '';
-      if (areaInput && !areaInput.value) areaInput.value = sessionUser.department || sessionUser.office || '';
 
       const options = await initPassengerList(passengersList);
       const me = options.find(
@@ -255,8 +246,7 @@
     }
 
     bootstrapForm();
-
-    downloadTemplateBtn.addEventListener('click', async () => {
+  downloadTemplateBtn.addEventListener('click', async () => {
       try {
         await withLoading(downloadTemplateBtn, 'Preparing…', fetchTravelRequestTemplatePdf);
       } catch (err) {
@@ -281,8 +271,6 @@
       try {
         const result = await withLoading(submitBtn, 'Submitting…', () => createRequest(payload));
         showToast('Travel request submitted successfully.', 'success');
-        form.hidden = true;
-        showRequestFormBtn.hidden = false;
         const id = getRequestId(result);
         window.location.href = id ? `request-detail.html?id=${encodeURIComponent(id)}` : 'requests.html';
       } catch (err) {

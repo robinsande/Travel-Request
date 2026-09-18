@@ -26,6 +26,33 @@ function showToast(message, type = 'info', duration = 4000) {
   }, duration);
 }
 
+let activeSyncRequests = 0;
+let syncStatusTimer = null;
+
+function renderSyncStatus(state = 'ready', label = '') {
+  const indicator = document.getElementById('sync-status');
+  if (!indicator) return;
+
+  const labelElement = indicator.querySelector('.sync-status__label');
+  indicator.className = `sync-status sync-status--${state}`;
+  indicator.setAttribute('aria-busy', state === 'syncing' ? 'true' : 'false');
+  if (labelElement) labelElement.textContent = label || (state === 'syncing' ? 'Syncing' : 'Up to date');
+}
+
+function beginSync(label = 'Syncing') {
+  activeSyncRequests += 1;
+  if (syncStatusTimer) clearTimeout(syncStatusTimer);
+  renderSyncStatus('syncing', label);
+}
+
+function endSync() {
+  activeSyncRequests = Math.max(0, activeSyncRequests - 1);
+  if (activeSyncRequests > 0) return;
+
+  renderSyncStatus('ready');
+  syncStatusTimer = setTimeout(() => renderSyncStatus('idle'), 1800);
+}
+
 function showValidationToast(message) {
   showToast(message, 'error', 5000);
 }
@@ -330,7 +357,14 @@ function showEmptyState(container, message, actionHtml = '') {
 }
 
 function showPageLoading(container, message = 'Loading…') {
-  container.innerHTML = `<div class="page-loading"><span class="spinner"></span> ${escapeHtml(message)}</div>`;
+  container.innerHTML = `
+    <div class="page-loading" role="status" aria-live="polite">
+      <span class="page-loading__orb" aria-hidden="true"><span></span></span>
+      <div class="page-loading__copy">
+        <strong>${escapeHtml(message)}</strong>
+        <span>Securing the latest information</span>
+      </div>
+    </div>`;
 }
 
 function initProtectedPage(activeNav, contentSelector = '#page-content') {
@@ -673,6 +707,10 @@ function renderAppShell(activeId) {
       </div>
 
       <div class="app-header__actions">
+        <div class="sync-status sync-status--idle" id="sync-status" aria-live="polite" aria-busy="false">
+          <span class="sync-status__dot" aria-hidden="true"></span>
+          <span class="sync-status__label">Up to date</span>
+        </div>
         <a href="notifications.html" class="notifications-link" id="notifications-badge-link" title="Notifications" aria-label="View notifications">
           <span class="notifications-icon" aria-hidden="true">🔔</span>
           <span class="notifications-badge" id="notifications-badge" hidden>0</span>
