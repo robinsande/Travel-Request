@@ -211,9 +211,75 @@
     const approverSelectContainer = document.getElementById('approver-select');
     initSignaturePad(form);
     bindDatePickers(form);
-    bindDatePickers(form);
     const sessionUser = getUser() || {};
     let approverSelect = null;
+    const draftKey = `tar-draft-${sessionUser.id || sessionUser._id || sessionUser.email || 'current-user'}`;
+    let draftSaveTimer = null;
+
+    function readDraft() {
+        try {
+          const raw = localStorage.getItem(draftKey);
+          return raw ? JSON.parse(raw) : null;
+        } catch {
+          return null;
+        }
+      }
+
+    function saveDraft() {
+        const fields = {};
+        Array.from(form.elements).forEach((element) => {
+          if (!element.name || element.name.startsWith('passenger_user_')) return;
+          fields[element.name] = element.type === 'checkbox' ? element.checked : element.value;
+        });
+
+        const passengers = Array.from(form.querySelectorAll('.passenger-row')).map((row) => ({
+          user: row.querySelector('[data-passenger-user]')?.value || '',
+          name: row.querySelector('[data-passenger-name]')?.value || '',
+          employeeNumber: row.querySelector('[data-passenger-employee]')?.value || '',
+        })).filter((passenger) => passenger.user);
+
+        const segments = Array.from(form.querySelectorAll('.travel-segment')).map((row) => ({
+          from: row.querySelector('[data-segment="from"]')?.value || '',
+          to: row.querySelector('[data-segment="to"]')?.value || '',
+          destination: row.querySelector('[data-segment="destination"]')?.value || '',
+          dateFrom: row.querySelector('[data-segment="dateFrom"]')?.value || '',
+          dateTo: row.querySelector('[data-segment="dateTo"]')?.value || '',
+        }));
+
+        localStorage.setItem(draftKey, JSON.stringify({ fields, passengers, segments }));
+      }
+
+    function queueDraftSave() {
+        if (draftSaveTimer) clearTimeout(draftSaveTimer);
+        draftSaveTimer = setTimeout(saveDraft, 250);
+      }
+
+    function restoreDraft(options) {
+        const draft = readDraft();
+        if (!draft) return false;
+
+        Object.entries(draft.fields || {}).forEach(([name, value]) => {
+          const element = form.elements[name];
+          if (!element) return;
+          if (element.type === 'checkbox') element.checked = value === true || value === 'true';
+          else element.value = value ?? '';
+        });
+
+        travelSegments.innerHTML = '';
+        (draft.segments || []).forEach((segment) => addTravelSegment(segment));
+
+        if (draft.passengers?.length) {
+          passengersList.innerHTML = '';
+          passengerIndex = 0;
+          draft.passengers.forEach((passenger) => addPassengerRow(passengersList, options, passenger));
+        }
+
+        return true;
+      }
+
+    form.addEventListener('input', queueDraftSave);
+    form.addEventListener('change', queueDraftSave);
+    window.addEventListener('beforeunload', saveDraft);
 
     async function loadApprovers() {
       const excludeIds = [sessionUser.id || sessionUser._id, ...getSelectedPassengerIds(form)];
@@ -229,10 +295,11 @@
       if (officeInput && !officeInput.value) officeInput.value = sessionUser.office || '';
 
       const options = await initPassengerList(passengersList);
+      const restored = restoreDraft(options);
       const me = options.find(
         (option) => String(option.value) === String(sessionUser.id || sessionUser._id)
       );
-      if (me) {
+      if (me && !restored) {
         const firstRow = passengersList.querySelector('.passenger-row');
         const hidden = firstRow?.querySelector('[data-passenger-user]');
         const input = firstRow?.querySelector('.searchable-select__input');
@@ -245,11 +312,12 @@
           if (empInput) empInput.value = me.employeeNumber || '';
         }
       }
+      if (restored) showToast('Your unfinished TAR has been restored.', 'info', 5000);
       await loadApprovers();
     }
 
     bootstrapForm();
-  downloadTemplateBtn.addEventListener('click', async () => {
+    downloadTemplateBtn.addEventListener('click', async () => {
       try {
         await withLoading(downloadTemplateBtn, 'Preparing…', fetchTravelRequestTemplatePdf);
       } catch (err) {
@@ -273,6 +341,7 @@
 
       try {
         const result = await withLoading(submitBtn, 'Submitting…', () => createRequest(payload));
+        localStorage.removeItem(draftKey);
         showToast('Travel request submitted successfully.', 'success');
         const id = getRequestId(result);
         window.location.href = id ? `request-detail.html?id=${encodeURIComponent(id)}` : 'requests.html';
