@@ -11,10 +11,19 @@
 
   <div id="page-content" class="page-content users-admin-page" hidden>
     <div class="page-header">
-      <h1>Users</h1>
+      <div>
+        <span class="section-kicker">SYSTEM DIRECTORY</span>
+        <h1>Users &amp; access</h1>
+        <p class="page-header__subtitle">Manage staff identities, approver relationships, and account health.</p>
+      </div>
     </div>
     <div id="admin-subnav"></div>
-    <p class="text-muted">Create staff accounts with a password, without an activation link.</p>
+    <div class="users-overview" aria-label="User account overview">
+      <article class="users-overview__card users-overview__card--total"><span class="users-overview__label">Directory</span><strong id="users-total-count">—</strong><span>accounts</span></article>
+      <article class="users-overview__card"><span class="users-overview__label">Active</span><strong id="users-active-count">—</strong><span>available now</span></article>
+      <article class="users-overview__card"><span class="users-overview__label">Approvers</span><strong id="users-admin-count">—</strong><span>line managers</span></article>
+      <article class="users-overview__card"><span class="users-overview__label">Needs attention</span><strong id="users-inactive-count">—</strong><span>inactive accounts</span></article>
+    </div>
 
     <div class="form-section create-account-panel">
       <div class="section-heading-row">
@@ -93,6 +102,10 @@
       </form>
     </section>
     <div class="data-table-wrap role-users-table" id="users-table-wrap" hidden>
+      <div class="users-table-heading">
+        <div><span class="section-kicker">LIVE DIRECTORY</span><h2>Staff accounts</h2></div>
+        <span class="users-table-heading__hint">Select an account to manage access or send an invitation.</span>
+      </div>
       <table class="data-table">
         <thead>
           <tr>
@@ -218,8 +231,14 @@
         const users = result.data || result.users || result || [];
 
         loadingEl.innerHTML = '';
+        document.getElementById('users-total-count').textContent = users.length;
+        document.getElementById('users-active-count').textContent = users.filter((user) => user.isActive !== false).length;
+        document.getElementById('users-admin-count').textContent = users.filter((user) => user.role === 'admin').length;
+        document.getElementById('users-inactive-count').textContent = users.filter((user) => user.isActive === false).length;
+        document.getElementById('users-empty').hidden = true;
 
         if (!users.length) {
+          document.getElementById('users-empty').hidden = false;
           showEmptyState(document.getElementById('users-empty'), 'No users found.');
         } else {
           tbody.innerHTML = users.map(renderUserRow).join('');

@@ -857,6 +857,130 @@ p { margin: 0 0 var(--spacing-md); max-width: 72ch; }
   outline: none;
 }
 
+.users-overview {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--spacing-md);
+  margin: var(--spacing-lg) 0;
+}
+
+.users-overview__card {
+  display: grid;
+  gap: 0.25rem;
+  min-height: 132px;
+  padding: 1.15rem 1.25rem;
+  border: 1px solid rgba(24, 49, 83, 0.12);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(245, 248, 251, 0.9));
+  box-shadow: 0 12px 26px rgba(24, 49, 83, 0.07);
+}
+
+.users-overview__card--total {
+  border-color: rgba(217, 107, 29, 0.28);
+  background: linear-gradient(145deg, #fff4e6, #ffffff);
+}
+
+.users-overview__label {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.users-overview__card strong {
+  color: var(--color-heading);
+  font-family: var(--font-family-heading);
+  font-size: 2.35rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.users-overview__card > span:last-child {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.users-table-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: 1.25rem 1.25rem 0.75rem;
+  background: #fff;
+}
+
+.users-table-heading h2 {
+  margin-bottom: 0;
+  font-size: 1.25rem;
+}
+
+.users-table-heading__hint {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  text-align: right;
+}
+
+.user-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 180px;
+}
+
+.user-identity__avatar {
+  display: grid;
+  width: 2.35rem;
+  height: 2.35rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 12px;
+  background: #183153;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.user-identity strong,
+.user-identity small,
+.data-table td small {
+  display: block;
+}
+
+.user-identity small,
+.user-department {
+  margin-top: 0.2rem;
+  color: var(--color-text-muted);
+  font-size: 0.74rem;
+}
+
+.user-email {
+  color: var(--color-heading);
+  font-weight: 600;
+}
+
+.user-email:hover {
+  color: var(--color-primary-dark);
+}
+
+.account-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.account-status > span {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.account-status--active { color: #18794e; }
+.account-status--inactive { color: #9b3d35; }
+
 .checkbox-group {
   display: flex;
   flex-wrap: wrap;
@@ -2558,6 +2682,19 @@ p { margin: 0 0 var(--spacing-md); max-width: 72ch; }
     width: auto;
     min-height: 36px;
     padding: 0.4rem 0.75rem;
+  }
+
+  .users-overview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .users-table-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .users-table-heading__hint {
+    text-align: left;
   }
 
   .app-body {
