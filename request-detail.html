@@ -38,7 +38,7 @@
   <!-- Edit / resubmit form for rejected requests -->
     <div id="resubmit-section" hidden>
       <div class="page-header" style="margin-top: 2rem;">
-        <h2>Edit &amp; Resubmit Request</h2>
+        <h2>Edit &amp; Update Request</h2>
       </div>
       <p class="text-muted">Update the details below and resubmit for approval.</p>
       <div id="resubmit-error" class="alert alert--error" hidden role="alert"></div>
@@ -170,7 +170,7 @@
         </section>
 
         <div class="btn-group">
-          <button type="submit" class="btn btn--primary" id="resubmit-btn">Resubmit Request</button>
+          <button type="submit" class="btn btn--primary" id="resubmit-btn">Save TAR Changes</button>
         </div>
       </form>
     </div>
@@ -292,7 +292,7 @@
 
         decisionSection.hidden = !canApproveTravelRequest(currentRequest);
 
-        if (currentRequest.status === 'rejected' && isRequester(currentRequest) && canCreateRequests()) {
+        if (['pending', 'rejected'].includes(currentRequest.status) && isRequester(currentRequest) && canCreateRequests()) {
           resubmitSection.hidden = false;
           await populateRequestForm(resubmitForm, currentRequest);
           initSignaturePad(resubmitForm);

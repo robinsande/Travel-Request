@@ -66,6 +66,16 @@
   overflow-wrap: anywhere;
 }
 
+.tar-preview td {
+  color: #123a8c;
+}
+
+.tar-preview__fine-print,
+.tar-preview__center-note,
+.tar-preview__meta {
+  color: #111827;
+}
+
 .tar-preview th {
   font-weight: 700;
 }
