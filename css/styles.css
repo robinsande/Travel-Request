@@ -67,11 +67,15 @@
 }
 
 .tar-preview td {
-  color: #0000FF;
+  color: #111827;
 }
 
 .tar-template-page .tar-preview td {
   color: #111827;
+}
+
+.tar-preview__filled-value {
+  color: #0000FF;
 }
 
 .tar-preview__fine-print,

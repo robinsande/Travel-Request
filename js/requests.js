@@ -533,6 +533,11 @@ function renderRequestDetail(request) {
     };
   });
   const office = request.employeeOffice || request.requestedBy?.office || '—';
+  const fieldValue = (value, fallback = '—') => {
+    const text = value == null || value === '' ? fallback : String(value);
+    const isFilled = value != null && value !== '' && text !== '—' && text !== 'No signature captured';
+    return `<span class="${isFilled ? 'tar-preview__filled-value' : 'tar-preview__blank-value'}">${escapeHtml(text)}</span>`;
+  };
   const signatureCell = (signature, label) => signature
     ? `<img class="tar-preview__signature" src="${signature}" alt="${escapeHtml(label)}" />`
     : '<span class="tar-preview__missing">No signature captured</span>';
@@ -544,6 +549,7 @@ function renderRequestDetail(request) {
     `${mode.publicTransport ? '[X]' : '[ ]'} Public Transport`,
     `${mode.aircraft ? '[X]' : '[ ]'} Aircraft`,
   ].join('   ');
+  const hasTravelMode = Boolean(mode.careVehicle || mode.publicTransport || mode.aircraft);
   const status = String(request.status || 'pending').toUpperCase();
   const statusLabel = status === 'APPROVED' ? 'APPROVED' : status === 'REJECTED' ? 'DECLINED' : 'PENDING APPROVAL';
 
@@ -556,18 +562,18 @@ function renderRequestDetail(request) {
         <h2>3.5.7 &nbsp; TRAVEL AUTHORIZATION REQUEST</h2>
         <table>
           <tbody>
-            <tr><th>Employee<br>Name</th><td>${escapeHtml(passengerNames)}</td><th>Employee<br>Number</th><td>${escapeHtml(passengerNumbers)}</td><th>Project<br>Name</th><td>${escapeHtml(p.name || '—')}</td></tr>
-            <tr><th>Business Unit:</th><td>${escapeHtml(p.businessUnit || '—')}</td><th>Fund Code:</th><td>${escapeHtml(p.fundCode || '—')}</td><th></th><td></td></tr>
-            <tr><th>Project ID:</th><td>${escapeHtml(p.projectId || '—')}</td><th>Department ID:</th><td>${escapeHtml(p.departmentId || '—')}</td><th>Activity ID:</th><td>${escapeHtml(p.activityId || '—')}</td></tr>
-            <tr><th>Assigned Area<br>of Operation</th><td colspan="2">${escapeHtml(request.assignedAreaOfOperation || '—')}</td><th>Employees<br>Office</th><td colspan="2">${escapeHtml(office)}</td></tr>
-            <tr><th>Purpose of the Trip</th><td colspan="5">${escapeHtml(request.purposeOfTrip || '—')}</td></tr>
-            <tr><th>Mode of Travel</th><td colspan="5">${escapeHtml(travelMode)}</td></tr>
+            <tr><th>Employee<br>Name</th><td>${fieldValue(passengerNames, '')}</td><th>Employee<br>Number</th><td>${fieldValue(passengerNumbers, '')}</td><th>Project<br>Name</th><td>${fieldValue(p.name)}</td></tr>
+            <tr><th>Business Unit:</th><td>${fieldValue(p.businessUnit)}</td><th>Fund Code:</th><td>${fieldValue(p.fundCode)}</td><th></th><td></td></tr>
+            <tr><th>Project ID:</th><td>${fieldValue(p.projectId)}</td><th>Department ID:</th><td>${fieldValue(p.departmentId)}</td><th>Activity ID:</th><td>${fieldValue(p.activityId)}</td></tr>
+            <tr><th>Assigned Area<br>of Operation</th><td colspan="2">${fieldValue(request.assignedAreaOfOperation)}</td><th>Employees<br>Office</th><td colspan="2">${fieldValue(office)}</td></tr>
+            <tr><th>Purpose of the Trip</th><td colspan="5">${fieldValue(request.purposeOfTrip)}</td></tr>
+            <tr><th>Mode of Travel</th><td colspan="5">${fieldValue(hasTravelMode ? travelMode : '')}</td></tr>
             <tr><th colspan="6" class="tar-preview__section-title">Travel Itinerary (must be completed prior to supervisor authorizing travel)</th></tr>
             <tr><th>Date From</th><th>Date To</th><th colspan="2">Destination</th><th>Passengers</th><th>Accommodation</th></tr>
-            <tr><td>${formatDate(it.dateFrom)}</td><td>${formatDate(it.dateTo)}</td><td colspan="2">${escapeHtml(it.destination || '—')}</td><td>${passengers.length}</td><td>${it.accommodationNeeded ? 'Yes' : 'No'}</td></tr>
+            <tr><td>${fieldValue(it.dateFrom ? formatDate(it.dateFrom) : '')}</td><td>${fieldValue(it.dateTo ? formatDate(it.dateTo) : '')}</td><td colspan="2">${fieldValue(it.destination)}</td><td>${fieldValue(passengers.length || '')}</td><td>${fieldValue(it.accommodationNeeded ? 'Yes' : '')}</td></tr>
             ${(request.travelSegments || []).length ? `<tr><th colspan="6" class="tar-preview__section-title">Additional Travel Destinations</th></tr><tr><th>Arrival</th><th>Departure</th><th>From</th><th>To</th><th colspan="2">Destination</th></tr>${request.travelSegments.map((segment) => `<tr><td>${formatDate(segment.dateFrom)}</td><td>${formatDate(segment.dateTo)}</td><td>${escapeHtml(segment.from || '—')}</td><td>${escapeHtml(segment.to || '—')}</td><td colspan="2">${escapeHtml(segment.destination || '—')}</td></tr>`).join('')}` : ''}
-            <tr class="tar-preview__signature-row"><th>Requested by:<br><br>Signature:</th><td colspan="3">${escapeHtml(requester)}<br>${signatureCell(request.requesterSignature, 'Requester signature')}</td><td colspan="2">Date: ${formatDate(request.submittedAt || request.createdAt)}</td></tr>
-            <tr class="tar-preview__signature-row"><th>Travel<br>Authorized<br>by:</th><td>Print Name:<br>${escapeHtml(approver)}</td><td>Position:<br>${escapeHtml(request.decision?.decidedBy?.position || request.selected_approver_id?.position || 'Supervisor / Approver')}</td><td>Signature:<br>${signatureCell(request.decision?.signature, 'Approver signature')}</td><td colspan="2">Date:<br>${formatDate(request.decision?.decidedAt || request.submittedAt)}</td></tr>
+            <tr class="tar-preview__signature-row"><th>Requested by:<br><br>Signature:</th><td colspan="3">${fieldValue(requester)}<br>${signatureCell(request.requesterSignature, 'Requester signature')}</td><td colspan="2">Date: ${fieldValue(request.submittedAt || request.createdAt ? formatDate(request.submittedAt || request.createdAt) : '')}</td></tr>
+            <tr class="tar-preview__signature-row"><th>Travel<br>Authorized<br>by:</th><td>Print Name:<br>${fieldValue(approver)}</td><td>Position:<br>${fieldValue(request.decision?.decidedBy?.position || request.selected_approver_id?.position || 'Supervisor / Approver')}</td><td>Signature:<br>${signatureCell(request.decision?.signature, 'Approver signature')}</td><td colspan="2">Date:<br>${fieldValue(request.decision?.decidedAt || request.submittedAt ? formatDate(request.decision?.decidedAt || request.submittedAt) : '')}</td></tr>
             <tr><td colspan="6" class="tar-preview__center-note">To be signed by supervisor once all is completed</td></tr>
             <tr><td colspan="6" class="tar-preview__fine-print">Note: This form must be produced in 3 or 4 copies BEFORE travel is undertaken. The signed original is to be submitted to the Finance Unit when seeking an advance or claiming reimbursement, another photocopy provided to the Security Officer and the Fleet Officer if requesting a CARE vehicle for travel, and the third copy for employee's records/file.</td></tr>
           </tbody>
