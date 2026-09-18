@@ -20,6 +20,11 @@
     </div>
     <div id="team-subnav" hidden></div>
     <p class="text-muted" id="page-subtitle">Trips you raised or are listed on as a passenger.</p>
+    <nav class="request-status-tabs" id="request-status-tabs" aria-label="My TAR status" hidden>
+      <a href="requests.html" data-status="">All TARs</a>
+      <a href="requests.html?status=pending" data-status="pending">Pending</a>
+      <a href="requests.html?status=approved" data-status="approved">Approved</a>
+    </nav>
 
     <div class="request-overview" id="request-overview" hidden aria-label="Travel request overview">
       <article class="request-overview__card request-overview__card--total"><span>Total requests</span><strong id="request-total-count">—</strong><small>organization directory</small></article>
@@ -94,6 +99,7 @@
     const isTeamView = scope === 'team' && isAdmin();
     const teamType = params.get('type') === 'reimbursement' ? 'reimbursement' : 'travel';
     const isTeamReimbursementView = isTeamView && teamType === 'reimbursement';
+    const requestedStatus = ['pending', 'approved'].includes(params.get('status')) ? params.get('status') : '';
 
     let activeNav = 'my-requests';
     let pageTitle = 'My Travel Requests';
@@ -128,6 +134,11 @@
           : 'Travel Requests — CARE TAR';
 
     const subtitleEl = document.getElementById('page-subtitle');
+    const statusTabs = document.getElementById('request-status-tabs');
+    if (scope === 'mine' && !isTeamView) {
+      statusTabs.hidden = false;
+      statusTabs.querySelector(`[data-status="${requestedStatus}"]`)?.classList.add('is-active');
+    }
     if (subtitleEl) {
       if (scope === 'all') {
         subtitleEl.textContent = 'All travel requests across the organization.';
@@ -187,6 +198,8 @@
       if (scope === 'team') filters.scope = 'team';
       else if (scope === 'all') filters.scope = 'all';
       else filters.scope = 'mine';
+
+      if (requestedStatus) filters.status = requestedStatus;
 
       if (!showFilters) return filters;
 
