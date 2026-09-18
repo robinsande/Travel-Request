@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TAR Template - CARE TAR</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div id="app-shell"></div>
+
+  <main class="page-content" id="page-content" hidden>
+    <div class="page-header">
+      <div>
+        <a href="request-new.html" class="back-link">&larr; New Travel Request</a>
+        <h1>TAR Template</h1>
+        <p class="page-header__subtitle">Blank Travel Authorization Request form.</p>
+      </div>
+      <button type="button" class="btn btn--primary" id="download-template-btn">Download Blank TAR Template</button>
+    </div>
+
+    <div id="template-preview"></div>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/api/http.js"></script>
+  <script src="js/api/requests.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/requests.js"></script>
+  <script>
+    if (!requireAuth()) throw new Error('auth');
+
+    initProtectedPage('my-requests');
+    document.getElementById('template-preview').innerHTML = renderRequestDetail({
+      _id: 'template',
+      requestedBy: {},
+      project: {},
+      assignedAreaOfOperation: '',
+      employeeOffice: '',
+      purposeOfTrip: '',
+      modeOfTravel: {},
+      itinerary: {},
+      passengers: [],
+      status: 'pending',
+      submittedAt: null,
+      decision: {},
+    });
+
+    const downloadButton = document.getElementById('download-template-btn');
+    downloadButton.addEventListener('click', async () => {
+      try {
+        await withLoading(downloadButton, 'Preparing...', fetchTravelRequestTemplatePdf);
+      } catch (err) {
+        showToast(err.message || 'Failed to download TAR template.', 'error');
+      }
+    });
+  </script>
+</body>
+</html>
