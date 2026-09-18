@@ -12,6 +12,19 @@ const ApiError = class extends Error {
   }
 };
 
+const MIN_INITIAL_LOAD_MS = 2000;
+const pageScriptStartedAt = performance.now();
+let initialLoadGate = null;
+
+function waitForInitialLoadGate() {
+  if (!initialLoadGate) {
+    const remaining = Math.max(0, MIN_INITIAL_LOAD_MS - (performance.now() - pageScriptStartedAt));
+    initialLoadGate = new Promise((resolve) => setTimeout(resolve, remaining));
+  }
+
+  return initialLoadGate;
+}
+
 function buildApiUrl(path) {
   const base = CONFIG.API_BASE_URL.replace(/\/+$/, '');
   const route = path.startsWith('/') ? path : `/${path}`;
@@ -95,6 +108,7 @@ async function apiRequest(path, options = {}) {
   if (typeof beginSync === 'function') beginSync();
 
   try {
+    await waitForInitialLoadGate();
     return await performApiRequest(path, options);
   } finally {
     if (typeof endSync === 'function') endSync();
