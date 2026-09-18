@@ -177,6 +177,11 @@
       throw new Error('forbidden');
     }
 
+    initProtectedPage('my-requests');
+
+    const form = document.getElementById('request-form');
+    const errorEl = document.getElementById('form-error');
+    const submitBtn = document.getElementById('submit-btn');
     const travelSegments = document.getElementById('travel-segments');
 
     function addTravelSegment(segment = {}) {
@@ -204,11 +209,6 @@
     const passengersList = document.getElementById('passengers-list');
     const approverSelectContainer = document.getElementById('approver-select');
     initSignaturePad(form);
-    showRequestFormBtn.addEventListener('click', () => {
-      form.hidden = false;
-      showRequestFormBtn.hidden = true;
-      form.querySelector('input, select, textarea')?.focus();
-    });
     const sessionUser = getUser() || {};
     let approverSelect = null;
 
