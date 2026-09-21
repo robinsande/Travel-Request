@@ -154,6 +154,19 @@
         <button type="button" class="btn btn--secondary btn--sm" id="add-passenger">Add passenger</button>
       </section>
 
+      <section class="form-section">
+        <h2>Supporting Documents</h2>
+        <div class="form-group">
+          <label for="scope-documents">Scope document</label>
+          <input type="file" id="scope-documents" name="scopeDocuments" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png" />
+          <p class="form-hint">Attach the scope of work or terms of reference. Approvers and authorized TAR viewers can download it separately.</p>
+        </div>
+        <div class="form-group">
+          <label for="supporting-documents">Other supporting documents</label>
+          <input type="file" id="supporting-documents" name="supportingDocuments" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png" />
+        </div>
+      </section>
+
       <div class="btn-group">
         <button type="submit" class="btn btn--primary" id="submit-btn">Submit Travel Request</button>
         <a href="tar-template.html" class="btn btn--secondary">View TAR Template</a>
@@ -369,11 +382,16 @@
 
       try {
         const result = await withLoading(submitBtn, 'Submitting…', () => createRequest(payload));
+        const requestId = getRequestId(result);
+        const scopeFiles = document.getElementById('scope-documents').files;
+        const supportingFiles = document.getElementById('supporting-documents').files;
+        if (requestId && (scopeFiles.length || supportingFiles.length)) {
+          await uploadRequestAttachments(requestId, scopeFiles, supportingFiles);
+        }
         saveTarDefaults();
         localStorage.removeItem(draftKey);
         showToast('Travel request submitted successfully.', 'success');
-        const id = getRequestId(result);
-        window.location.href = id ? `request-detail.html?id=${encodeURIComponent(id)}` : 'requests.html';
+        window.location.href = requestId ? `request-detail.html?id=${encodeURIComponent(requestId)}` : 'requests.html';
       } catch (err) {
         renderApiErrors(errorEl, buildManagerAssignmentError(err) || err);
       }

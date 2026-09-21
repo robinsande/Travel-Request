@@ -23,6 +23,20 @@ async function createRequest(payload) {
   return api.post('/requests', payload);
 }
 
+async function uploadRequestAttachments(requestId, scopeFiles = [], supportingFiles = []) {
+  const formData = new FormData();
+  Array.from(scopeFiles).forEach((file) => formData.append('scopeDocuments', file));
+  Array.from(supportingFiles).forEach((file) => formData.append('supportingDocuments', file));
+  return api.post(`/requests/${encodeURIComponent(requestId)}/attachments`, formData);
+}
+
+async function downloadRequestAttachment(requestId, attachmentId, filename) {
+  return downloadFile(
+    `/requests/${encodeURIComponent(requestId)}/attachments/${encodeURIComponent(attachmentId)}`,
+    filename || 'travel-request-attachment'
+  );
+}
+
 async function updateRequest(id, payload) {
   return api.patch(`/requests/${id}`, payload);
 }

@@ -552,6 +552,12 @@ function renderRequestDetail(request) {
   const hasTravelMode = Boolean(mode.careVehicle || mode.publicTransport || mode.aircraft);
   const status = String(request.status || 'pending').toUpperCase();
   const statusLabel = status === 'APPROVED' ? 'APPROVED' : status === 'REJECTED' ? 'DECLINED' : 'PENDING APPROVAL';
+  const attachments = request.attachments || [];
+  const renderAttachments = (category, label) => {
+    const files = attachments.filter((attachment) => attachment.category === category);
+    if (!files.length) return '';
+    return `<div class="detail-section"><h2>${label}</h2><div class="btn-group">${files.map((attachment) => `<button type="button" class="btn btn--secondary btn--sm request-attachment-btn" data-attachment-id="${escapeHtml(String(attachment._id))}" data-attachment-name="${escapeHtml(attachment.originalName)}">${escapeHtml(attachment.originalName)}</button>`).join('')}</div></div>`;
+  };
 
   return `
     <div class="tar-preview-wrap">
@@ -581,5 +587,7 @@ function renderRequestDetail(request) {
         <div class="tar-preview__status">TAR STATUS: ${escapeHtml(statusLabel)}</div>
         <div class="tar-preview__meta">Request ID: ${escapeHtml(String(request._id || ''))} &nbsp;&nbsp; Approved/Reviewed by: ${escapeHtml(approver)}</div>
       </article>
+      ${renderAttachments('scope', 'Scope Documents')}
+      ${renderAttachments('supporting', 'Other Supporting Documents')}
     </div>`;
 }

@@ -265,6 +265,15 @@
             ${canDownloadSignedTar ? '<button type="button" class="btn btn--primary" id="download-request-pdf">Download Signed TAR</button>' : ''}
           </div>`;
         contentEl.hidden = false;
+        contentEl.querySelectorAll('.request-attachment-btn').forEach((button) => {
+          button.addEventListener('click', async () => {
+            try {
+              await downloadRequestAttachment(requestId, button.dataset.attachmentId, button.dataset.attachmentName);
+            } catch (err) {
+              showToast(err.message || 'Failed to download document.', 'error');
+            }
+          });
+        });
         document.getElementById('download-request-preview')?.addEventListener('click', async () => {
           try {
             await fetchTravelRequestPdf(requestId, { preview: true });
