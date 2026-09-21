@@ -216,6 +216,7 @@
     const sessionUser = getUser() || {};
     let approverSelect = null;
     const draftKey = `tar-draft-${sessionUser.id || sessionUser._id || sessionUser.email || 'current-user'}`;
+    const defaultsKey = `tar-defaults-${sessionUser.id || sessionUser._id || sessionUser.email || 'current-user'}`;
     let draftSaveTimer = null;
 
     function readDraft() {
@@ -250,6 +251,30 @@
 
         localStorage.setItem(draftKey, JSON.stringify({ fields, passengers, segments }));
       }
+
+    function saveTarDefaults() {
+      const defaults = {};
+      ['project_businessUnit', 'project_fundCode', 'project_projectId', 'project_departmentId', 'employeeOffice']
+        .forEach((name) => {
+          defaults[name] = form.elements[name]?.value?.trim() || '';
+        });
+      localStorage.setItem(defaultsKey, JSON.stringify(defaults));
+    }
+
+    function restoreTarDefaults() {
+      try {
+        const raw = localStorage.getItem(defaultsKey);
+        if (!raw) return false;
+        const defaults = JSON.parse(raw);
+        Object.entries(defaults).forEach(([name, value]) => {
+          const element = form.elements[name];
+          if (element && !element.value) element.value = value || '';
+        });
+        return true;
+      } catch {
+        return false;
+      }
+    }
 
     function queueDraftSave() {
         if (draftSaveTimer) clearTimeout(draftSaveTimer);
@@ -298,6 +323,7 @@
 
       const options = await initPassengerList(passengersList);
       const restored = restoreDraft(options);
+      if (!restored) restoreTarDefaults();
       const me = options.find(
         (option) => String(option.value) === String(sessionUser.id || sessionUser._id)
       );
@@ -343,6 +369,7 @@
 
       try {
         const result = await withLoading(submitBtn, 'Submitting…', () => createRequest(payload));
+        saveTarDefaults();
         localStorage.removeItem(draftKey);
         showToast('Travel request submitted successfully.', 'success');
         const id = getRequestId(result);
