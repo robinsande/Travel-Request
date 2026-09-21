@@ -12,19 +12,6 @@ const ApiError = class extends Error {
   }
 };
 
-const MIN_INITIAL_LOAD_MS = 350;
-const pageScriptStartedAt = performance.now();
-let initialLoadGate = null;
-
-function waitForInitialLoadGate() {
-  if (!initialLoadGate) {
-    const remaining = Math.max(0, MIN_INITIAL_LOAD_MS - (performance.now() - pageScriptStartedAt));
-    initialLoadGate = new Promise((resolve) => setTimeout(resolve, remaining));
-  }
-
-  return initialLoadGate;
-}
-
 function buildApiUrl(path) {
   const base = CONFIG.API_BASE_URL.replace(/\/+$/, '');
   const route = path.startsWith('/') ? path : `/${path}`;
@@ -47,6 +34,8 @@ function redirectToLogin() {
 }
 
 async function performApiRequest(path, options = {}) {
+  const requestStartedAt = performance.now();
+  console.info(`[timing] ${path} start`);
   const url = buildApiUrl(path);
   const headers = { ...(options.headers || {}) };
 
@@ -64,6 +53,7 @@ async function performApiRequest(path, options = {}) {
   try {
     response = await fetch(url, { ...options, headers });
   } catch {
+    console.info(`[timing] ${path} network failed after ${(performance.now() - requestStartedAt).toFixed(1)}ms`);
     throw new ApiError(
       `Cannot reach the API at ${CONFIG.API_BASE_URL}. Start the backend (npm start in care-travel-request-backend) and refresh.`,
       0,
@@ -101,6 +91,11 @@ async function performApiRequest(path, options = {}) {
     throw new ApiError(message, response.status, body);
   }
 
+  const serverTiming = response.headers.get('server-timing');
+  console.info(
+    `[timing] ${path} client=${(performance.now() - requestStartedAt).toFixed(1)}ms${serverTiming ? ` server=${serverTiming}` : ''}`
+  );
+
   return body;
 }
 
@@ -108,7 +103,6 @@ async function apiRequest(path, options = {}) {
   if (typeof beginSync === 'function') beginSync();
 
   try {
-    await waitForInitialLoadGate();
     return await performApiRequest(path, options);
   } finally {
     if (typeof endSync === 'function') endSync();

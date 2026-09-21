@@ -74,6 +74,8 @@
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      const submitStartedAt = performance.now();
+      performance.mark('login-submit');
       errorEl.hidden = true;
 
       const email = form.email.value.trim();
@@ -88,7 +90,13 @@
 
       try {
         const result = await login(email, password);
+        performance.mark('login-session-stored');
+        performance.measure('login-submit-to-session', 'login-submit', 'login-session-stored');
+        console.info(`[timing] login submit-to-session=${(performance.now() - submitStartedAt).toFixed(1)}ms`);
         form.reset();
+        performance.mark('login-redirect');
+        performance.measure('login-submit-to-redirect', 'login-submit', 'login-redirect');
+        console.info(`[timing] login submit-to-redirect=${(performance.now() - submitStartedAt).toFixed(1)}ms`);
         window.location.replace(result.user?.mustSetPassword ? 'profile.html' : 'dashboard.html');
       } catch (err) {
         renderApiErrors(errorEl, err);

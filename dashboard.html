@@ -42,8 +42,11 @@
   <script>
     if (!requireAuth()) throw new Error('auth');
 
+    performance.mark('dashboard-route-mounted');
+    console.info('[timing] dashboard route mounted');
     renderAppShell('dashboard');
     mountPageContent('#page-content');
+    performance.mark('dashboard-shell-mounted');
 
     const dashboardLoading = document.getElementById('dashboard-loading');
     const metricsEl = document.getElementById('dashboard-metrics');
@@ -66,7 +69,7 @@
       const users = Array.isArray(data.users?.data) ? data.users.data : Array.isArray(data.users) ? data.users : [];
       const approved = requests.filter((request) => request.status === 'approved').length;
       const pendingCount = isSuperadmin ? requests.filter((request) => request.status === 'pending').length : pending.length;
-      const usersCount = users.length;
+      const usersCount = data.usersPending ? '...' : users.length;
 
       metricsEl.innerHTML = isSuperadmin
         ? metricCard('Total users', usersCount, 'users', 'admin-users.html') + metricCard('All TARs', requests.length, 'requests', 'requests.html?scope=all') + metricCard('Pending TARs', pendingCount, 'pending', 'requests.html?scope=all&status=pending') + metricCard('Approved TARs', approved, 'approved', 'requests.html?scope=all&status=approved')
@@ -84,6 +87,8 @@
     }
 
     async function loadDashboard() {
+      const dashboardLoadStartedAt = performance.now();
+      performance.mark('dashboard-fetches-start');
       showPageLoading(dashboardLoading);
       try {
         if (!dashboardUser) {
@@ -110,12 +115,25 @@
           }),
         ]);
 
-        const usersResult = await userListCall;
         renderDashboard({
           requests: requestsResult,
           pending: pendingResult,
-          users: usersResult,
+          users: [],
+          usersPending: isSuperadmin,
         });
+        performance.mark('dashboard-interactive');
+        performance.measure('dashboard-fetches-to-interactive', 'dashboard-fetches-start', 'dashboard-interactive');
+        console.info(`[timing] dashboard interactive=${(performance.now() - dashboardLoadStartedAt).toFixed(1)}ms`);
+
+        const usersResult = await userListCall;
+        if (isSuperadmin) {
+          renderDashboard({
+            requests: requestsResult,
+            pending: pendingResult,
+            users: usersResult,
+            usersPending: false,
+          });
+        }
       } catch (error) {
         dashboardLoading.innerHTML = '';
         showToast(error?.message || 'Failed to load dashboard.', 'error');
