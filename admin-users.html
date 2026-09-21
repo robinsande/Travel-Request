@@ -200,16 +200,22 @@
       event.preventDefault();
       editError.hidden = true;
       try {
-        await updateUserProfile(editingUserId, {
+        const profileUpdates = {
           name: document.getElementById('edit-user-name').value.trim(),
           email: document.getElementById('edit-user-email').value.trim(),
           employeeNumber: document.getElementById('edit-user-employee-number').value.trim(),
           position: document.getElementById('edit-user-position').value.trim(),
           office: document.getElementById('edit-user-office').value.trim(),
           department: document.getElementById('edit-user-department').value.trim(),
-          managerId: document.getElementById('edit-user-manager').value || null,
           alternateApproverIds: Array.from(document.getElementById('edit-user-alternates').selectedOptions).map((option) => option.value),
-        });
+        };
+        const selectedManagerId = document.getElementById('edit-user-manager').value;
+        const existingUser = users.find((user) => String(user._id || user.id) === editingUserId);
+        const existingManagerId = existingUser?.managerId?._id || existingUser?.managerId;
+        if (selectedManagerId || existingManagerId) {
+          profileUpdates.managerId = selectedManagerId || null;
+        }
+        await updateUserProfile(editingUserId, profileUpdates);
         editPanel.hidden = true;
         await loadUsers();
         showToast('User profile updated.', 'success');
