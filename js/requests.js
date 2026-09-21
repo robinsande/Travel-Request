@@ -66,6 +66,7 @@ function buildRequestPayload(form) {
 
   return {
     selected_approver_id: fd.get('selected_approver_id')?.trim() || '',
+    selected_approver_ids: Array.from(form.querySelector('[name="selected_approver_ids"]')?.selectedOptions || []).map((option) => option.value),
     project: {
       name: fd.get('project_name')?.trim() || '',
       businessUnit: fd.get('project_businessUnit')?.trim() || '',
@@ -255,11 +256,23 @@ function getRequesterLabel(request) {
 }
 
 function getRequestApproverLabel(request) {
+  const approvers = request.selected_approver_ids?.length
+    ? request.selected_approver_ids
+    : [request.selected_approver_id];
+  const labels = approvers.map((approver) => approver?.name || approver?.email || getEntityId(approver)).filter(Boolean);
+  if (labels.length) return labels.join(', ');
   return (
     request.selected_approver_id?.name ||
     request.selected_approver_id?.email ||
     'Selected approver not available'
   );
+}
+
+function getRequestApproverIds(request) {
+  const approvers = request.selected_approver_ids?.length
+    ? request.selected_approver_ids
+    : [request.selected_approver_id];
+  return approvers.map((approver) => getEntityId(approver) || approver).filter(Boolean);
 }
 
 function getRequestDateRange(request) {
@@ -269,8 +282,10 @@ function getRequestDateRange(request) {
 function canApproveTravelRequest(request, user = getUser()) {
   if (!user || user.role !== 'admin' || request?.status !== 'pending') return false;
   const uid = String(user.id || user._id || '');
-  const approverId = String(getSelectedApproverId(request) || '');
-  return Boolean(uid && approverId && uid === approverId);
+  const approverIds = request.selected_approver_ids?.length
+    ? request.selected_approver_ids.map((approver) => String(getEntityId(approver) || approver))
+    : [String(getSelectedApproverId(request) || '')];
+  return Boolean(uid && approverIds.includes(uid));
 }
 
 function renderTravelRejectForm(requestId) {

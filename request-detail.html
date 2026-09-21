@@ -220,7 +220,7 @@
       const options = await loadPassengerOptions();
       addPassengerRow(document.getElementById('passengers-list'), options);
       document.getElementById('passengers-list').lastElementChild?.querySelector('.searchable-select__input')?.focus();
-      await loadApprovers(getSelectedApproverId(currentRequest));
+      await loadApprovers(getRequestApproverIds(currentRequest));
     });
     const resubmitError = document.getElementById('resubmit-error');
     const resubmitBtn = document.getElementById('resubmit-btn');
@@ -233,6 +233,8 @@
       resubmitApproverSelect = await loadApproverSelect(resubmitApproverContainer, {
         selectedId,
         excludeIds,
+        multiple: true,
+        hiddenInputName: 'selected_approver_ids',
       });
     }
 

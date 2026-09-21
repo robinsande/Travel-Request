@@ -326,7 +326,9 @@
       approverSelect = await loadApproverSelect(approverSelectContainer, {
         errorContainer: errorEl,
         excludeIds,
-        selectedId: approverSelect?.getValue?.() || '',
+        selectedId: Array.from(approverSelect?.selectedOptions || []).map((option) => option.value),
+        multiple: true,
+        hiddenInputName: 'selected_approver_ids',
       });
     }
 

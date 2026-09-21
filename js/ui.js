@@ -448,6 +448,7 @@ async function loadApproverSelect(container, config = {}) {
     errorContainer = null,
     excludeIds = [],
     onLoaded = null,
+    multiple = false,
   } = config;
 
   try {
@@ -456,6 +457,11 @@ async function loadApproverSelect(container, config = {}) {
     const options = unwrapListResult(approvers)
       .map(mapApproverOption)
       .filter((option) => !excluded.has(String(option.value)));
+    if (multiple) {
+      const selectedIds = new Set((Array.isArray(selectedId) ? selectedId : [selectedId]).map(String));
+      container.innerHTML = `<select class="form-control" name="${escapeHtml(hiddenInputName)}" multiple size="${Math.min(Math.max(options.length, 3), 8)}" aria-label="${escapeHtml(placeholder)}">${options.map((option) => `<option value="${escapeHtml(option.value)}"${selectedIds.has(String(option.value)) ? ' selected' : ''}>${escapeHtml(option.label)}</option>`).join('')}</select><p class="form-hint">Hold Ctrl (Windows) or Command (Mac) to select more than one approver.</p>`;
+      return container.querySelector('select');
+    }
     const selected = options.find((option) => String(option.value) === String(selectedId));
 
     const select = buildSearchableSelect(container, options, {
@@ -509,7 +515,7 @@ async function runDecisionAction(button, options) {
 }
 
 function requireSelectedApprover(errorContainer, selectedApproverId) {
-  if (selectedApproverId) return true;
+  if (Array.isArray(selectedApproverId) ? selectedApproverId.length : selectedApproverId) return true;
   renderApiErrors(errorContainer, { message: 'Please select an approver.' });
   return false;
 }
