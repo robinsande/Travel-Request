@@ -123,9 +123,12 @@ function normalizeOriginForCompare(origin) {
 }
 
 /** Verify backend is reachable (GET /api/health) */
-async function checkBackendConnection() {
+async function checkBackendConnection(timeoutMs = 8000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
-    const response = await fetch(buildApiUrl('/health'), { method: 'GET' });
+    const response = await fetch(buildApiUrl('/health'), { method: 'GET', signal: controller.signal });
     if (!response.ok) return { ok: false, url: CONFIG.API_BASE_URL };
     const data = await response.json();
     const frontendOrigin = window.location.origin;
@@ -146,8 +149,28 @@ async function checkBackendConnection() {
     };
   } catch {
     return { ok: false, url: CONFIG.API_BASE_URL };
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
+
+const BACKEND_KEEP_ALIVE_MS = 4 * 60 * 1000;
+let backendKeepAliveTimer;
+
+function pingBackendKeepAlive() {
+  if (document.visibilityState !== 'visible') return;
+  checkBackendConnection().catch(() => {});
+}
+
+function startBackendKeepAlive() {
+  pingBackendKeepAlive();
+  backendKeepAliveTimer = setInterval(pingBackendKeepAlive, BACKEND_KEEP_ALIVE_MS);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') pingBackendKeepAlive();
+  });
+}
+
+if (typeof document !== 'undefined') startBackendKeepAlive();
 
 const api = {
   get: (path) => apiRequest(path),
