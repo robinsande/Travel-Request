@@ -64,9 +64,11 @@ function buildRequestPayload(form) {
     }
   });
 
+  const selectedApproverIds = Array.from(form.querySelector('[name="selected_approver_ids"]')?.selectedOptions || []).map((option) => option.value);
+
   return {
     selected_approver_id: fd.get('selected_approver_id')?.trim() || '',
-    selected_approver_ids: Array.from(form.querySelector('[name="selected_approver_ids"]')?.selectedOptions || []).map((option) => option.value),
+    ...(selectedApproverIds.length ? { selected_approver_ids: selectedApproverIds } : {}),
     project: {
       name: fd.get('project_name')?.trim() || '',
       businessUnit: fd.get('project_businessUnit')?.trim() || '',
