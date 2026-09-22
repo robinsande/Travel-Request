@@ -387,6 +387,22 @@
         localStorage.removeItem(draftKey);
         if (!restoreTarDefaults()) await restoreApprovedTarDefaults();
       }
+      const requester = options.find(
+        (option) => String(option.value) === String(sessionUser.id || sessionUser._id)
+      );
+      if (requester && !restored) {
+        const firstRow = passengersList.querySelector('.passenger-row');
+        const hidden = firstRow?.querySelector('[data-passenger-user]');
+        const input = firstRow?.querySelector('.searchable-select__input');
+        const nameInput = firstRow?.querySelector('[data-passenger-name]');
+        const employeeInput = firstRow?.querySelector('[data-passenger-employee]');
+        if (hidden && input) {
+          hidden.value = requester.value;
+          input.value = requester.label;
+          if (nameInput) nameInput.value = requester.name || '';
+          if (employeeInput) employeeInput.value = requester.employeeNumber || '';
+        }
+      }
       if (restored) showToast('Your unfinished TAR has been restored.', 'info', 5000);
       await loadApprovers();
     }
