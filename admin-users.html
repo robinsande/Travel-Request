@@ -155,6 +155,7 @@
     const editForm = document.getElementById('edit-user-form');
     const editError = document.getElementById('edit-user-error');
     let editingUserId = null;
+    let users = [];
     if (currentUser.role !== 'superadmin') {
       document.getElementById('new-role').value = 'user';
       document.getElementById('new-role').disabled = true;
@@ -234,7 +235,8 @@
 
       try {
         const result = await fetchAllUsers();
-        const users = result.data || result.users || result || [];
+        users = result.data || result.users || result || [];
+        if (!Array.isArray(users)) users = [];
 
         loadingEl.innerHTML = '';
         document.getElementById('users-total-count').textContent = users.length;
