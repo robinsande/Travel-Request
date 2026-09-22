@@ -63,7 +63,7 @@
     }
 
     function renderDashboard(data) {
-      const isSuperadmin = dashboardUser?.role === 'superadmin';
+      const isSuperadmin = ['superadmin', 'super_superadmin'].includes(dashboardUser?.role);
       const requests = Array.isArray(data.requests?.data) ? data.requests.data : Array.isArray(data.requests) ? data.requests : [];
       const pending = Array.isArray(data.pending?.data) ? data.pending.data : Array.isArray(data.pending) ? data.pending : [];
       const users = Array.isArray(data.users?.data) ? data.users.data : Array.isArray(data.users) ? data.users : [];
@@ -96,7 +96,7 @@
           return;
         }
 
-        const isSuperadmin = dashboardUser.role === 'superadmin';
+        const isSuperadmin = ['superadmin', 'super_superadmin'].includes(dashboardUser.role);
         const userListCall = isSuperadmin && typeof fetchAllUsers === 'function'
           ? fetchAllUsers().catch((error) => {
               console.warn('Dashboard user list failed to load:', error);

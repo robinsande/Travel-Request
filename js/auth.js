@@ -91,6 +91,16 @@ function isSuperadmin() {
   return user && user.role === 'superadmin';
 }
 
+function isSuperSuperadmin() {
+  const user = getUser();
+  return user && user.role === 'super_superadmin';
+}
+
+function canViewAllRequests() {
+  const user = getUser();
+  return Boolean(user && ['superadmin', 'super_superadmin'].includes(user.role));
+}
+
 function isUserOrAdmin() {
   const user = getUser();
   return user && (user.role === 'user' || user.role === 'admin' || user.role === 'superadmin');
