@@ -93,8 +93,8 @@
           <div class="form-group"><label for="edit-user-position">Position</label><input id="edit-user-position" /></div>
           <div class="form-group"><label for="edit-user-office">Office</label><input id="edit-user-office" /></div>
           <div class="form-group"><label for="edit-user-department">Department</label><input id="edit-user-department" /></div>
-          <div class="form-group"><label for="edit-user-manager">Line manager / approver</label><select id="edit-user-manager"><option value="">No line manager</option></select><p class="form-hint">Each option includes the approver's exact email address.</p></div>
-          <div class="form-group"><label for="edit-user-alternates">Alternative approvers</label><select id="edit-user-alternates" multiple></select><p class="form-hint">Select active admins who can approve this user when the designated approver is unavailable. Each option includes the exact email address.</p></div>
+          <div class="form-group"><label for="edit-user-manager">Line manager / approver</label><input class="form-control approver-search" id="edit-user-manager-search" type="search" placeholder="Search approvers by name or email" autocomplete="off"><select id="edit-user-manager"><option value="">No line manager</option></select><p class="form-hint">Each option includes the approver's exact email address.</p></div>
+          <div class="form-group"><label for="edit-user-alternates">Alternative approvers</label><input class="form-control approver-search" id="edit-user-alternates-search" type="search" placeholder="Search alternative approvers" autocomplete="off"><select id="edit-user-alternates" multiple></select><p class="form-hint">Select active admins who can approve this user when the designated approver is unavailable. Each option includes the exact email address.</p></div>
           <div class="form-group" id="edit-user-approver-summary" hidden></div>
         </div>
         <button type="submit" class="btn btn--primary" id="edit-user-button">Save profile</button>
@@ -154,8 +154,20 @@
     const editPanel = document.getElementById('edit-user-panel');
     const editForm = document.getElementById('edit-user-form');
     const editError = document.getElementById('edit-user-error');
+    const managerSearch = document.getElementById('edit-user-manager-search');
+    const alternateSearch = document.getElementById('edit-user-alternates-search');
     let editingUserId = null;
     let users = [];
+
+    function filterApproverOptions(select, searchInput) {
+      const phrase = searchInput.value.trim().toLowerCase();
+      Array.from(select.options).forEach((option) => {
+        option.hidden = Boolean(phrase) && !option.textContent.toLowerCase().includes(phrase);
+      });
+    }
+
+    managerSearch.addEventListener('input', () => filterApproverOptions(document.getElementById('edit-user-manager'), managerSearch));
+    alternateSearch.addEventListener('input', () => filterApproverOptions(document.getElementById('edit-user-alternates'), alternateSearch));
     if (currentUser.role !== 'superadmin') {
       document.getElementById('new-role').value = 'user';
       document.getElementById('new-role').disabled = true;
@@ -356,6 +368,7 @@
               document.getElementById('edit-user-office').value = user.office || '';
               document.getElementById('edit-user-department').value = user.department || '';
               const managerSelect = document.getElementById('edit-user-manager');
+              managerSearch.value = '';
               managerSelect.innerHTML = '<option value="">No line manager</option>' + users
                 .filter((candidate) => candidate.role === 'admin' && candidate.isActive !== false && String(candidate._id || candidate.id) !== button.dataset.userId)
                 .map((candidate) => {
@@ -373,6 +386,7 @@
                 <div class="form-hint">${assignedAlternates.length ? assignedAlternates.map((approver) => `${escapeHtml(approver.name)} (${escapeHtml(approver.email || 'No email')})`).join('<br>') : 'No alternative approvers selected'}</div>`;
               approverSummary.hidden = false;
               const alternateSelect = document.getElementById('edit-user-alternates');
+              alternateSearch.value = '';
               alternateSelect.innerHTML = users
                 .filter((candidate) => candidate.role === 'admin' && candidate.isActive !== false && String(candidate._id || candidate.id) !== button.dataset.userId)
                 .map((candidate) => {
