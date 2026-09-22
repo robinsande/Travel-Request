@@ -20,6 +20,10 @@ async function deleteTarDraft() {
   return api.delete('/users/me/tar-draft');
 }
 
+async function fetchUserTarDraft(userId) {
+  return api.get(`/users/${userId}/tar-draft`);
+}
+
 async function fetchAllUsers() {
   return api.get('/users');
 }

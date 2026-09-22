@@ -101,6 +101,10 @@
         <button type="button" class="btn btn--secondary" id="cancel-edit-user">Cancel</button>
       </form>
     </section>
+    <section id="user-draft-preview" class="form-section" hidden>
+      <h2 id="user-draft-preview-title">Saved TAR draft</h2>
+      <div id="user-draft-preview-content" class="detail-grid"></div>
+    </section>
     <div class="data-table-wrap role-users-table" id="users-table-wrap" hidden>
       <div class="users-table-heading">
         <div><span class="section-kicker">LIVE DIRECTORY</span><h2>Staff accounts</h2></div>
@@ -154,6 +158,9 @@
     const editPanel = document.getElementById('edit-user-panel');
     const editForm = document.getElementById('edit-user-form');
     const editError = document.getElementById('edit-user-error');
+    const draftPreview = document.getElementById('user-draft-preview');
+    const draftPreviewTitle = document.getElementById('user-draft-preview-title');
+    const draftPreviewContent = document.getElementById('user-draft-preview-content');
     const managerSearch = document.getElementById('edit-user-manager-search');
     const alternateSearch = document.getElementById('edit-user-alternates-search');
     let editingUserId = null;
@@ -240,6 +247,25 @@
     document.getElementById('cancel-edit-user').addEventListener('click', () => {
       editPanel.hidden = true;
     });
+
+    function renderDraftPreview(result) {
+      const draft = result.draft;
+      draftPreviewTitle.textContent = `${result.user.name}'s saved TAR draft`;
+      if (!draft) {
+        draftPreviewContent.innerHTML = '<p class="text-muted">No TAR draft is stored for this account.</p>';
+      } else {
+        const fields = draft.fields || {};
+        draftPreviewContent.innerHTML = `
+          <dt>Saved</dt><dd>${escapeHtml(draft.savedAt ? new Date(draft.savedAt).toLocaleString() : 'Unknown')}</dd>
+          <dt>Project</dt><dd>${escapeHtml(fields.project_name || 'Not entered')}</dd>
+          <dt>Destination</dt><dd>${escapeHtml(fields.itinerary_destination || 'Not entered')}</dd>
+          <dt>Passengers</dt><dd>${draft.passengers?.length || 0}</dd>
+          <dt>Travel segments</dt><dd>${draft.segments?.length || 0}</dd>
+          <dt>Account</dt><dd>${escapeHtml(result.user.email)}</dd>`;
+      }
+      draftPreview.hidden = false;
+      draftPreview.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 
     async function loadUsers() {
       if (currentUser.role !== 'superadmin') return;
@@ -396,6 +422,18 @@
                 }).join('');
               editPanel.hidden = false;
               document.getElementById('edit-user-name').focus();
+            });
+          });
+          tbody.querySelectorAll('.user-draft-button').forEach((button) => {
+            button.addEventListener('click', async () => {
+              button.disabled = true;
+              try {
+                renderDraftPreview(await fetchUserTarDraft(button.dataset.userId));
+              } catch (error) {
+                showToast(error.message || 'Failed to load TAR draft.', 'error');
+              } finally {
+                button.disabled = false;
+              }
             });
           });
           tbody.querySelectorAll('.user-reset-password-button').forEach((button) => {
