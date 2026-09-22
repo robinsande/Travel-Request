@@ -181,6 +181,7 @@
 
       <div class="btn-group">
         <button type="submit" class="btn btn--primary" id="submit-btn">Submit Travel Request</button>
+        <button type="button" class="btn btn--secondary" id="save-draft-btn">Save TAR draft</button>
         <a href="tar-template.html" class="btn btn--secondary">View TAR Template</a>
         <button type="button" class="btn btn--secondary" id="download-template-btn">Download Blank TAR Template</button>
         <a href="requests.html" class="btn btn--ghost">Cancel</a>
@@ -387,6 +388,10 @@
     window.addEventListener('beforeunload', saveDraft);
     window.addEventListener('pagehide', saveDraft);
     document.addEventListener('before-app-logout', saveDraft);
+    document.getElementById('save-draft-btn').addEventListener('click', () => {
+      saveDraft();
+      showToast('TAR draft saved. You can continue it later.', 'success');
+    });
 
     async function loadApprovers(selectedApproverId = '') {
       const excludeIds = [sessionUser.id || sessionUser._id, ...getSelectedPassengerIds(form)];
