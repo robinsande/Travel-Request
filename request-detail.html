@@ -172,6 +172,14 @@
         </section>
 
         <div class="btn-group">
+          <div class="form-group">
+            <label for="scope-documents-resubmit">Scope documents</label>
+            <input type="file" id="scope-documents-resubmit" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png" />
+          </div>
+          <div class="form-group">
+            <label for="supporting-documents-resubmit">Other supporting documents</label>
+            <input type="file" id="supporting-documents-resubmit" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png" />
+          </div>
           <button type="submit" class="btn btn--primary" id="resubmit-btn">Save TAR Changes</button>
         </div>
       </form>
@@ -315,7 +323,7 @@
 
         decisionSection.hidden = !canApproveTravelRequest(currentRequest);
 
-        if (['pending', 'rejected'].includes(currentRequest.status) && isRequester(currentRequest) && canCreateRequests()) {
+        if (['pending', 'rejected'].includes(currentRequest.status) && (isRequester(currentRequest) || user.role === 'superadmin') && canCreateRequests()) {
           resubmitSection.hidden = false;
           await populateRequestForm(resubmitForm, currentRequest);
           initSignaturePad(resubmitForm);
@@ -390,7 +398,14 @@
       if (!confirmAction('Resubmit this travel request for approval?')) return;
 
       try {
-        await withLoading(resubmitBtn, 'Resubmitting…', () => updateRequest(requestId, payload));
+        await withLoading(resubmitBtn, 'Resubmitting…', async () => {
+          await updateRequest(requestId, payload);
+          const scopeFiles = document.getElementById('scope-documents-resubmit').files;
+          const supportingFiles = document.getElementById('supporting-documents-resubmit').files;
+          if (scopeFiles.length || supportingFiles.length) {
+            await uploadRequestAttachments(requestId, scopeFiles, supportingFiles);
+          }
+        });
         showToast('Request resubmitted successfully.', 'success');
         window.location.reload();
       } catch (err) {
