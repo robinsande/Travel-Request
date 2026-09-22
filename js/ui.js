@@ -562,6 +562,8 @@ function getNavItems() {
       { href: 'approvals.html', label: 'All Approvals', id: 'approvals' },
       { href: 'admin-users.html', label: 'Users', id: 'admin-users' }
     );
+  } else if (user.role === 'super_superadmin') {
+    items.push({ href: 'requests.html?scope=all&status=approved', label: 'Approved TARs', id: 'all-requests' });
   } else {
     items.push(
       { href: 'requests.html', label: 'My Travel Requests', id: 'my-requests' }

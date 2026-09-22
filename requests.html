@@ -105,10 +105,14 @@
     const params = new URLSearchParams(window.location.search);
     const scope = params.get('scope') || 'mine';
     const user = getUser();
+    const isReadOnlySuperAdmin = user.role === 'super_superadmin';
     const isTeamView = scope === 'team' && isAdmin();
+    const isAllRequestsViewer = canViewAllRequests();
     const teamType = params.get('type') === 'reimbursement' ? 'reimbursement' : 'travel';
     const isTeamReimbursementView = isTeamView && teamType === 'reimbursement';
-    const requestedStatus = ['pending', 'approved'].includes(params.get('status')) ? params.get('status') : '';
+    const requestedStatus = isReadOnlySuperAdmin
+      ? 'approved'
+      : ['pending', 'approved'].includes(params.get('status')) ? params.get('status') : '';
 
     let activeNav = 'my-requests';
     let pageTitle = 'My Travel Requests';
@@ -116,9 +120,9 @@
     let showNewBtn = canCreateRequests();
     let currentPage = 1;
 
-    if (scope === 'all') {
+    if (scope === 'all' && isAllRequestsViewer) {
       activeNav = 'all-requests';
-      pageTitle = 'All Travel Requests';
+      pageTitle = isReadOnlySuperAdmin ? 'Approved TARs' : 'All Travel Requests';
       showFilters = true;
       showNewBtn = false;
       document.getElementById('page-kicker').textContent = 'SUPER ADMIN DIRECTORY';
@@ -187,7 +191,7 @@
     if (showFilters) {
       filtersBar.hidden = false;
       if (scope === 'all') document.getElementById('all-sort-group').hidden = false;
-      if (scope === 'team' || user.role === 'superadmin') {
+      if (scope === 'team' || isAllRequestsViewer) {
         document.getElementById('filter-email-group').hidden = false;
       }
       if (isTeamReimbursementView) {
@@ -363,7 +367,7 @@
         if (!requests.length) {
           const emptyMsg =
             scope === 'team' ? 'No team travel requests match your filters.'
-            : user.role === 'superadmin' ? 'No travel requests found.'
+            : isAllRequestsViewer ? 'No travel requests found.'
             : 'No travel requests yet.';
           const action =
             showNewBtn ? '<a href="request-new.html" class="btn btn--primary">Create New TAR</a>' : '';
