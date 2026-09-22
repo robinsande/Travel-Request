@@ -214,3 +214,20 @@ async function downloadFile(path, filenameFallback = 'download.pdf') {
     if (typeof endSync === 'function') endSync();
   }
 }
+
+async function viewFile(path) {
+  const viewer = window.open('', '_blank');
+  try {
+    const token = typeof getToken === 'function' ? getToken() : null;
+    const response = await fetch(buildApiUrl(path), {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!response.ok) throw new Error(`Unable to open document (${response.status})`);
+    const blobUrl = URL.createObjectURL(await response.blob());
+    if (viewer) viewer.location = blobUrl;
+    else window.open(blobUrl, '_blank');
+  } catch (error) {
+    viewer?.close();
+    throw error;
+  }
+}

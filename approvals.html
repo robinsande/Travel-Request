@@ -17,6 +17,9 @@
         <p class="page-header__subtitle">Review requests waiting for an authorized decision.</p>
       </div>
     </div>
+    <div class="btn-group" id="superadmin-reminder-actions" hidden>
+      <button type="button" class="btn btn--secondary" id="remind-all-pending-btn">Email reminders for all pending TARs</button>
+    </div>
     <div id="approvals-subnav"></div>
     <p class="text-muted">Assigned admins can approve or reject. Super Admins have a read-only oversight view.</p>
 
@@ -42,6 +45,22 @@
     const loadingEl = document.getElementById('approvals-loading');
     const listEl = document.getElementById('approvals-list');
     const EMPTY_MESSAGE = 'No pending travel request approvals.';
+    const remindAllButton = document.getElementById('remind-all-pending-btn');
+    if (user.role === 'superadmin') {
+      document.getElementById('superadmin-reminder-actions').hidden = false;
+      remindAllButton.addEventListener('click', async () => {
+        if (!confirmAction('Send reminder emails for every pending TAR to its assigned approver?')) return;
+        setLoading(remindAllButton, true, 'Sending…');
+        try {
+          const result = await remindAllPendingApprovers();
+          showToast(`${result.sent} reminder email(s) sent. ${result.skipped} request(s) skipped.`, result.failed ? 'warning' : 'success');
+        } catch (err) {
+          showToast(err.message || 'Failed to send pending TAR reminders.', 'error');
+        } finally {
+          setLoading(remindAllButton, false);
+        }
+      });
+    }
 
     function removeApprovalCard(card) {
       card.remove();

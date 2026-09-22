@@ -276,6 +276,15 @@
             }
           });
         });
+        contentEl.querySelectorAll('.request-attachment-view-btn').forEach((button) => {
+          button.addEventListener('click', async () => {
+            try {
+              await viewRequestAttachment(requestId, button.dataset.attachmentId);
+            } catch (err) {
+              showToast(err.message || 'Failed to open document.', 'error');
+            }
+          });
+        });
         document.getElementById('download-request-preview')?.addEventListener('click', async () => {
           try {
             await fetchTravelRequestPdf(requestId, { preview: true });

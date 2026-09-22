@@ -575,7 +575,7 @@ function renderRequestDetail(request) {
   const renderAttachments = (category, label) => {
     const files = attachments.filter((attachment) => attachment.category === category);
     if (!files.length) return '';
-    return `<div class="detail-section"><h2>${label}</h2><div class="btn-group">${files.map((attachment) => `<button type="button" class="btn btn--secondary btn--sm request-attachment-btn" data-attachment-id="${escapeHtml(String(attachment._id))}" data-attachment-name="${escapeHtml(attachment.originalName)}">${escapeHtml(attachment.originalName)}</button>`).join('')}</div></div>`;
+    return `<div class="detail-section"><h2>${label}</h2><div class="btn-group">${files.map((attachment) => `<span class="attachment-actions"><strong>${escapeHtml(attachment.originalName)}</strong><button type="button" class="btn btn--secondary btn--sm request-attachment-view-btn" data-attachment-id="${escapeHtml(String(attachment._id))}">View</button><button type="button" class="btn btn--ghost btn--sm request-attachment-btn" data-attachment-id="${escapeHtml(String(attachment._id))}" data-attachment-name="${escapeHtml(attachment.originalName)}">Download</button></span>`).join('')}</div></div>`;
   };
 
   return `

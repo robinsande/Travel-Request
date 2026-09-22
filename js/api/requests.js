@@ -37,6 +37,12 @@ async function downloadRequestAttachment(requestId, attachmentId, filename) {
   );
 }
 
+async function viewRequestAttachment(requestId, attachmentId) {
+  return viewFile(
+    `/requests/${encodeURIComponent(requestId)}/attachments/${encodeURIComponent(attachmentId)}?view=true`
+  );
+}
+
 async function updateRequest(id, payload) {
   return api.patch(`/requests/${id}`, payload);
 }
@@ -55,6 +61,10 @@ async function rejectRequest(id, commentOrPayload) {
 
 async function remindApprover(id) {
   return api.post(`/requests/${id}/remind-approver`, {});
+}
+
+async function remindAllPendingApprovers() {
+  return api.post('/requests/remind-pending', {});
 }
 
 async function fetchTravelRequestPdf(id, { preview = false } = {}) {
