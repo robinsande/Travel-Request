@@ -11,3 +11,7 @@ async function markNotificationRead(id) {
 async function markAllNotificationsRead() {
   return api.patch('/notifications/mark-all-read', {});
 }
+
+async function clearNotifications() {
+  return api.delete('/notifications');
+}

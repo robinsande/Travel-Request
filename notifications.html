@@ -14,6 +14,7 @@
       <h1>Notifications</h1>
       <div class="btn-group">
         <button type="button" class="btn btn--secondary btn--sm" id="mark-all-read-btn">Mark all as read</button>
+        <button type="button" class="btn btn--secondary btn--sm" id="clear-history-btn">Clear history</button>
         <button type="button" class="btn btn--secondary btn--sm" id="refresh-btn">Refresh</button>
       </div>
     </div>
@@ -37,6 +38,7 @@
     const loadingEl = document.getElementById('notifications-loading');
     const listEl = document.getElementById('notifications-list');
     const markAllReadBtn = document.getElementById('mark-all-read-btn');
+    const clearHistoryBtn = document.getElementById('clear-history-btn');
 
     async function loadNotifications() {
       showPageLoading(loadingEl);
@@ -103,6 +105,23 @@
         showToast(err.message || 'Failed to mark all as read.', 'error');
       } finally {
         setLoading(markAllReadBtn, false);
+      }
+    });
+
+    clearHistoryBtn.addEventListener('click', async () => {
+      if (!confirmAction('Clear your notification history? This cannot be undone.')) return;
+
+      setLoading(clearHistoryBtn, true, 'Clearing…');
+      try {
+        await clearNotifications();
+        listEl.innerHTML = '';
+        showEmptyState(listEl, 'No notifications.');
+        refreshNotificationBadge();
+        showToast('Notification history cleared.', 'success');
+      } catch (err) {
+        showToast(err.message || 'Failed to clear notification history.', 'error');
+      } finally {
+        setLoading(clearHistoryBtn, false);
       }
     });
 
