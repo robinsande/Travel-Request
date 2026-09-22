@@ -230,6 +230,7 @@
     let approverSelect = null;
     const draftKey = `tar-draft-${sessionUser.id || sessionUser._id || sessionUser.email || 'current-user'}`;
     const defaultsKey = `tar-defaults-${sessionUser.id || sessionUser._id || sessionUser.email || 'current-user'}`;
+    const tarDefaultFields = ['project_name', 'project_businessUnit', 'project_fundCode', 'project_projectId', 'project_departmentId', 'project_activityId', 'employeeOffice'];
     let draftSaveTimer = null;
     let isSubmittingRequest = false;
 
@@ -270,10 +271,9 @@
 
     function saveTarDefaults() {
       const defaults = {};
-      ['project_name', 'project_businessUnit', 'project_fundCode', 'project_projectId', 'project_departmentId', 'project_activityId', 'employeeOffice']
-        .forEach((name) => {
+      tarDefaultFields.forEach((name) => {
           defaults[name] = form.elements[name]?.value?.trim() || '';
-        });
+      });
       localStorage.setItem(defaultsKey, JSON.stringify(defaults));
     }
 
@@ -324,10 +324,9 @@
         const legacyDraft = raw ? JSON.parse(raw) : null;
         if (!legacyDraft?.fields) return;
         const defaults = {};
-        ['project_name', 'project_businessUnit', 'project_fundCode', 'project_projectId', 'project_departmentId', 'project_activityId', 'employeeOffice']
-          .forEach((name) => {
+        tarDefaultFields.forEach((name) => {
             defaults[name] = String(legacyDraft.fields[name] || '').trim();
-          });
+        });
         localStorage.setItem(defaultsKey, JSON.stringify(defaults));
       } catch {
       }
@@ -343,20 +342,12 @@
         if (!draft) return false;
 
         Object.entries(draft.fields || {}).forEach(([name, value]) => {
+          if (!tarDefaultFields.includes(name)) return;
           const element = form.elements[name];
           if (!element) return;
           if (element.type === 'checkbox') element.checked = value === true || value === 'true';
           else element.value = value ?? '';
         });
-
-        travelSegments.innerHTML = '';
-        (draft.segments || []).forEach((segment) => addTravelSegment(segment));
-
-        if (draft.passengers?.length) {
-          passengersList.innerHTML = '';
-          passengerIndex = 0;
-          draft.passengers.forEach((passenger) => addPassengerRow(passengersList, options, passenger));
-        }
 
         return true;
       }
@@ -390,7 +381,7 @@
       const requester = options.find(
         (option) => String(option.value) === String(sessionUser.id || sessionUser._id)
       );
-      if (requester && !restored) {
+      if (requester) {
         const firstRow = passengersList.querySelector('.passenger-row');
         const hidden = firstRow?.querySelector('[data-passenger-user]');
         const input = firstRow?.querySelector('.searchable-select__input');
