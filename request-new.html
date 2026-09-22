@@ -339,9 +339,8 @@
       if (officeInput && !officeInput.value) officeInput.value = sessionUser.office || '';
 
       const options = await initPassengerList(passengersList);
-      const restored = restoreDraft(options);
-      if (!restored) restoreTarDefaults();
-      if (restored) showToast('Your unfinished TAR has been restored.', 'info', 5000);
+      localStorage.removeItem(draftKey);
+      restoreTarDefaults();
       await loadApprovers();
     }
 
