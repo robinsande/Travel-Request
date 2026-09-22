@@ -18,6 +18,14 @@
       </div>
       <a href="request-new.html" class="btn btn--primary" id="new-request-btn" hidden>Create New TAR</a>
     </div>
+    <section class="saved-draft-panel" id="saved-draft-panel" hidden aria-labelledby="saved-draft-heading">
+      <div>
+        <span class="section-kicker">UNFINISHED TAR</span>
+        <h2 id="saved-draft-heading">Saved TAR draft</h2>
+        <p id="saved-draft-summary">Continue filling in your saved travel request before submitting it.</p>
+      </div>
+      <a href="request-new.html" class="btn btn--secondary" id="edit-saved-draft-btn">View and edit draft</a>
+    </section>
     <div id="team-subnav" hidden></div>
     <p class="text-muted" id="page-subtitle">Trips you raised or are listed on as a passenger.</p>
     <nav class="request-status-tabs" id="request-status-tabs" aria-label="My TAR status" hidden>
@@ -96,6 +104,7 @@
     const params = new URLSearchParams(window.location.search);
     const scope = params.get('scope') || 'mine';
     const user = getUser();
+    const draftKey = `tar-draft-${user?.id || user?._id || user?.email || 'current-user'}`;
     const isTeamView = scope === 'team' && isAdmin();
     const teamType = params.get('type') === 'reimbursement' ? 'reimbursement' : 'travel';
     const isTeamReimbursementView = isTeamView && teamType === 'reimbursement';
@@ -155,6 +164,20 @@
 
     const newBtn = document.getElementById('new-request-btn');
     if (newBtn) newBtn.hidden = !showNewBtn;
+
+    const savedDraftPanel = document.getElementById('saved-draft-panel');
+    try {
+      const savedDraft = JSON.parse(localStorage.getItem(draftKey) || 'null');
+      if (savedDraft?.version === 2) {
+        savedDraftPanel.hidden = false;
+        if (savedDraft.savedAt) {
+          document.getElementById('saved-draft-summary').textContent =
+            `Continue your saved travel request from ${new Date(savedDraft.savedAt).toLocaleString()}.`;
+        }
+      }
+    } catch {
+      savedDraftPanel.hidden = true;
+    }
 
     const teamSubnav = document.getElementById('team-subnav');
     if (isTeamView) {

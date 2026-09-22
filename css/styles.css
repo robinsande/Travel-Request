@@ -1623,6 +1623,35 @@ p { margin: 0 0 var(--spacing-md); max-width: 72ch; }
   color: rgba(255, 211, 159, 0.92);
 }
 
+.saved-draft-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-lg);
+  margin: 0 0 var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--color-bg-alt);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+}
+
+.saved-draft-panel h2 {
+  margin: 0.2rem 0 0;
+  font-size: 1.1rem;
+}
+
+.saved-draft-panel p {
+  margin: 0.35rem 0 0;
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 640px) {
+  .saved-draft-panel {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
 .back-link {
   display: inline-block;
   font-size: 0.9rem;

@@ -13,7 +13,7 @@
     <div class="page-header">
       <div>
         <a href="requests.html" class="back-link">← My Travel Requests</a>
-        <h1>New Travel Request</h1>
+        <h1 id="request-form-title">New Travel Request</h1>
       </div>
     </div>
 
@@ -289,7 +289,7 @@
           dateTo: row.querySelector('[data-segment="dateTo"]')?.value || '',
         }));
 
-        localStorage.setItem(draftKey, JSON.stringify({ version: 2, fields, passengers, segments }));
+        localStorage.setItem(draftKey, JSON.stringify({ version: 2, savedAt: new Date().toISOString(), fields, passengers, segments }));
       }
 
     function saveTarDefaults() {
@@ -428,6 +428,7 @@
 
       const options = await initPassengerList(passengersList);
       const restored = restoreDraft(options);
+      if (restored) document.getElementById('request-form-title').textContent = 'Edit Saved TAR Draft';
       if (!restored) {
         migrateLegacyDraftDefaults();
         localStorage.removeItem(draftKey);
