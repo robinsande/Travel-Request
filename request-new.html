@@ -286,6 +286,32 @@
           const element = form.elements[name];
           if (element && !element.value) element.value = value || '';
         });
+        return Object.values(defaults).some((value) => String(value || '').trim());
+      } catch {
+        return false;
+      }
+    }
+
+    async function restoreApprovedTarDefaults() {
+      try {
+        const result = await fetchMyRequests({ status: 'approved', limit: 1 });
+        const approvedTar = unwrapListResult(result)[0];
+        if (!approvedTar) return false;
+        const project = approvedTar.project || {};
+        const defaults = {
+          project_name: project.name || '',
+          project_businessUnit: project.businessUnit || '',
+          project_fundCode: project.fundCode || '',
+          project_projectId: project.projectId || '',
+          project_departmentId: project.departmentId || '',
+          project_activityId: project.activityId || '',
+          employeeOffice: approvedTar.employeeOffice || '',
+        };
+        localStorage.setItem(defaultsKey, JSON.stringify(defaults));
+        Object.entries(defaults).forEach(([name, value]) => {
+          const element = form.elements[name];
+          if (element) element.value = value;
+        });
         return true;
       } catch {
         return false;
@@ -359,23 +385,7 @@
       if (!restored) {
         migrateLegacyDraftDefaults();
         localStorage.removeItem(draftKey);
-        restoreTarDefaults();
-      }
-      const me = options.find(
-        (option) => String(option.value) === String(sessionUser.id || sessionUser._id)
-      );
-      if (me && !restored) {
-        const firstRow = passengersList.querySelector('.passenger-row');
-        const hidden = firstRow?.querySelector('[data-passenger-user]');
-        const input = firstRow?.querySelector('.searchable-select__input');
-        const nameInput = firstRow?.querySelector('[data-passenger-name]');
-        const empInput = firstRow?.querySelector('[data-passenger-employee]');
-        if (hidden && input) {
-          hidden.value = me.value;
-          input.value = me.label;
-          if (nameInput) nameInput.value = me.name || '';
-          if (empInput) empInput.value = me.employeeNumber || '';
-        }
+        if (!restoreTarDefaults()) await restoreApprovedTarDefaults();
       }
       if (restored) showToast('Your unfinished TAR has been restored.', 'info', 5000);
       await loadApprovers();
