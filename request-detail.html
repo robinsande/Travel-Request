@@ -231,10 +231,10 @@
     async function loadApprovers(selectedId) {
       const excludeIds = [user.id || user._id, ...getSelectedPassengerIds(resubmitForm)];
       resubmitApproverSelect = await loadApproverSelect(resubmitApproverContainer, {
-        selectedId,
+        selectedId: Array.isArray(selectedId) ? selectedId[0] : selectedId,
         excludeIds,
-        multiple: true,
-        hiddenInputName: 'selected_approver_ids',
+        multiple: false,
+        hiddenInputName: 'selected_approver_id',
       });
     }
 

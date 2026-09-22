@@ -267,7 +267,7 @@
 
     function saveTarDefaults() {
       const defaults = {};
-      ['project_businessUnit', 'project_fundCode', 'project_projectId', 'project_departmentId', 'employeeOffice']
+      ['project_name', 'project_businessUnit', 'project_fundCode', 'project_projectId', 'project_departmentId', 'project_activityId', 'employeeOffice']
         .forEach((name) => {
           defaults[name] = form.elements[name]?.value?.trim() || '';
         });
@@ -326,9 +326,9 @@
       approverSelect = await loadApproverSelect(approverSelectContainer, {
         errorContainer: errorEl,
         excludeIds,
-        selectedId: Array.from(approverSelect?.selectedOptions || []).map((option) => option.value),
-        multiple: true,
-        hiddenInputName: 'selected_approver_ids',
+        selectedId: approverSelect?.getValue?.() || '',
+        multiple: false,
+        hiddenInputName: 'selected_approver_id',
       });
     }
 
