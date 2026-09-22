@@ -506,6 +506,7 @@
 
       const payload = buildRequestPayload(form);
 
+      if (!requireSelectedApprover(errorEl, payload.selected_approver_id)) return;
       if (!requireSelectedTravelMode(errorEl, payload.modeOfTravel)) return;
 
       if (!payload.passengers.length) {

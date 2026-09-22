@@ -449,7 +449,7 @@ async function loadApproverSelect(container, config = {}) {
     excludeIds = [],
     onLoaded = null,
     multiple = false,
-    autoSelectFirst = true,
+    autoSelectFirst = false,
   } = config;
 
   try {

@@ -370,6 +370,7 @@
 
       const payload = buildRequestPayload(resubmitForm);
 
+      if (!requireSelectedApprover(resubmitError, payload.selected_approver_id)) return;
       if (!requireSelectedTravelMode(resubmitError, payload.modeOfTravel)) return;
 
       if (!payload.passengers.length) {
