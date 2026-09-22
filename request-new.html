@@ -342,12 +342,20 @@
         if (!draft) return false;
 
         Object.entries(draft.fields || {}).forEach(([name, value]) => {
-          if (!tarDefaultFields.includes(name)) return;
           const element = form.elements[name];
           if (!element) return;
           if (element.type === 'checkbox') element.checked = value === true || value === 'true';
           else element.value = value ?? '';
         });
+
+        travelSegments.innerHTML = '';
+        (draft.segments || []).forEach((segment) => addTravelSegment(segment));
+
+        if (draft.passengers?.length) {
+          passengersList.innerHTML = '';
+          passengerIndex = 0;
+          draft.passengers.forEach((passenger) => addPassengerRow(passengersList, options, passenger));
+        }
 
         return true;
       }
@@ -381,7 +389,7 @@
       const requester = options.find(
         (option) => String(option.value) === String(sessionUser.id || sessionUser._id)
       );
-      if (requester) {
+      if (requester && (!restored || !getSelectedPassengerIds(form).length)) {
         const firstRow = passengersList.querySelector('.passenger-row');
         const hidden = firstRow?.querySelector('[data-passenger-user]');
         const input = firstRow?.querySelector('.searchable-select__input');
