@@ -8,6 +8,18 @@ async function updateCurrentUser(profile) {
   return api.patch('/users/me', profile);
 }
 
+async function fetchTarDraft() {
+  return api.get('/users/me/tar-draft');
+}
+
+async function saveTarDraft(draft) {
+  return api.put('/users/me/tar-draft', { draft });
+}
+
+async function deleteTarDraft() {
+  return api.delete('/users/me/tar-draft');
+}
+
 async function fetchAllUsers() {
   return api.get('/users');
 }

@@ -254,10 +254,12 @@
     const defaultsKey = `tar-defaults-${sessionUser.id || sessionUser._id || sessionUser.email || 'current-user'}`;
     const tarDefaultFields = ['project_name', 'project_businessUnit', 'project_fundCode', 'project_projectId', 'project_departmentId', 'project_activityId', 'employeeOffice'];
     let draftSaveTimer = null;
+    let accountDraft = null;
+    let accountDraftLoaded = false;
     let isSubmittingRequest = false;
     let previousApprovedTars = [];
 
-    function readDraft() {
+    function readLegacyDraft() {
         try {
           const raw = localStorage.getItem(draftKey);
           const draft = raw ? JSON.parse(raw) : null;
@@ -266,6 +268,10 @@
           return null;
         }
       }
+
+    function readDraft() {
+      return accountDraft?.version === 2 ? accountDraft : readLegacyDraft();
+    }
 
     function saveDraft() {
         if (isSubmittingRequest) return;
@@ -289,7 +295,9 @@
           dateTo: row.querySelector('[data-segment="dateTo"]')?.value || '',
         }));
 
-        localStorage.setItem(draftKey, JSON.stringify({ version: 2, savedAt: new Date().toISOString(), fields, passengers, segments }));
+        const draft = { version: 2, savedAt: new Date().toISOString(), fields, passengers, segments };
+        accountDraft = draft;
+        return saveTarDraft(draft).then(() => true).catch(() => false);
       }
 
     function saveTarDefaults() {
@@ -388,9 +396,9 @@
     window.addEventListener('beforeunload', saveDraft);
     window.addEventListener('pagehide', saveDraft);
     document.addEventListener('before-app-logout', saveDraft);
-    document.getElementById('save-draft-btn').addEventListener('click', () => {
-      saveDraft();
-      showToast('TAR draft saved. You can continue it later.', 'success');
+    document.getElementById('save-draft-btn').addEventListener('click', async () => {
+      const saved = await saveDraft();
+      showToast(saved ? 'TAR draft saved to your account.' : 'TAR draft could not be saved. Check your connection and try again.', saved ? 'success' : 'error');
     });
 
     async function loadApprovers(selectedApproverId = '') {
@@ -427,11 +435,26 @@
       if (officeInput && !officeInput.value) officeInput.value = sessionUser.office || '';
 
       const options = await initPassengerList(passengersList);
+      try {
+        accountDraft = await fetchTarDraft();
+        accountDraftLoaded = true;
+        if (!accountDraft) {
+          const legacyDraft = readLegacyDraft();
+          if (legacyDraft) {
+            accountDraft = legacyDraft;
+            await saveTarDraft(legacyDraft);
+          }
+          localStorage.removeItem(draftKey);
+        }
+      } catch {
+        accountDraft = null;
+      }
       const restored = restoreDraft(options);
       if (restored) document.getElementById('request-form-title').textContent = 'Edit Saved TAR Draft';
+      if (restored && accountDraftLoaded && !accountDraft) localStorage.removeItem(draftKey);
       if (!restored) {
         migrateLegacyDraftDefaults();
-        localStorage.removeItem(draftKey);
+        if (accountDraftLoaded) localStorage.removeItem(draftKey);
       }
       if (!restoreTarDefaults()) await restoreApprovedTarDefaults();
       const requester = options.find(
@@ -503,6 +526,7 @@
         isSubmittingRequest = true;
         if (draftSaveTimer) clearTimeout(draftSaveTimer);
         localStorage.removeItem(draftKey);
+        await deleteTarDraft().catch(() => {});
         showToast('Travel request submitted successfully.', 'success');
         window.location.href = requestId ? `request-detail.html?id=${encodeURIComponent(requestId)}` : 'requests.html';
       } catch (err) {
