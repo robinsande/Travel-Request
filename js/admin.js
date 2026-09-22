@@ -42,7 +42,7 @@ function renderImportSummary(result, container) {
 }
 
 function renderUserRow(user) {
-  const roles = ['user', 'admin', 'superadmin'];
+  const roles = ['user', 'admin', 'superadmin', 'super_superadmin'];
   const initials = String(user.name || '?')
     .split(/\s+/)
     .filter(Boolean)
@@ -52,7 +52,7 @@ function renderUserRow(user) {
   const roleOptions = roles
     .map(
       (role) =>
-        `<option value="${role}" ${role === user.role ? 'selected' : ''}>${role === 'admin' ? 'Admin / line manager' : role}</option>`
+        `<option value="${role}" ${role === user.role ? 'selected' : ''}>${role === 'admin' ? 'Admin / line manager' : role === 'super_superadmin' ? 'Super super admin (read-only)' : role}</option>`
     )
     .join('');
 
