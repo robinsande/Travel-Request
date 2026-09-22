@@ -43,6 +43,14 @@ async function viewRequestAttachment(requestId, attachmentId) {
   );
 }
 
+async function deleteRequestAttachment(requestId, attachmentId) {
+  return api.delete(`/requests/${encodeURIComponent(requestId)}/attachments/${encodeURIComponent(attachmentId)}`);
+}
+
+async function deleteRequest(requestId) {
+  return api.delete(`/requests/${encodeURIComponent(requestId)}`);
+}
+
 async function updateRequest(id, payload) {
   return api.patch(`/requests/${id}`, payload);
 }

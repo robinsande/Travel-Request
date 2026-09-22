@@ -572,10 +572,11 @@ function renderRequestDetail(request) {
   const status = String(request.status || 'pending').toUpperCase();
   const statusLabel = status === 'APPROVED' ? 'APPROVED' : status === 'REJECTED' ? 'DECLINED' : 'PENDING APPROVAL';
   const attachments = request.attachments || [];
+  const canDelete = getUser()?.role === 'superadmin';
   const renderAttachments = (category, label) => {
     const files = attachments.filter((attachment) => attachment.category === category);
     if (!files.length) return '';
-    return `<div class="detail-section"><h2>${label}</h2><div class="btn-group">${files.map((attachment) => `<span class="attachment-actions"><strong>${escapeHtml(attachment.originalName)}</strong><button type="button" class="btn btn--secondary btn--sm request-attachment-view-btn" data-attachment-id="${escapeHtml(String(attachment._id))}">View</button><button type="button" class="btn btn--ghost btn--sm request-attachment-btn" data-attachment-id="${escapeHtml(String(attachment._id))}" data-attachment-name="${escapeHtml(attachment.originalName)}">Download</button></span>`).join('')}</div></div>`;
+    return `<div class="detail-section"><h2>${label}</h2><div class="btn-group">${files.map((attachment) => `<span class="attachment-actions"><strong>${escapeHtml(attachment.originalName)}</strong><button type="button" class="btn btn--secondary btn--sm request-attachment-view-btn" data-attachment-id="${escapeHtml(String(attachment._id))}">View</button><button type="button" class="btn btn--ghost btn--sm request-attachment-btn" data-attachment-id="${escapeHtml(String(attachment._id))}" data-attachment-name="${escapeHtml(attachment.originalName)}">Download</button>${canDelete ? `<button type="button" class="btn btn--danger btn--sm request-attachment-delete-btn" data-attachment-id="${escapeHtml(String(attachment._id))}">Delete</button>` : ''}</span>`).join('')}</div></div>`;
   };
 
   return `

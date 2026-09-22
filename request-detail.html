@@ -273,6 +273,7 @@
             <button type="button" class="btn btn--secondary" id="download-request-preview">Download Filled TAR Preview</button>
             ${currentRequest.status === 'pending' && isRequester(currentRequest) ? '<button type="button" class="btn btn--secondary" id="remind-approver-btn">Remind Approver</button>' : ''}
             ${canDownloadSignedTar ? '<button type="button" class="btn btn--primary" id="download-request-pdf">Download Signed TAR</button>' : ''}
+            ${user.role === 'superadmin' ? '<button type="button" class="btn btn--danger" id="delete-request-btn">Delete TAR</button>' : ''}
           </div>`;
         contentEl.hidden = false;
         contentEl.querySelectorAll('.request-attachment-btn').forEach((button) => {
@@ -292,6 +293,28 @@
               showToast(err.message || 'Failed to open document.', 'error');
             }
           });
+        });
+        contentEl.querySelectorAll('.request-attachment-delete-btn').forEach((button) => {
+          button.addEventListener('click', async () => {
+            if (!confirmAction('Delete this attachment permanently?')) return;
+            try {
+              await deleteRequestAttachment(requestId, button.dataset.attachmentId);
+              showToast('Attachment deleted.', 'success');
+              await loadRequest();
+            } catch (err) {
+              showToast(err.message || 'Failed to delete attachment.', 'error');
+            }
+          });
+        });
+        document.getElementById('delete-request-btn')?.addEventListener('click', async () => {
+          if (!confirmAction('Delete this TAR and all its attachments permanently?')) return;
+          try {
+            await deleteRequest(requestId);
+            showToast('TAR deleted.', 'success');
+            window.location.href = 'requests.html?scope=all';
+          } catch (err) {
+            showToast(err.message || 'Failed to delete TAR.', 'error');
+          }
         });
         document.getElementById('download-request-preview')?.addEventListener('click', async () => {
           try {
