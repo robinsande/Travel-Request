@@ -221,17 +221,24 @@
         <div class="form-group"><label>Arrival</label><div class="date-input"><input type="text" inputmode="numeric" data-segment="dateFrom" data-date-text placeholder="DD/MM/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}" required value="${escapeHtml(formatDateInput(segment.dateFrom))}" /><button type="button" class="date-input__button" aria-label="Open arrival date picker">&#128197;</button><input type="date" data-date-picker tabindex="-1" aria-hidden="true" /></div></div>
         <div class="form-group"><label>Departure</label><div class="date-input"><input type="text" inputmode="numeric" data-segment="dateTo" data-date-text placeholder="DD/MM/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}" required value="${escapeHtml(formatDateInput(segment.dateTo))}" /><button type="button" class="date-input__button" aria-label="Open departure date picker">&#128197;</button><input type="date" data-date-picker tabindex="-1" aria-hidden="true" /></div></div>
         <button type="button" class="btn btn--danger btn--sm remove-travel-segment">Remove</button>`;
-      row.querySelector('.remove-travel-segment').addEventListener('click', () => row.remove());
+      row.querySelector('.remove-travel-segment').addEventListener('click', () => {
+        row.remove();
+        saveDraft();
+      });
       travelSegments.appendChild(row);
       bindDatePickers(row);
     }
 
-    document.getElementById('add-travel-segment').addEventListener('click', () => addTravelSegment());
+    document.getElementById('add-travel-segment').addEventListener('click', () => {
+      addTravelSegment();
+      saveDraft();
+    });
     document.getElementById('add-passenger').addEventListener('click', async () => {
       const options = await loadPassengerOptions();
       addPassengerRow(passengersList, options);
       passengersList.lastElementChild?.querySelector('.searchable-select__input')?.focus();
       await loadApprovers();
+      saveDraft();
     });
     const downloadTemplateBtn = document.getElementById('download-template-btn');
     const passengersList = document.getElementById('passengers-list');
@@ -378,6 +385,8 @@
     form.addEventListener('input', queueDraftSave);
     form.addEventListener('change', queueDraftSave);
     window.addEventListener('beforeunload', saveDraft);
+    window.addEventListener('pagehide', saveDraft);
+    document.addEventListener('before-app-logout', saveDraft);
 
     async function loadApprovers(selectedApproverId = '') {
       const excludeIds = [sessionUser.id || sessionUser._id, ...getSelectedPassengerIds(form)];

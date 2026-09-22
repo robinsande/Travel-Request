@@ -224,8 +224,10 @@ function addPassengerRow(container, options, pass = null) {
   }
 
   row.querySelector('.passenger-remove').addEventListener('click', () => {
-    if (container.querySelectorAll('.passenger-row').length > 1) row.remove();
-    else showToast('At least one passenger is required.', 'warning');
+    if (container.querySelectorAll('.passenger-row').length > 1) {
+      row.remove();
+      container.dispatchEvent(new Event('change', { bubbles: true }));
+    } else showToast('At least one passenger is required.', 'warning');
   });
 
   return row;

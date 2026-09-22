@@ -24,6 +24,7 @@ function clearAuth() {
 }
 
 function logout() {
+  document.dispatchEvent(new CustomEvent('before-app-logout'));
   clearAuth();
   window.location.replace('./');
 }
