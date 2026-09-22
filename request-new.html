@@ -231,6 +231,7 @@
     const draftKey = `tar-draft-${sessionUser.id || sessionUser._id || sessionUser.email || 'current-user'}`;
     const defaultsKey = `tar-defaults-${sessionUser.id || sessionUser._id || sessionUser.email || 'current-user'}`;
     let draftSaveTimer = null;
+    let isSubmittingRequest = false;
 
     function readDraft() {
         try {
@@ -242,6 +243,7 @@
       }
 
     function saveDraft() {
+        if (isSubmittingRequest) return;
         const fields = {};
         Array.from(form.elements).forEach((element) => {
           if (!element.name || element.name.startsWith('passenger_user_')) return;
@@ -375,6 +377,8 @@
           await uploadRequestAttachments(requestId, scopeFiles, supportingFiles);
         }
         saveTarDefaults();
+        isSubmittingRequest = true;
+        if (draftSaveTimer) clearTimeout(draftSaveTimer);
         localStorage.removeItem(draftKey);
         showToast('Travel request submitted successfully.', 'success');
         window.location.href = requestId ? `request-detail.html?id=${encodeURIComponent(requestId)}` : 'requests.html';
