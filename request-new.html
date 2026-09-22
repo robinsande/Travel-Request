@@ -310,7 +310,7 @@
         localStorage.setItem(defaultsKey, JSON.stringify(defaults));
         Object.entries(defaults).forEach(([name, value]) => {
           const element = form.elements[name];
-          if (element) element.value = value;
+          if (element && !element.value) element.value = value;
         });
         return true;
       } catch {
@@ -385,8 +385,8 @@
       if (!restored) {
         migrateLegacyDraftDefaults();
         localStorage.removeItem(draftKey);
-        if (!restoreTarDefaults()) await restoreApprovedTarDefaults();
       }
+      if (!restoreTarDefaults()) await restoreApprovedTarDefaults();
       const requester = options.find(
         (option) => String(option.value) === String(sessionUser.id || sessionUser._id)
       );
