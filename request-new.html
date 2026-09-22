@@ -22,6 +22,18 @@
       You can include yourself and/or colleagues.
     </p>
 
+    <section class="form-section" aria-labelledby="previous-tar-heading">
+      <h2 id="previous-tar-heading">Start from a previous TAR</h2>
+      <div class="form-group">
+        <label for="previous-tar-select">Previous approved TAR</label>
+        <select id="previous-tar-select" class="form-control">
+          <option value="">Start with a blank TAR</option>
+        </select>
+        <button type="button" class="btn btn--secondary btn--sm" id="load-previous-tar-btn" disabled>Load TAR to edit</button>
+        <p class="form-hint">This copies the selected TAR into a new editable request. The original TAR stays unchanged.</p>
+      </div>
+    </section>
+
     <div id="form-error" class="alert alert--error" hidden role="alert"></div>
 
     <form id="request-form" autocomplete="off" novalidate>
@@ -224,6 +236,8 @@
     const downloadTemplateBtn = document.getElementById('download-template-btn');
     const passengersList = document.getElementById('passengers-list');
     const approverSelectContainer = document.getElementById('approver-select');
+    const previousTarSelect = document.getElementById('previous-tar-select');
+    const loadPreviousTarButton = document.getElementById('load-previous-tar-btn');
     initSignaturePad(form);
     bindDatePickers(form);
     const sessionUser = getUser() || {};
@@ -233,6 +247,7 @@
     const tarDefaultFields = ['project_name', 'project_businessUnit', 'project_fundCode', 'project_projectId', 'project_departmentId', 'project_activityId', 'employeeOffice'];
     let draftSaveTimer = null;
     let isSubmittingRequest = false;
+    let previousApprovedTars = [];
 
     function readDraft() {
         try {
@@ -364,15 +379,33 @@
     form.addEventListener('change', queueDraftSave);
     window.addEventListener('beforeunload', saveDraft);
 
-    async function loadApprovers() {
+    async function loadApprovers(selectedApproverId = '') {
       const excludeIds = [sessionUser.id || sessionUser._id, ...getSelectedPassengerIds(form)];
       approverSelect = await loadApproverSelect(approverSelectContainer, {
         errorContainer: errorEl,
         excludeIds,
-        selectedId: approverSelect?.getValue?.() || '',
+        selectedId: approverSelect?.getValue?.() || selectedApproverId,
         multiple: false,
         hiddenInputName: 'selected_approver_id',
       });
+    }
+
+    async function loadPreviousTars() {
+      try {
+        const result = await fetchMyRequests({ status: 'approved', limit: 100 });
+        previousApprovedTars = unwrapListResult(result).filter((tar) => {
+          const requesterId = tar.requestedBy?._id || tar.requestedBy?.id || tar.requestedBy;
+          return String(requesterId || '') === String(sessionUser.id || sessionUser._id || '');
+        });
+        previousApprovedTars.forEach((tar) => {
+          const option = document.createElement('option');
+          option.value = getRequestId(tar);
+          option.textContent = `${tar.project?.name || 'Unnamed project'} - ${tar.itinerary?.destination || 'No destination'} (${formatDate(tar.createdAt)})`;
+          previousTarSelect.appendChild(option);
+        });
+      } catch {
+        previousTarSelect.disabled = true;
+      }
     }
 
     async function bootstrapForm() {
@@ -403,7 +436,22 @@
         }
       }
       await loadApprovers();
+      await loadPreviousTars();
     }
+
+    previousTarSelect.addEventListener('change', () => {
+      loadPreviousTarButton.disabled = !previousTarSelect.value;
+    });
+
+    loadPreviousTarButton.addEventListener('click', async () => {
+      const previousTar = previousApprovedTars.find((tar) => getRequestId(tar) === previousTarSelect.value);
+      if (!previousTar) return;
+      const options = await loadPassengerOptions();
+      await populateRequestForm(form, previousTar, options);
+      approverSelect = null;
+      await loadApprovers(getSelectedApproverId(previousTar));
+      showToast('Previous TAR loaded. Edit the fields and submit it as a new request.', 'success');
+    });
 
     bootstrapForm();
     downloadTemplateBtn.addEventListener('click', async () => {
