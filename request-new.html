@@ -236,7 +236,8 @@
     function readDraft() {
         try {
           const raw = localStorage.getItem(draftKey);
-          return raw ? JSON.parse(raw) : null;
+          const draft = raw ? JSON.parse(raw) : null;
+          return draft?.version === 2 ? draft : null;
         } catch {
           return null;
         }
@@ -264,7 +265,7 @@
           dateTo: row.querySelector('[data-segment="dateTo"]')?.value || '',
         }));
 
-        localStorage.setItem(draftKey, JSON.stringify({ fields, passengers, segments }));
+        localStorage.setItem(draftKey, JSON.stringify({ version: 2, fields, passengers, segments }));
       }
 
     function saveTarDefaults() {
@@ -288,6 +289,21 @@
         return true;
       } catch {
         return false;
+      }
+    }
+
+    function migrateLegacyDraftDefaults() {
+      try {
+        const raw = localStorage.getItem(draftKey);
+        const legacyDraft = raw ? JSON.parse(raw) : null;
+        if (!legacyDraft?.fields) return;
+        const defaults = {};
+        ['project_name', 'project_businessUnit', 'project_fundCode', 'project_projectId', 'project_departmentId', 'project_activityId', 'employeeOffice']
+          .forEach((name) => {
+            defaults[name] = String(legacyDraft.fields[name] || '').trim();
+          });
+        localStorage.setItem(defaultsKey, JSON.stringify(defaults));
+      } catch {
       }
     }
 
@@ -339,8 +355,29 @@
       if (officeInput && !officeInput.value) officeInput.value = sessionUser.office || '';
 
       const options = await initPassengerList(passengersList);
-      localStorage.removeItem(draftKey);
-      restoreTarDefaults();
+      const restored = restoreDraft(options);
+      if (!restored) {
+        migrateLegacyDraftDefaults();
+        localStorage.removeItem(draftKey);
+        restoreTarDefaults();
+      }
+      const me = options.find(
+        (option) => String(option.value) === String(sessionUser.id || sessionUser._id)
+      );
+      if (me && !restored) {
+        const firstRow = passengersList.querySelector('.passenger-row');
+        const hidden = firstRow?.querySelector('[data-passenger-user]');
+        const input = firstRow?.querySelector('.searchable-select__input');
+        const nameInput = firstRow?.querySelector('[data-passenger-name]');
+        const empInput = firstRow?.querySelector('[data-passenger-employee]');
+        if (hidden && input) {
+          hidden.value = me.value;
+          input.value = me.label;
+          if (nameInput) nameInput.value = me.name || '';
+          if (empInput) empInput.value = me.employeeNumber || '';
+        }
+      }
+      if (restored) showToast('Your unfinished TAR has been restored.', 'info', 5000);
       await loadApprovers();
     }
 
