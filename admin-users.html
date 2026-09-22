@@ -45,7 +45,7 @@
           <div class="form-group"><label for="new-position">Position</label><input id="new-position" /></div>
           <div class="form-group"><label for="new-office">Office</label><input id="new-office" /></div>
           <div class="form-group"><label for="new-department">Department</label><input id="new-department" /></div>
-          <div class="form-group"><label for="new-role">Role</label><select id="new-role"><option value="user">Staff user</option><option value="admin">Admin / line manager / approver</option></select></div>
+          <div class="form-group"><label for="new-role">Role</label><select id="new-role"><option value="user">Staff user</option><option value="admin">Admin / line manager / approver</option><option value="superadmin">Super admin</option><option value="super_superadmin">Super super admin (read-only)</option></select></div>
         </div>
         <button type="submit" class="btn btn--primary create-account-button" id="create-user-btn">Create account</button>
       </form>
@@ -64,6 +64,7 @@
         <div class="role-guide__item"><strong>Staff user</strong><span>Creates and tracks personal TARs.</span></div>
         <div class="role-guide__item"><strong>Admin / approver</strong><span>Reviews, approves, or declines assigned TARs.</span></div>
         <div class="role-guide__item"><strong>Superadmin</strong><span>Manages users, roles, and system access.</span></div>
+        <div class="role-guide__item"><strong>Super super admin</strong><span>Views approved TARs only and receives approved flight TAR emails.</span></div>
       </div>
     </section>
 
