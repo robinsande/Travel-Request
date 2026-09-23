@@ -103,7 +103,7 @@ frontend/
 
 This is a **static** frontend (no CRA/Vite). There is no `REACT_APP_*` or `VITE_*`.
 
-Default API base is set in `frontend/js/config.js` (`http://127.0.0.1:5000/api`).
+Default API base is set in `frontend/js/config.js` (`https://tar-backend.onrender.com/api`).
 
 Overrides (preferred for staging/production):
 
