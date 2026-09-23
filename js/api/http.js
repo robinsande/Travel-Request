@@ -124,6 +124,13 @@ function normalizeOriginForCompare(origin) {
 
 /** Verify backend is reachable (GET /api/health) */
 async function checkBackendConnection(timeoutMs = 8000) {
+  if (backendConnectionPromise) return backendConnectionPromise;
+
+  backendConnectionPromise = checkBackendConnectionInternal(timeoutMs);
+  return backendConnectionPromise;
+}
+
+async function checkBackendConnectionInternal(timeoutMs) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -151,15 +158,21 @@ async function checkBackendConnection(timeoutMs = 8000) {
     return { ok: false, url: CONFIG.API_BASE_URL };
   } finally {
     clearTimeout(timeoutId);
+    backendConnectionPromise = null;
   }
 }
 
 const BACKEND_KEEP_ALIVE_MS = 4 * 60 * 1000;
 let backendKeepAliveTimer;
+let backendConnectionPromise;
 
 function pingBackendKeepAlive() {
   if (document.visibilityState !== 'visible') return;
   checkBackendConnection().catch(() => {});
+}
+
+function waitForBackendWakeUp() {
+  return backendConnectionPromise || Promise.resolve();
 }
 
 function startBackendKeepAlive() {

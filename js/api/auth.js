@@ -7,6 +7,8 @@ function isTransientLoginError(error) {
 }
 
 async function loginRequest(email, password) {
+  await waitForBackendWakeUp();
+
   for (let attempt = 0; attempt <= LOGIN_RETRY_DELAYS_MS.length; attempt += 1) {
     try {
       return await api.post('/auth/login', { email, password });
