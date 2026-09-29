@@ -501,10 +501,21 @@ function initSignaturePad(root) {
       return;
     }
     const reader = new FileReader();
+    reader.onerror = () => {
+      showToast('Failed to read the signature image file. Please try another file.', 'error');
+      upload.value = '';
+    };
     reader.onload = () => {
       const image = new Image();
+      image.onerror = () => {
+        showToast('Could not decode the signature image. Please try another format (PNG, JPG, GIF).', 'error');
+        upload.value = '';
+      };
       image.onload = () => {
         context.clearRect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = '#000000';
         const scale = Math.min(canvas.width / image.width, canvas.height / image.height);
         const width = image.width * scale;
         const height = image.height * scale;
@@ -557,9 +568,14 @@ function renderRequestDetail(request) {
     const isFilled = value != null && value !== '' && text !== '—' && text !== 'No signature captured';
     return `<span class="${isFilled ? 'tar-preview__filled-value' : 'tar-preview__blank-value'}">${escapeHtml(text)}</span>`;
   };
-  const signatureCell = (signature, label) => signature
-    ? `<img class="tar-preview__signature" src="${signature}" alt="${escapeHtml(label)}" />`
-    : '<span class="tar-preview__missing">No signature captured</span>';
+  const signatureCell = (signature, label) => {
+    if (!signature) return '<span class="tar-preview__missing">No signature captured</span>';
+    const sigStr = String(signature);
+    const isImage = sigStr.startsWith('data:image/') || sigStr.startsWith('http') || sigStr.startsWith('/');
+    return isImage
+      ? `<img class="tar-preview__signature" src="${signature}" alt="${escapeHtml(label)}" />`
+      : `<div class="tar-preview__signature tar-preview__signature--text" style="font-family: 'Segoe Script', 'Brush Script MT', cursive; font-size: 18px; color: #0000ff; padding: 4px 0;">${escapeHtml(sigStr)}</div>`;
+  };
   const passengerNames = passengers.map((passenger) => passenger.name).join(', ') || requester;
   const passengerNumbers = passengers.map((passenger) => passenger.employeeNumber).join(', ') || '—';
   const mode = request.modeOfTravel || {};
