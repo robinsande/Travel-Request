@@ -55,12 +55,50 @@
   <script src="js/ui.js"></script>
   <script>
     redirectIfAuthenticated();
-    showBackendConnectionStatus('backend-status');
 
     const form = document.getElementById('login-form');
     const errorEl = document.getElementById('login-error');
+    const backendStatusEl = document.getElementById('backend-status');
     const loginBtn = document.getElementById('login-btn');
     const bgVideo = document.querySelector('.auth-bg-video');
+
+    let backendWarmPromise = null;
+    let backendWarmStatus = { ok: false, warming: false };
+
+    async function warmBackendWithStatus() {
+      if (backendWarmPromise) return backendWarmPromise;
+      backendWarmStatus.warming = true;
+
+      backendStatusEl.hidden = false;
+      backendStatusEl.className = 'alert alert--info';
+      backendStatusEl.innerHTML = `
+        <strong>Checking connection to the travel request service…</strong>
+        <p style="margin:0.4rem 0 0;font-size:0.85rem;">If this is the first visit in a while, the service may need a moment to wake up. This usually takes 10–30 seconds.</p>
+      `;
+
+      backendWarmPromise = (async () => {
+        for (let attempt = 0; attempt < 6; attempt += 1) {
+          try {
+            const result = await checkBackendConnection(attempt === 0 ? 12000 : 8000);
+            if (result.ok) {
+              backendWarmStatus.ok = true;
+              backendStatusEl.hidden = true;
+              backendWarmStatus.warming = false;
+              return result;
+            }
+          } catch {}
+          await new Promise((resolve) => setTimeout(resolve, attempt === 0 ? 4000 : 2500));
+        }
+
+        backendWarmStatus.warming = false;
+        showBackendConnectionStatus('backend-status');
+        return null;
+      })();
+
+      return backendWarmPromise;
+    }
+
+    warmBackendWithStatus();
 
     const enableVideoAudio = () => {
       if (!bgVideo) return;
@@ -71,6 +109,12 @@
 
     document.addEventListener('pointerdown', enableVideoAudio, { once: true });
     document.addEventListener('keydown', enableVideoAudio, { once: true });
+
+    function getLoginLoadingLabel(elapsedMs) {
+      if (elapsedMs < 12000) return 'Signing in…';
+      if (elapsedMs < 25000) return 'Signing in… (service is waking up)';
+      return 'Signing in… (almost ready)';
+    }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -86,10 +130,28 @@
         return;
       }
 
-      setLoading(loginBtn, true, 'Signing in…');
+      if (backendWarmStatus.warming) {
+        backendStatusEl.hidden = false;
+        backendStatusEl.className = 'alert alert--info';
+        backendStatusEl.innerHTML = `
+          <strong>Still connecting to the service…</strong>
+          <p style="margin:0.4rem 0 0;font-size:0.85rem;">Your sign-in will begin automatically in a moment. Please wait.</p>
+        `;
+        try { await backendWarmPromise; } catch {}
+      }
+
+      const loadingUpdateTimer = setInterval(() => {
+        const elapsed = performance.now() - submitStartedAt;
+        if (loginBtn.classList.contains('is-loading')) {
+          loginBtn.textContent = getLoginLoadingLabel(elapsed);
+        }
+      }, 2500);
+
+      setLoading(loginBtn, true, getLoginLoadingLabel(0));
 
       try {
         const result = await login(email, password);
+        clearInterval(loadingUpdateTimer);
         performance.mark('login-session-stored');
         performance.measure('login-submit-to-session', 'login-submit', 'login-session-stored');
         console.info(`[timing] login submit-to-session=${(performance.now() - submitStartedAt).toFixed(1)}ms`);
@@ -97,10 +159,22 @@
         performance.mark('login-redirect');
         performance.measure('login-submit-to-redirect', 'login-submit', 'login-redirect');
         console.info(`[timing] login submit-to-redirect=${(performance.now() - submitStartedAt).toFixed(1)}ms`);
-        window.location.replace(result.user?.mustSetPassword ? 'profile.html' : 'dashboard.html');
+        const redirectTarget = result.user?.mustSetPassword ? 'profile.html' : 'dashboard.html';
+        loginBtn.textContent = 'Signed in — redirecting…';
+        window.location.replace(redirectTarget);
       } catch (err) {
+        clearInterval(loadingUpdateTimer);
+        if (err?.body?.timeout || err?.status === 408 || err?.status === 502 || err?.status === 503 || err?.status === 0) {
+          backendStatusEl.hidden = false;
+          backendStatusEl.className = 'alert alert--warning';
+          backendStatusEl.innerHTML = `
+            <strong>The service took too long to respond.</strong>
+            <p style="margin:0.4rem 0 0;font-size:0.85rem;">This usually happens when it has been idle. Click <strong>Sign In</strong> again — it should be much faster the second time.</p>
+          `;
+        }
         renderApiErrors(errorEl, err);
       } finally {
+        clearInterval(loadingUpdateTimer);
         setLoading(loginBtn, false);
       }
     });

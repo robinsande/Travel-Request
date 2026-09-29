@@ -129,6 +129,7 @@ function formatCurrency(amount, currency = 'KSH') {
 function renderApiErrors(container, error) {
   if (!container) return;
 
+  clearPageLoading(container);
   container.hidden = true;
   container.innerHTML = '';
 
@@ -348,6 +349,7 @@ async function showBackendConnectionStatus(containerId) {
 }
 
 function showEmptyState(container, message, actionHtml = '') {
+  clearPageLoading(container);
   container.innerHTML = `
     <div class="empty-state">
       <p>${escapeHtml(message)}</p>
@@ -356,15 +358,59 @@ function showEmptyState(container, message, actionHtml = '') {
   `;
 }
 
-function showPageLoading(container, message = 'Loading…') {
+const PAGE_LOADING_TIMEOUT_MS = 20_000;
+const pageLoadingTimers = new WeakMap();
+
+function clearPageLoadingTimer(container) {
+  const existing = pageLoadingTimers.get(container);
+  if (existing) {
+    clearTimeout(existing);
+    pageLoadingTimers.delete(container);
+  }
+}
+
+function showPageLoading(container, message = 'Loading…', options = {}) {
+  clearPageLoadingTimer(container);
+  const slowAfterMs = options.slowAfterMs || PAGE_LOADING_TIMEOUT_MS;
+  const retryAction = options.retryAction;
+  const retryLabel = options.retryLabel || 'Try again';
+
   container.innerHTML = `
-    <div class="page-loading" role="status" aria-live="polite">
+    <div class="page-loading" role="status" aria-live="polite" data-loading-state="loading">
       <span class="page-loading__orb" aria-hidden="true"><span></span></span>
       <div class="page-loading__copy">
-        <strong>${escapeHtml(message)}</strong>
-        <span>Securing the latest information</span>
+        <strong class="page-loading__title">${escapeHtml(message)}</strong>
+        <span class="page-loading__subtitle">Securing the latest information</span>
+        <div class="page-loading__slow" hidden>
+          <p>This is taking longer than expected. The service may be waking up from idle.</p>
+          ${retryAction ? `<button type="button" class="btn btn--secondary btn--sm page-loading__retry" style="margin-top:0.75rem;">${escapeHtml(retryLabel)}</button>` : ''}
+        </div>
       </div>
     </div>`;
+
+  const slowEl = container.querySelector('.page-loading__slow');
+  const retryBtn = container.querySelector('.page-loading__retry');
+  if (retryBtn && typeof retryAction === 'function') {
+    retryBtn.addEventListener('click', () => {
+      clearPageLoadingTimer(container);
+      try { retryAction(); } catch (e) { console.error(e); }
+    });
+  }
+
+  const timer = setTimeout(() => {
+    if (slowEl) {
+      slowEl.hidden = false;
+      const titleEl = container.querySelector('.page-loading__title');
+      if (titleEl) titleEl.textContent = `${message} (still loading…)`;
+      const stateEl = container.querySelector('[data-loading-state]');
+      if (stateEl) stateEl.setAttribute('data-loading-state', 'slow');
+    }
+  }, slowAfterMs);
+  pageLoadingTimers.set(container, timer);
+}
+
+function clearPageLoading(container) {
+  clearPageLoadingTimer(container);
 }
 
 function initProtectedPage(activeNav, contentSelector = '#page-content') {

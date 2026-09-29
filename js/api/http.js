@@ -12,6 +12,11 @@ const ApiError = class extends Error {
   }
 };
 
+const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
+const AUTH_REQUEST_TIMEOUT_MS = 45_000;
+const DEFAULT_RETRY_DELAY_MS = 1200;
+const MAX_RETRY_ATTEMPTS = 2;
+
 function buildApiUrl(path) {
   const base = CONFIG.API_BASE_URL.replace(/\/+$/, '');
   const route = path.startsWith('/') ? path : `/${path}`;
@@ -20,6 +25,18 @@ function buildApiUrl(path) {
 
 function isPublicAuthPath(path) {
   return PUBLIC_AUTH_PATHS.some((p) => path === p || path.startsWith(`${p}?`));
+}
+
+function isRetryableError(status, attempt) {
+  if (attempt >= MAX_RETRY_ATTEMPTS) return false;
+  if (status === 0) return true;
+  if (status === 408 || status === 425 || status === 429) return true;
+  if (status >= 500 && status <= 504) return true;
+  return false;
+}
+
+function sleepMs(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /** Detect if we're in a flat HTML page context */
@@ -35,68 +52,127 @@ function redirectToLogin() {
 
 async function performApiRequest(path, options = {}) {
   const requestStartedAt = performance.now();
-  console.info(`[timing] ${path} start`);
-  const url = buildApiUrl(path);
-  const headers = { ...(options.headers || {}) };
+  const method = (options.method || 'GET').toUpperCase();
+  const timeoutMs = isPublicAuthPath(path) ? AUTH_REQUEST_TIMEOUT_MS : DEFAULT_REQUEST_TIMEOUT_MS;
 
-  const token = typeof getToken === 'function' ? getToken() : null;
-  if (token && !headers.Authorization) {
-    headers.Authorization = `Bearer ${token}`;
-  }
+  let lastError = null;
+  let lastStatus = 0;
 
-  if (options.body && !(options.body instanceof FormData)) {
-    headers['Content-Type'] = 'application/json';
-    options.body = JSON.stringify(options.body);
-  }
+  for (let attempt = 0; attempt <= MAX_RETRY_ATTEMPTS; attempt += 1) {
+    const attemptStartedAt = performance.now();
+    const attemptLabel = attempt > 0 ? ` retry#${attempt}` : '';
+    console.info(`[timing] ${path}${attemptLabel} start (timeout=${timeoutMs}ms)`);
 
-  let response;
-  try {
-    response = await fetch(url, { ...options, headers });
-  } catch {
-    console.info(`[timing] ${path} network failed after ${(performance.now() - requestStartedAt).toFixed(1)}ms`);
-    throw new ApiError(
-      `Cannot reach the API at ${CONFIG.API_BASE_URL}. Start the backend (npm start in care-travel-request-backend) and refresh.`,
-      0,
-      { network: true }
-    );
-  }
+    const url = buildApiUrl(path);
+    const headers = { ...(options.headers || {}) };
 
-  if (response.status === 401 && !isPublicAuthPath(path)) {
-    redirectToLogin();
-    throw new ApiError('Session expired. Please log in again.', 401);
-  }
-
-  const contentType = response.headers.get('content-type') || '';
-  let body = null;
-  if (contentType.includes('application/json')) {
-    body = await response.json();
-  } else if (response.status !== 204) {
-    body = await response.text();
-  }
-
-  if (!response.ok) {
-    const message =
-      (body && body.message) ||
-      (typeof body === 'string' ? body : null) ||
-      `Request failed (${response.status})`;
-
-    if (response.status === 404 && message === 'Route not found') {
-      throw new ApiError(
-        `${message} — requested ${url}. Check that API_BASE_URL in js/config.js ends with /api and the backend is running.`,
-        response.status,
-        body
-      );
+    const token = typeof getToken === 'function' ? getToken() : null;
+    if (token && !headers.Authorization) {
+      headers.Authorization = `Bearer ${token}`;
     }
 
-    throw new ApiError(message, response.status, body);
+    if (options.body && !(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+      options.body = JSON.stringify(options.body);
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    let response;
+    let wasTimeout = false;
+    try {
+      response = await fetch(url, { ...options, headers, signal: controller.signal });
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      wasTimeout = fetchError?.name === 'AbortError';
+      const elapsedMs = (performance.now() - attemptStartedAt).toFixed(1);
+      console.info(`[timing] ${path}${attemptLabel} ${wasTimeout ? 'timed out' : 'network failed'} after ${elapsedMs}ms`);
+
+      const status = wasTimeout ? 408 : 0;
+      lastStatus = status;
+      lastError = wasTimeout
+        ? new ApiError(
+            `Request took too long (${Math.round(timeoutMs / 1000)}s). The service may be waking up — please retry in a moment.`,
+            status,
+            { network: true, timeout: true }
+          )
+        : new ApiError(
+            `Cannot reach the API at ${CONFIG.API_BASE_URL}. Check that the backend is running and refresh, or retry in a moment.`,
+            status,
+            { network: true }
+          );
+
+      if (isRetryableError(status, attempt)) {
+        const retryDelay = DEFAULT_RETRY_DELAY_MS * (attempt + 1);
+        console.info(`[timing] ${path}${attemptLabel} will retry in ${retryDelay}ms`);
+        await sleepMs(retryDelay);
+        continue;
+      }
+      throw lastError;
+    }
+
+    clearTimeout(timeoutId);
+
+    if (response.status === 401 && !isPublicAuthPath(path)) {
+      redirectToLogin();
+      throw new ApiError('Session expired. Please log in again.', 401);
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    let body = null;
+    try {
+      if (contentType.includes('application/json')) {
+        body = await response.json();
+      } else if (response.status !== 204) {
+        body = await response.text();
+      }
+    } catch (parseError) {
+      lastStatus = response.status;
+      lastError = new ApiError(`Server returned an unreadable response (${response.status}). Please retry.`, response.status);
+      if (isRetryableError(response.status, attempt)) {
+        await sleepMs(DEFAULT_RETRY_DELAY_MS * (attempt + 1));
+        continue;
+      }
+      throw lastError;
+    }
+
+    if (!response.ok) {
+      const message =
+        (body && body.message) ||
+        (typeof body === 'string' ? body : null) ||
+        `Request failed (${response.status})`;
+
+      lastStatus = response.status;
+
+      if (response.status === 404 && message === 'Route not found') {
+        throw new ApiError(
+          `${message} — requested ${url}. Check that API_BASE_URL in js/config.js ends with /api and the backend is running.`,
+          response.status,
+          body
+        );
+      }
+
+      lastError = new ApiError(message, response.status, body);
+      if (isRetryableError(response.status, attempt) && method !== 'POST') {
+        console.info(`[timing] ${path}${attemptLabel} status=${response.status}; retrying`);
+        await sleepMs(DEFAULT_RETRY_DELAY_MS * (attempt + 1));
+        continue;
+      }
+      throw lastError;
+    }
+
+    const serverTiming = response.headers.get('server-timing');
+    const totalMs = (performance.now() - requestStartedAt).toFixed(1);
+    const attemptMs = (performance.now() - attemptStartedAt).toFixed(1);
+    console.info(
+      `[timing] ${path}${attemptLabel} attempt=${attemptMs}ms total=${totalMs}ms${serverTiming ? ` server=${serverTiming}` : ''}`
+    );
+
+    return body;
   }
 
-  const serverTiming = response.headers.get('server-timing');
-  console.info(
-    `[timing] ${path} client=${(performance.now() - requestStartedAt).toFixed(1)}ms${serverTiming ? ` server=${serverTiming}` : ''}`
-  );
-
-  return body;
+  throw lastError || new ApiError(`Request failed after ${MAX_RETRY_ATTEMPTS + 1} attempts`, lastStatus || 0);
 }
 
 async function apiRequest(path, options = {}) {
