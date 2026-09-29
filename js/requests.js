@@ -316,7 +316,7 @@ function renderTravelDecisionButtons(requestId) {
     <div class="form-group approval-signature-field">
       <label>Approver Signature</label>
       <canvas class="signature-pad" width="520" height="150" aria-label="Draw approver signature"></canvas>
-      <input type="file" class="signature-upload" accept="image/*" />
+      <input type="file" class="signature-upload" accept="image/*,.svg,.pdf,application/pdf,image/svg+xml" />
       <input type="text" class="signature-text-input" placeholder="Or type your full name as a digital signature" autocomplete="off" />
       <input type="hidden" class="signature-value approval-signature" />
       <button type="button" class="btn btn--ghost btn--sm clear-signature-btn">Clear signature</button>
@@ -495,20 +495,56 @@ function initSignaturePad(root) {
   upload?.addEventListener('change', () => {
     const file = upload.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      showToast('Please select an image file for the signature.', 'warning');
+    const isImage = file.type && file.type.startsWith('image/');
+    const isSvg = /(\.svg$|image\/svg\+xml|application\/svg)/i.test(file.name + '|' + (file.type || ''));
+    const isPdf = /(\.pdf$|application\/pdf)/i.test(file.name + '|' + (file.type || ''));
+    if (!isImage && !isSvg && !isPdf) {
+      showToast('Please upload a signature file (PNG, JPG, GIF, SVG, or PDF).', 'warning');
       upload.value = '';
       return;
     }
     const reader = new FileReader();
     reader.onerror = () => {
-      showToast('Failed to read the signature image file. Please try another file.', 'error');
+      showToast('Failed to read the signature file. Please try another file.', 'error');
       upload.value = '';
     };
     reader.onload = () => {
+      const dataUrl = String(reader.result || '');
+      if (isSvg || isPdf || dataUrl.startsWith('data:image/svg+xml') || dataUrl.startsWith('data:application/pdf') || dataUrl.startsWith('data:application/octet-stream')) {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = '#000000';
+        const image = new Image();
+        image.onerror = () => {
+          hasSignature = true;
+          if (textInput) textInput.value = '';
+          if (valueInput) valueInput.value = dataUrl;
+          context.font = "16px 'Segoe Script', 'Brush Script MT', cursive";
+          context.textAlign = 'center';
+          context.textBaseline = 'middle';
+          context.fillStyle = '#0000ff';
+          context.fillText('[Signature uploaded – stored as file]', canvas.width / 2, canvas.height / 2);
+        };
+        image.onload = () => {
+          const scale = Math.min(canvas.width / image.width, canvas.height / image.height);
+          const width = image.width * scale;
+          const height = image.height * scale;
+          context.drawImage(image, (canvas.width - width) / 2, (canvas.height - height) / 2, width, height);
+          hasSignature = true;
+          if (textInput) textInput.value = '';
+          if (valueInput) valueInput.value = canvas.toDataURL('image/png');
+        };
+        if (isSvg || dataUrl.startsWith('data:image/svg+xml')) {
+          image.src = dataUrl;
+        } else {
+          image.onerror();
+        }
+        return;
+      }
       const image = new Image();
       image.onerror = () => {
-        showToast('Could not decode the signature image. Please try another format (PNG, JPG, GIF).', 'error');
+        showToast('Could not decode the signature image. Please try another format (PNG, JPG, GIF, SVG, PDF).', 'error');
         upload.value = '';
       };
       image.onload = () => {
@@ -524,7 +560,7 @@ function initSignaturePad(root) {
         if (textInput) textInput.value = '';
         if (valueInput) valueInput.value = canvas.toDataURL('image/png');
       };
-      image.src = reader.result;
+      image.src = dataUrl;
     };
     reader.readAsDataURL(file);
   });
@@ -571,9 +607,19 @@ function renderRequestDetail(request) {
   const signatureCell = (signature, label) => {
     if (!signature) return '<span class="tar-preview__missing">No signature captured</span>';
     const sigStr = String(signature);
-    const isImage = sigStr.startsWith('data:image/') || sigStr.startsWith('http') || sigStr.startsWith('/');
+    const startsWithDataUrl = sigStr.startsWith('data:');
+    const startsWithHttp = sigStr.startsWith('http://') || sigStr.startsWith('https://') || sigStr.startsWith('/');
+    const isSvgOrImageData =
+      startsWithDataUrl &&
+      (sigStr.startsWith('data:image/') ||
+        sigStr.startsWith('data:application/pdf') ||
+        sigStr.startsWith('data:application/octet-stream') ||
+        sigStr.startsWith('data:;base64,'));
+    const looksLikeLongBlob = !startsWithDataUrl && !startsWithHttp && sigStr.length >= 500;
+    const isImage = startsWithHttp || isSvgOrImageData || looksLikeLongBlob;
+    const imageSrc = looksLikeLongBlob ? `data:image/png;base64,${sigStr.replace(/\s+/g, '')}` : signature;
     return isImage
-      ? `<img class="tar-preview__signature" src="${signature}" alt="${escapeHtml(label)}" />`
+      ? `<img class="tar-preview__signature" src="${imageSrc}" alt="${escapeHtml(label)}" onerror="this.style.display='none';const s=document.createElement('div');s.className='tar-preview__signature tar-preview__signature--text';s.style.fontFamily=&quot;'Segoe Script', 'Brush Script MT', cursive&quot;;s.style.fontSize='18px';s.style.color='#0000ff';s.style.padding='4px 0';s.textContent=this.alt && this.alt.length < 120 ? this.alt : '[Signature on file]';this.parentNode.replaceChild(s,this);" />`
       : `<div class="tar-preview__signature tar-preview__signature--text" style="font-family: 'Segoe Script', 'Brush Script MT', cursive; font-size: 18px; color: #0000ff; padding: 4px 0;">${escapeHtml(sigStr)}</div>`;
   };
   const passengerNames = passengers.map((passenger) => passenger.name).join(', ') || requester;
