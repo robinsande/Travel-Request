@@ -627,3 +627,117 @@ function renderRequestDetail(request) {
       ${renderAttachments('supporting', 'Other Supporting Documents')}
     </div>`;
 }
+
+function getSelectedApproverId(request) {
+  if (!request) return '';
+  const first = (request.selected_approver_ids || [])[0];
+  const direct = request.selected_approver_id;
+  const id = first?._id || first?.id || first || direct?._id || direct?.id || direct || '';
+  return String(id || '');
+}
+
+function renderRerouteApprovalButton(request, options = {}) {
+  const user = getUser();
+  if (user?.role !== 'superadmin') return '';
+  if (String(request.status || '').toLowerCase() !== 'pending') return '';
+  return `<button type="button" class="btn btn--secondary btn--sm ${options.extraClass || ''}" data-reroute-request="${escapeHtml(getRequestId(request))}">Re-route Approval</button>`;
+}
+
+function bindRerouteApprovalActions(root, { onSuccess = null } = {}) {
+  root.querySelectorAll('[data-reroute-request]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const requestId = button.dataset.rerouteRequest;
+      const ok = await openRerouteApprovalModal(requestId, root);
+      if (ok && typeof onSuccess === 'function') onSuccess(button, requestId);
+    });
+  });
+}
+
+function openRerouteApprovalModal(requestId, scope = document) {
+  return new Promise((resolve) => {
+    const modalId = `reroute-modal-${Math.random().toString(36).slice(2, 10)}`;
+    const existing = scope.querySelector('.reroute-modal');
+    if (existing) existing.remove();
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop reroute-modal';
+    backdrop.innerHTML = `
+      <div class="modal" style="max-width: 560px;" role="dialog" aria-modal="true" aria-labelledby="${modalId}-title">
+        <header class="modal__header">
+          <h2 id="${modalId}-title">Re-route Approval to Another Approver</h2>
+          <button type="button" class="btn btn--ghost btn--sm modal__close" aria-label="Close">&times;</button>
+        </header>
+        <div class="modal__body">
+          <div id="${modalId}-error" class="alert alert--error" hidden role="alert"></div>
+          <div class="form-group">
+            <label for="${modalId}-approver">Select New Approver</label>
+            <div id="${modalId}-approver-select"></div>
+          </div>
+          <div class="form-group">
+            <label for="${modalId}-comment">Comment (optional)</label>
+            <textarea id="${modalId}-comment" rows="3" placeholder="Reason for re-routing this approval…"></textarea>
+          </div>
+          <p class="form-hint">The new approver will receive an email notification about this reassignment.</p>
+        </div>
+        <footer class="modal__footer">
+          <button type="button" class="btn btn--ghost modal__cancel">Cancel</button>
+          <button type="button" class="btn btn--primary modal__confirm">Re-route Approval</button>
+        </footer>
+      </div>`;
+    document.body.appendChild(backdrop);
+
+    let approverSelect = null;
+    let destroyed = false;
+
+    function destroy() {
+      if (destroyed) return;
+      destroyed = true;
+      backdrop.remove();
+    }
+
+    async function confirm() {
+      if (destroyed) return;
+      const newApproverId = approverSelect?.getValue?.() || '';
+      if (!newApproverId) {
+        const err = document.getElementById(`${modalId}-error`);
+        renderApiErrors(err, { message: 'Please select a new approver.' });
+        return;
+      }
+      const comment = document.getElementById(`${modalId}-comment`).value.trim();
+      const confirmBtn = backdrop.querySelector('.modal__confirm');
+      setLoading(confirmBtn, true, 'Re-routing…');
+      try {
+        await rerouteApproval(requestId, newApproverId, comment || undefined);
+        showToast('Approval re-routed to the new approver.', 'success');
+        if (typeof refreshApprovalBadges === 'function') refreshApprovalBadges();
+        destroy();
+        resolve(true);
+      } catch (err) {
+        const errEl = document.getElementById(`${modalId}-error`);
+        renderApiErrors(errEl, err);
+      } finally {
+        setLoading(confirmBtn, false);
+      }
+    }
+
+    (async () => {
+      try {
+        approverSelect = await loadApproverSelect(document.getElementById(`${modalId}-approver-select`), {
+          placeholder: 'Search for the new approver…',
+          hiddenInputName: 'reroute_new_approver_id',
+        });
+        approverSelect?.getInput?.()?.focus();
+      } catch (err) {
+        const errEl = document.getElementById(`${modalId}-error`);
+        renderApiErrors(errEl, err);
+      }
+    })();
+
+    backdrop.querySelector('.modal__close').addEventListener('click', () => { destroy(); resolve(false); });
+    backdrop.querySelector('.modal__cancel').addEventListener('click', () => { destroy(); resolve(false); });
+    backdrop.querySelector('.modal__confirm').addEventListener('click', confirm);
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) { destroy(); resolve(false); }
+    });
+  });
+}

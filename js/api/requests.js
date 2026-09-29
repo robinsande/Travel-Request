@@ -75,6 +75,12 @@ async function remindAllPendingApprovers() {
   return api.post('/requests/remind-pending', {});
 }
 
+async function rerouteApproval(requestId, newApproverId, comment) {
+  const payload = { newApproverId };
+  if (comment) payload.comment = comment;
+  return api.patch(`/requests/${encodeURIComponent(requestId)}/reroute-approval`, payload);
+}
+
 async function fetchTravelRequestPdf(id, { preview = false } = {}) {
   const query = preview ? '?preview=true' : '';
   const filename = preview ? `travel-request-${id}-preview.pdf` : `travel-request-${id}.pdf`;

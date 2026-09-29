@@ -91,6 +91,24 @@
               onSuccess: (card) => removeApprovalCard(card),
             });
           }
+          if (user.role === 'superadmin') {
+            listEl.querySelectorAll('.request-card, .approval-card').forEach((card) => {
+              const reqId = card.dataset.requestId;
+              const request = requests.find((r) => (r._id || r.id || '').toString() === reqId);
+              if (request && renderRerouteApprovalButton(request, { extraClass: '' })) {
+                const actionEl = card.querySelector('.detail-actions, .request-card__header, .approval-card__header');
+                const btnHtml = `<div style="margin-top: 8px;">${renderRerouteApprovalButton(request)}</div>`;
+                if (card.classList.contains('approval-card')) {
+                  card.insertAdjacentHTML('beforeend', btnHtml);
+                } else {
+                  card.insertAdjacentHTML('beforeend', btnHtml);
+                }
+              }
+            });
+            bindRerouteApprovalActions(listEl, {
+              onSuccess: () => loadApprovals(),
+            });
+          }
         }
         if (typeof refreshApprovalBadges === 'function') refreshApprovalBadges();
       } catch (err) {

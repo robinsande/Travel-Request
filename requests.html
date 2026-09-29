@@ -387,6 +387,30 @@
                 removeListCard(card, 'No team travel requests match your filters.', listEl),
             });
           }
+
+          if ((scope === 'all' && isAllRequestsViewer) || user.role === 'superadmin' || user.role === 'super_superadmin') {
+            listEl.querySelectorAll('.request-card, .approval-card').forEach((card) => {
+              const reqId = card.dataset.requestId;
+              const request = requests.find((r) =>
+                (r._id || r.id || '').toString() === (reqId || card.href?.split('id=')?.[1])
+              );
+              if (!request && card.href) {
+                const url = new URL(card.href, window.location.href);
+                const idFromUrl = url.searchParams.get('id');
+                const found = requests.find((r) => (r._id || r.id || '').toString() === idFromUrl);
+                if (found && String(found.status || '').toLowerCase() === 'pending') {
+                  const btnHtml = `<div style="margin-top: 8px;">${renderRerouteApprovalButton(found)}</div>`;
+                  card.insertAdjacentHTML('beforeend', btnHtml);
+                }
+              } else if (request && String(request.status || '').toLowerCase() === 'pending') {
+                const btnHtml = `<div style="margin-top: 8px;">${renderRerouteApprovalButton(request)}</div>`;
+                card.insertAdjacentHTML('beforeend', btnHtml);
+              }
+            });
+            bindRerouteApprovalActions(listEl, {
+              onSuccess: () => loadRequests(),
+            });
+          }
         }
 
         renderPagination(paginationEl, pagination, (page) => {

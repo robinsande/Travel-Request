@@ -272,6 +272,7 @@
           <div class="detail-actions">
             <button type="button" class="btn btn--secondary" id="download-request-preview">Download Filled TAR Preview</button>
             ${currentRequest.status === 'pending' && isRequester(currentRequest) ? '<button type="button" class="btn btn--secondary" id="remind-approver-btn">Remind Approver</button>' : ''}
+            ${user.role === 'superadmin' && currentRequest.status === 'pending' ? renderRerouteApprovalButton(currentRequest) : ''}
             ${canDownloadSignedTar ? '<button type="button" class="btn btn--primary" id="download-request-pdf">Download Signed TAR</button>' : ''}
             ${user.role === 'superadmin' ? '<button type="button" class="btn btn--danger" id="delete-request-btn">Delete TAR</button>' : ''}
           </div>`;
@@ -342,6 +343,10 @@
           } finally {
             setLoading(button, false);
           }
+        });
+
+        bindRerouteApprovalActions(contentEl, {
+          onSuccess: () => loadRequest(),
         });
 
         decisionSection.hidden = !canApproveTravelRequest(currentRequest);
