@@ -99,6 +99,20 @@ async function fetchTravelRequestPdf(id, { preview = false } = {}) {
   return downloadFile(`/travel-requests/${id}/pdf${query}`, filename);
 }
 
+async function fetchTravelRequestsPdf(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (!['page', 'limit'].includes(key) && value !== undefined && value !== null && value !== '') {
+      query.set(key, value);
+    }
+  });
+  const qs = query.toString();
+  return downloadFile(
+    `/requests/export/pdf${qs ? `?${qs}` : ''}`,
+    'travel-requests.pdf'
+  );
+}
+
 async function fetchTravelRequestTemplatePdf() {
   return downloadFile('/travel-requests/template/pdf', 'care-travel-authority-request-template.pdf');
 }

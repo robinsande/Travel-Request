@@ -17,10 +17,22 @@ async function loginRequest(email, password) {
   }
 }
 
+async function setupMfaRequest(challengeToken) {
+  return api.post('/auth/mfa/setup', {}, {
+    headers: { Authorization: `Bearer ${challengeToken}` },
+  });
+}
+
+async function verifyMfaRequest(challengeToken, code) {
+  return api.post('/auth/mfa/verify', { code }, {
+    headers: { Authorization: `Bearer ${challengeToken}` },
+  });
+}
+
 async function activateAccountRequest(email, token, newPassword) {
   return api.post('/auth/activate', { email, token, newPassword });
 }
 
-async function setPasswordRequest(email, currentPassword, newPassword) {
-  return api.post('/auth/set-password', { email, currentPassword, newPassword });
+async function setPasswordRequest(currentPassword, newPassword) {
+  return api.post('/auth/set-password', { currentPassword, newPassword });
 }

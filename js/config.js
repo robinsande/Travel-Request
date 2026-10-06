@@ -60,4 +60,10 @@ const CONFIG = {
 };
 
 /** Public auth paths — 401 here means bad credentials, not expired session */
-const PUBLIC_AUTH_PATHS = ['/auth/login', '/auth/activate', '/auth/set-password'];
+const PUBLIC_AUTH_PATHS = [
+  '/auth/login',
+  '/auth/activate',
+  '/auth/set-password',
+  '/auth/mfa/setup',
+  '/auth/mfa/verify',
+];

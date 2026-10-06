@@ -51,9 +51,9 @@
       <section class="form-section">
         <h2>Line Manager / Approver</h2>
         <div class="form-group">
-          <label for="selected-approver-search">Select Approver</label>
+          <label for="selected_approver_ids">Select Line Manager(s) / Approver(s)</label>
           <div id="approver-select"></div>
-          <p class="form-hint">Choose an admin who is not traveling on this travel request. Managers cannot approve their own trip.</p>
+          <p class="form-hint">Select all line managers who should receive this TAR. Approver / Budget Holder accounts are available here as well. Hold Ctrl (Windows) or Command (Mac) to select multiple people.</p>
         </div>
       </section>
 
@@ -289,7 +289,11 @@
         const fields = {};
         Array.from(form.elements).forEach((element) => {
           if (!element.name || element.name.startsWith('passenger_user_')) return;
-          fields[element.name] = element.type === 'checkbox' ? element.checked : element.value;
+          fields[element.name] = element.type === 'checkbox'
+            ? element.checked
+            : element.multiple
+              ? Array.from(element.selectedOptions).map((option) => option.value)
+              : element.value;
         });
 
         const passengers = Array.from(form.querySelectorAll('.passenger-row')).map((row) => ({
@@ -412,14 +416,23 @@
       showToast(saved ? 'TAR draft saved to your account.' : 'TAR draft could not be saved. Check your connection and try again.', saved ? 'success' : 'error');
     });
 
-    async function loadApprovers(selectedApproverId = '') {
+    async function loadApprovers(selectedApproverIds = []) {
       const excludeIds = [sessionUser.id || sessionUser._id, ...getSelectedPassengerIds(form)];
+      const currentSelection = getSelectedApproverIds(form);
+      const draftSelection = accountDraft?.fields?.selected_approver_ids;
+      const savedSelection = currentSelection.length
+        ? currentSelection
+        : selectedApproverIds.length
+          ? selectedApproverIds
+          : Array.isArray(draftSelection) && draftSelection.length
+            ? draftSelection
+            : [draftSelection || accountDraft?.fields?.selected_approver_id].filter(Boolean);
       approverSelect = await loadApproverSelect(approverSelectContainer, {
         errorContainer: errorEl,
         excludeIds,
-        selectedId: approverSelect?.getValue?.() || selectedApproverId,
-        multiple: false,
-        hiddenInputName: 'selected_approver_id',
+        selectedId: savedSelection,
+        multiple: true,
+        hiddenInputName: 'selected_approver_ids',
       });
     }
 
@@ -509,7 +522,7 @@
       const options = await loadPassengerOptions();
       await populateRequestForm(form, previousTar, options);
       approverSelect = null;
-      await loadApprovers(getSelectedApproverId(previousTar));
+      await loadApprovers(getRequestApproverIds(previousTar));
       showToast('Previous TAR loaded. Edit the fields and submit it as a new request.', 'success');
     });
 
@@ -528,7 +541,7 @@
 
       const payload = buildRequestPayload(form);
 
-      if (!requireSelectedApprover(errorEl, payload.selected_approver_id)) return;
+      if (!requireSelectedApprover(errorEl, payload.selected_approver_ids?.length ? payload.selected_approver_ids[0] : payload.selected_approver_id)) return;
       if (!requireSelectedTravelMode(errorEl, payload.modeOfTravel)) return;
 
       if (!payload.passengers.length) {

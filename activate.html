@@ -35,7 +35,7 @@
         <label for="confirmPassword">Confirm password</label>
         <input type="password" id="confirmPassword" name="confirmPassword" required minlength="8" autocomplete="new-password" />
       </div>
-      <button type="submit" class="btn btn--primary btn--block" id="activate-btn">Activate &amp; Sign In</button>
+      <button type="submit" class="btn btn--primary btn--block" id="activate-btn">Activate account</button>
     </form>
 
     <p class="form-hint" style="margin-top: 1.5rem; text-align: center;">
@@ -88,8 +88,7 @@
 
       try {
         await activateAccount(email, token, newPassword);
-        showToast('Account activated successfully.', 'success');
-        window.location.href = 'dashboard.html';
+        window.location.replace('login.html?activated=true');
       } catch (err) {
         renderApiErrors(errorEl, err);
       } finally {

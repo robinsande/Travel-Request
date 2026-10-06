@@ -32,6 +32,7 @@
     <div id="backend-status" class="alert alert--info" hidden role="status"></div>
 
     <div id="login-error" class="alert alert--error" hidden role="alert"></div>
+    <div id="login-info" class="alert alert--info" hidden role="status"></div>
 
     <form id="login-form" autocomplete="off" novalidate>
       <div class="form-group">
@@ -44,6 +45,34 @@
       </div>
       <button type="submit" class="btn btn--primary btn--block" id="login-btn">Sign In</button>
     </form>
+
+    <section id="authenticator-step" hidden aria-live="polite">
+      <h2 id="authenticator-title">Authenticator verification</h2>
+      <p id="authenticator-instructions" class="text-muted"></p>
+      <div id="authenticator-enrollment" hidden>
+        <img id="authenticator-qr" class="authenticator-qr" alt="QR code for authenticator setup" />
+        <p class="form-hint">If you cannot scan the QR code, enter this setup key manually:</p>
+        <code id="authenticator-manual-key" class="authenticator-manual-key"></code>
+        <p class="form-hint">Use Google Authenticator, Microsoft Authenticator, or another time-based authenticator app.</p>
+      </div>
+      <button type="button" id="retry-authenticator-setup" class="btn btn--ghost" hidden>Reload setup QR code</button>
+      <button type="button" id="restart-sign-in" class="btn btn--ghost">Back to sign in</button>
+      <form id="authenticator-form" autocomplete="one-time-code" novalidate>
+        <div class="form-group">
+          <label for="authenticator-code">Six-digit authenticator code</label>
+          <input
+            type="text"
+            id="authenticator-code"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            pattern="[0-9]{6}"
+            maxlength="6"
+            required
+          />
+        </div>
+        <button type="submit" class="btn btn--primary btn--block" id="authenticator-submit">Verify and continue</button>
+      </form>
+    </section>
 
     <p class="form-hint" style="margin-top: 1.5rem; text-align: center;">Need access? Contact your superadmin to create an account.</p>
   </div>
@@ -58,9 +87,28 @@
 
     const form = document.getElementById('login-form');
     const errorEl = document.getElementById('login-error');
+    const loginInfoEl = document.getElementById('login-info');
     const backendStatusEl = document.getElementById('backend-status');
     const loginBtn = document.getElementById('login-btn');
+    const authenticatorStep = document.getElementById('authenticator-step');
+    const authenticatorTitle = document.getElementById('authenticator-title');
+    const authenticatorInstructions = document.getElementById('authenticator-instructions');
+    const authenticatorEnrollment = document.getElementById('authenticator-enrollment');
+    const authenticatorQr = document.getElementById('authenticator-qr');
+    const authenticatorManualKey = document.getElementById('authenticator-manual-key');
+    const authenticatorForm = document.getElementById('authenticator-form');
+    const authenticatorCode = document.getElementById('authenticator-code');
+    const authenticatorSubmit = document.getElementById('authenticator-submit');
+    const retryAuthenticatorSetup = document.getElementById('retry-authenticator-setup');
+    const restartSignIn = document.getElementById('restart-sign-in');
     const bgVideo = document.querySelector('.auth-bg-video');
+    let pendingMfaToken = null;
+    let isMfaEnrollment = false;
+
+    if (new URLSearchParams(window.location.search).get('activated') === 'true') {
+      loginInfoEl.textContent = 'Your account is activated. Sign in to set up authenticator verification.';
+      loginInfoEl.hidden = false;
+    }
 
     const enableVideoAudio = () => {
       if (!bgVideo) return;
@@ -77,6 +125,36 @@
       if (elapsedMs < 25000) return 'Signing in… (service is waking up)';
       return 'Signing in… (almost ready)';
     }
+
+    async function loadAuthenticatorSetup() {
+      retryAuthenticatorSetup.hidden = true;
+      try {
+        const setup = await setupMfaRequest(pendingMfaToken);
+        authenticatorQr.src = setup.qrCodeDataUrl;
+        authenticatorManualKey.textContent = setup.manualEntryKey;
+      } catch (err) {
+        retryAuthenticatorSetup.hidden = false;
+        throw err;
+      }
+    }
+
+    retryAuthenticatorSetup.addEventListener('click', async () => {
+      errorEl.hidden = true;
+      try {
+        await loadAuthenticatorSetup();
+      } catch (err) {
+        renderApiErrors(errorEl, err);
+      }
+    });
+
+    restartSignIn.addEventListener('click', () => {
+      pendingMfaToken = null;
+      authenticatorForm.reset();
+      form.reset();
+      authenticatorStep.hidden = true;
+      form.hidden = false;
+      errorEl.hidden = true;
+    });
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -105,18 +183,31 @@
       try {
         const result = await login(email, password);
         clearInterval(loadingUpdateTimer);
-        performance.mark('login-session-stored');
-        performance.measure('login-submit-to-session', 'login-submit', 'login-session-stored');
-        console.info(`[timing] login submit-to-session=${(performance.now() - submitStartedAt).toFixed(1)}ms`);
+        if (!result.challengeToken) {
+          throw new Error('The server did not start authenticator verification. Please try again.');
+        }
+        pendingMfaToken = result.challengeToken;
+        isMfaEnrollment = Boolean(result.mfaSetupRequired);
         form.reset();
-        performance.mark('login-redirect');
-        performance.measure('login-submit-to-redirect', 'login-submit', 'login-redirect');
-        console.info(`[timing] login submit-to-redirect=${(performance.now() - submitStartedAt).toFixed(1)}ms`);
-        const redirectTarget = result.user?.mustSetPassword ? 'profile.html' : 'dashboard.html';
-        loginBtn.textContent = 'Signed in — redirecting…';
-        window.location.replace(redirectTarget);
+        form.hidden = true;
+        authenticatorStep.hidden = false;
+        authenticatorEnrollment.hidden = !isMfaEnrollment;
+        retryAuthenticatorSetup.hidden = true;
+        authenticatorTitle.textContent = isMfaEnrollment
+          ? 'Set up authenticator verification'
+          : 'Enter your authenticator code';
+        authenticatorInstructions.textContent = isMfaEnrollment
+          ? 'Scan this QR code with your authenticator app, then enter the six-digit code it displays to finish setup.'
+          : 'Enter the current six-digit code from your authenticator app to complete sign-in.';
+        if (isMfaEnrollment) await loadAuthenticatorSetup();
+        authenticatorCode.focus();
+        return;
       } catch (err) {
         clearInterval(loadingUpdateTimer);
+        if (pendingMfaToken) {
+          renderApiErrors(errorEl, err);
+          return;
+        }
         if (err?.body?.timeout || err?.status === 408 || err?.status === 502 || err?.status === 503 || err?.status === 0) {
           backendStatusEl.hidden = false;
           backendStatusEl.className = 'alert alert--warning';
@@ -129,6 +220,32 @@
       } finally {
         clearInterval(loadingUpdateTimer);
         setLoading(loginBtn, false);
+      }
+    });
+
+    authenticatorForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      errorEl.hidden = true;
+      if (!pendingMfaToken) {
+        renderApiErrors(errorEl, { message: 'Your verification session expired. Please sign in again.' });
+        return;
+      }
+
+      authenticatorSubmit.disabled = true;
+      authenticatorSubmit.textContent = 'Verifying…';
+      try {
+        const result = await verifyMfaLogin(pendingMfaToken, authenticatorCode.value.trim());
+        pendingMfaToken = null;
+        const redirectTarget = result.user?.mustSetPassword ? 'profile.html' : 'dashboard.html';
+        authenticatorSubmit.textContent = 'Verified — redirecting…';
+        window.location.replace(redirectTarget);
+      } catch (err) {
+        authenticatorCode.value = '';
+        authenticatorCode.focus();
+        renderApiErrors(errorEl, err);
+      } finally {
+        authenticatorSubmit.disabled = false;
+        authenticatorSubmit.textContent = 'Verify and continue';
       }
     });
   </script>

@@ -77,6 +77,11 @@
     </div>
 
     <div id="travel-panel">
+      <div class="request-export-actions" id="request-export-actions" hidden>
+        <button type="button" class="btn btn--secondary" id="download-all-tars">
+          Download matching TARs (PDF)
+        </button>
+      </div>
       <div id="requests-loading"></div>
       <div id="requests-list" class="request-list"></div>
       <div id="pagination" hidden></div>
@@ -193,6 +198,11 @@
       if (scope === 'all') document.getElementById('all-sort-group').hidden = false;
       if (scope === 'team' || isAllRequestsViewer) {
         document.getElementById('filter-email-group').hidden = false;
+        if (isAllRequestsViewer) {
+          document.getElementById('filter-email-label').textContent = 'Requester name or email';
+          document.getElementById('filter-email').placeholder = 'Name or email…';
+          document.getElementById('filter-search').placeholder = 'Traveler name, destination, project…';
+        }
       }
       if (isTeamReimbursementView) {
         document.getElementById('filter-destination-group').hidden = true;
@@ -209,6 +219,8 @@
     const listEl = document.getElementById('requests-list');
     const loadingEl = document.getElementById('requests-loading');
     const paginationEl = document.getElementById('pagination');
+    const exportActionsEl = document.getElementById('request-export-actions');
+    const exportAllTarsButton = document.getElementById('download-all-tars');
     const reimbLoadingEl = document.getElementById('reimbursements-loading');
     const reimbListEl = document.getElementById('reimbursements-list');
 
@@ -373,13 +385,15 @@
             showNewBtn ? '<a href="request-new.html" class="btn btn--primary">Create New TAR</a>' : '';
           showEmptyState(listEl, emptyMsg, action);
         } else {
-          listEl.innerHTML = requests
-            .map((request) =>
-              renderRequestRow(request, {
-                showApproveActions: isTeamView,
-              })
-            )
-            .join('');
+          listEl.innerHTML = scope === 'all' && isAllRequestsViewer
+            ? renderRequestTable(requests)
+            : requests
+              .map((request) =>
+                renderRequestRow(request, {
+                  showApproveActions: isTeamView,
+                })
+              )
+              .join('');
 
           if (isTeamView) {
             bindTravelApprovalActions(listEl, {
@@ -435,6 +449,22 @@
       currentPage = 1;
       loadPage();
     }, 300);
+
+    if (scope === 'all' && isAllRequestsViewer) {
+      exportActionsEl.hidden = false;
+      exportAllTarsButton.addEventListener('click', async () => {
+        exportAllTarsButton.disabled = true;
+        exportAllTarsButton.textContent = 'Preparing TARs…';
+        try {
+          await fetchTravelRequestsPdf(getFilterParams());
+        } catch (err) {
+          showToast(err.message || 'Failed to download TARs.', 'error');
+        } finally {
+          exportAllTarsButton.disabled = false;
+          exportAllTarsButton.textContent = 'Download matching TARs (PDF)';
+        }
+      });
+    }
 
     ['all-sort', 'filter-status', 'filter-search', 'filter-destination', 'filter-email'].forEach((id) => {
       document.getElementById(id)?.addEventListener('input', triggerFilter);

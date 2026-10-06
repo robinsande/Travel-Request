@@ -114,10 +114,13 @@ See `.env.example` for documentation only (the browser does not load `.env` file
 
 ## Authentication
 
-- JWT is stored in `localStorage` after login or activation.
+- JWT is stored in `localStorage` only after authenticator verification.
+- Every account must enroll a time-based authenticator on first sign-in by scanning the QR code with Google Authenticator, Microsoft Authenticator, or another compatible app. Every later sign-in requires a fresh six-digit code.
+- A session JWT is issued only after authenticator verification. Account activation sends new users back to sign in to enroll.
 - The app remembers the last authenticated page and restores it when the root page is opened or refreshed.
 - Protected pages redirect to `login.html` when no token is present.
 - `401` responses clear the session and redirect to login.
 - Accounts are created by a superadmin; self-registration is not available.
 - Logout clears `localStorage` and returns to the sign-in page.
 - Request list scopes: `?scope=mine|team|all` are sent to `GET /api/requests` so admin “My Requests” and “Team Requests” stay distinct.
+- The organization-wide TAR directory displays a filterable grid table; superadmins can download one multi-page PDF containing every TAR matching the active filters.

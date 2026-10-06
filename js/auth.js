@@ -95,6 +95,12 @@ function redirectIfAuthenticated() {
 
 async function login(email, password) {
   const data = await loginRequest(email, password);
+  if (data.token) setAuth(data.token, data.user);
+  return data;
+}
+
+async function verifyMfaLogin(challengeToken, code) {
+  const data = await verifyMfaRequest(challengeToken, code);
   setAuth(data.token, data.user);
   return data;
 }
@@ -105,8 +111,8 @@ async function activateAccount(email, token, newPassword) {
   return data;
 }
 
-async function setPassword(email, currentPassword, newPassword) {
-  const data = await setPasswordRequest(email, currentPassword, newPassword);
+async function setPassword(currentPassword, newPassword) {
+  const data = await setPasswordRequest(currentPassword, newPassword);
   if (data.token) setAuth(data.token, data.user);
   return data;
 }

@@ -60,7 +60,7 @@
         <section class="form-section">
           <h2>Line Manager / Approver</h2>
           <div class="form-group">
-            <label for="resubmit-approver-search">Select Approver</label>
+            <label for="selected_approver_ids">Select Line Manager(s) / Approver(s)</label>
             <div id="resubmit-approver-select"></div>
           </div>
         </section>
@@ -250,11 +250,12 @@
 
     async function loadApprovers(selectedId) {
       const excludeIds = [user.id || user._id, ...getSelectedPassengerIds(resubmitForm)];
+      const currentSelection = getSelectedApproverIds(resubmitForm);
       resubmitApproverSelect = await loadApproverSelect(resubmitApproverContainer, {
-        selectedId: Array.isArray(selectedId) ? selectedId[0] : selectedId,
+        selectedId: currentSelection.length ? currentSelection : (Array.isArray(selectedId) ? selectedId : [selectedId].filter(Boolean)),
         excludeIds,
-        multiple: false,
-        hiddenInputName: 'selected_approver_id',
+        multiple: true,
+        hiddenInputName: 'selected_approver_ids',
       });
     }
 
@@ -371,7 +372,7 @@
           );
           await populateRequestForm(resubmitForm, currentRequest);
           initSignaturePad(resubmitForm);
-          await loadApprovers(getSelectedApproverId(currentRequest));
+          await loadApprovers(getRequestApproverIds(currentRequest));
         } else {
           resubmitSection.hidden = true;
         }
@@ -431,7 +432,7 @@
 
       const payload = buildRequestPayload(resubmitForm);
 
-      if (!requireSelectedApprover(resubmitError, payload.selected_approver_id)) return;
+      if (!requireSelectedApprover(resubmitError, payload.selected_approver_ids?.length ? payload.selected_approver_ids[0] : payload.selected_approver_id)) return;
       if (!requireSelectedTravelMode(resubmitError, payload.modeOfTravel)) return;
 
       if (!payload.passengers.length) {

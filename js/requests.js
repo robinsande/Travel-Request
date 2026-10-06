@@ -64,11 +64,11 @@ function buildRequestPayload(form) {
     }
   });
 
-  const selectedApproverIds = Array.from(form.querySelector('[name="selected_approver_ids"]')?.selectedOptions || []).map((option) => option.value);
+  const selectedApproverIds = getSelectedApproverIds(form);
 
   return {
     selected_budget_holder_id: fd.get('selected_budget_holder_id')?.trim() || '',
-    selected_approver_id: fd.get('selected_approver_id')?.trim() || '',
+    selected_approver_id: fd.get('selected_approver_id')?.trim() || selectedApproverIds[0] || '',
     ...(selectedApproverIds.length ? { selected_approver_ids: selectedApproverIds } : {}),
     project: {
       name: fd.get('project_name')?.trim() || '',
@@ -100,6 +100,12 @@ function buildRequestPayload(form) {
   };
 }
 
+function getSelectedApproverIds(form) {
+  return Array.from(form.querySelector('[name="selected_approver_ids"]')?.selectedOptions || [])
+    .map((option) => option.value)
+    .filter(Boolean);
+}
+
 /** Populate form fields from a request object (for edit/resubmit) */
 async function populateRequestForm(form, request, passengerOptions = null) {
   const set = (name, value) => {
@@ -113,7 +119,13 @@ async function populateRequestForm(form, request, passengerOptions = null) {
     request.selected_budget_holder_id ||
     '';
   set('selected_budget_holder_id', budgetHolderId);
-  set('selected_approver_id', request.selected_approver_id?._id || request.selected_approver_id?.id || '');
+  const approverIds = getRequestApproverIds(request);
+  const approverSelect = form.querySelector('[name="selected_approver_ids"]');
+  if (approverSelect) {
+    Array.from(approverSelect.options).forEach((option) => {
+      option.selected = approverIds.includes(option.value);
+    });
+  }
   set('project_name', p.name);
   set('project_businessUnit', p.businessUnit);
   set('project_fundCode', p.fundCode);
@@ -335,6 +347,63 @@ function renderTravelDecisionButtons(requestId) {
       <input type="date" class="approval-date" value="${new Date().toISOString().slice(0, 10)}" />
     </div>
     ${renderTravelRejectForm(requestId)}`;
+}
+
+function renderRequestTable(requests) {
+  const rows = requests.map((request) => {
+    const id = getRequestId(request);
+    const passengers = (request.passengers || [])
+      .map((passenger) => passenger.name || passenger.user?.name)
+      .filter(Boolean);
+    const travelerNames = passengers.length ? passengers.join(', ') : getRequesterLabel(request);
+    const budgetHolder = request.selected_budget_holder_id?.name ||
+      request.selected_budget_holder_id?.email ||
+      '—';
+    const submitted = formatDate(request.submittedAt || request.createdAt);
+    const rerouteButton = renderRerouteApprovalButton(request);
+
+    return `
+      <tr>
+        <td data-label="Traveler(s)"><strong>${escapeHtml(travelerNames)}</strong></td>
+        <td data-label="Requester">${escapeHtml(getRequesterLabel(request))}</td>
+        <td data-label="Project">${escapeHtml(request.project?.name || '—')}</td>
+        <td data-label="Fund code">${escapeHtml(request.project?.fundCode || '—')}</td>
+        <td data-label="Destination">${escapeHtml(request.itinerary?.destination || '—')}</td>
+        <td data-label="Travel dates">${escapeHtml(getRequestDateRange(request))}</td>
+        <td data-label="Travel mode">${escapeHtml(formatModeOfTravel(request.modeOfTravel))}</td>
+        <td data-label="Budget holder">${escapeHtml(budgetHolder)}</td>
+        <td data-label="Line manager(s)">${escapeHtml(getRequestApproverLabel(request))}</td>
+        <td data-label="Status">${statusBadge(request.status)}</td>
+        <td data-label="Submitted">${escapeHtml(submitted)}</td>
+        <td data-label="Actions">
+          <a class="btn btn--secondary btn--sm" href="request-detail.html?id=${encodeURIComponent(id)}">View TAR</a>
+          ${rerouteButton}
+        </td>
+      </tr>`;
+  }).join('');
+
+  return `
+    <div class="data-table-wrap request-table-wrap">
+      <table class="data-table request-table">
+        <thead>
+          <tr>
+            <th scope="col">Traveler(s)</th>
+            <th scope="col">Requester</th>
+            <th scope="col">Project</th>
+            <th scope="col">Fund code</th>
+            <th scope="col">Destination</th>
+            <th scope="col">Travel dates</th>
+            <th scope="col">Travel mode</th>
+            <th scope="col">Budget holder</th>
+            <th scope="col">Line manager(s)</th>
+            <th scope="col">Status</th>
+            <th scope="col">Submitted</th>
+            <th scope="col"><span class="visually-hidden">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
 }
 
 /** Render a request summary card for list views */
