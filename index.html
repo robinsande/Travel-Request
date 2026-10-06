@@ -4,10 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex" />
-  <title>Sign In — CARE TAR</title>
+  <title>CARE Travel Authorization Request</title>
 </head>
 <body>
-  <p>Redirecting to <a id="sign-in-link" href="login.html">sign in</a>…</p>
   <script src="js/config.js"></script>
   <script src="js/auth.js"></script>
   <script>
@@ -22,7 +21,6 @@
       destinationUrl.search = window.location.search;
       destinationUrl.hash = window.location.hash;
     }
-    document.getElementById('sign-in-link').href = destinationUrl.href;
     window.location.replace(destinationUrl.href);
   </script>
 </body>
