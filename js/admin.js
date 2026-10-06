@@ -52,7 +52,7 @@ function renderUserRow(user) {
   const roleOptions = roles
     .map(
       (role) =>
-        `<option value="${role}" ${role === user.role ? 'selected' : ''}>${role === 'admin' ? 'Admin / line manager / approver' : role === 'approver_budget_holder' ? 'Approver / Budget Holder' : role === 'super_superadmin' ? 'Super super admin (read-only)' : role}</option>`
+        `<option value="${role}" ${role === user.role ? 'selected' : ''}>${role === 'admin' ? 'Admin / Line Manager' : role === 'approver_budget_holder' ? 'Approver / Budget Holder (both roles)' : role === 'super_superadmin' ? 'Super super admin (read-only)' : role}</option>`
     )
     .join('');
 
