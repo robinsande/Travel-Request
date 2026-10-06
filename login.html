@@ -29,7 +29,7 @@
     <h1>Sign In</h1>
     <p class="text-muted">Enter your work email and password to access the travel request system.</p>
 
-    <div id="backend-status" class="alert alert--error" hidden role="alert"></div>
+    <div id="backend-status" class="alert alert--info" hidden role="status"></div>
 
     <div id="login-error" class="alert alert--error" hidden role="alert"></div>
 
@@ -91,7 +91,7 @@
         }
 
         backendWarmStatus.warming = false;
-        showBackendConnectionStatus('backend-status');
+        backendStatusEl.hidden = true;
         return null;
       })();
 
