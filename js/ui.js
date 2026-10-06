@@ -621,6 +621,10 @@ function getNavItems() {
         { href: 'requests.html?scope=team', label: 'Team', id: 'team-requests' }
       );
     }
+
+    if (user.role === 'user') {
+      items.push({ href: 'approvals.html', label: 'Fund Code Reviews', id: 'approvals' });
+    }
   }
 
   items.push({ href: 'profile.html', label: 'My Profile', id: 'profile' });

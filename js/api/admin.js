@@ -8,3 +8,12 @@ async function importEmployees(file) {
     body: formData,
   });
 }
+
+async function importBudgetHolders(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return apiRequest('/admin/import-budget-holders', {
+    method: 'POST',
+    body: formData,
+  });
+}

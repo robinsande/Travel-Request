@@ -67,6 +67,7 @@ function buildRequestPayload(form) {
   const selectedApproverIds = Array.from(form.querySelector('[name="selected_approver_ids"]')?.selectedOptions || []).map((option) => option.value);
 
   return {
+    selected_budget_holder_id: fd.get('selected_budget_holder_id')?.trim() || '',
     selected_approver_id: fd.get('selected_approver_id')?.trim() || '',
     ...(selectedApproverIds.length ? { selected_approver_ids: selectedApproverIds } : {}),
     project: {
@@ -107,6 +108,11 @@ async function populateRequestForm(form, request, passengerOptions = null) {
   };
 
   const p = request.project || {};
+  const budgetHolderId = request.selected_budget_holder_id?._id ||
+    request.selected_budget_holder_id?.id ||
+    request.selected_budget_holder_id ||
+    '';
+  set('selected_budget_holder_id', budgetHolderId);
   set('selected_approver_id', request.selected_approver_id?._id || request.selected_approver_id?.id || '');
   set('project_name', p.name);
   set('project_businessUnit', p.businessUnit);
@@ -284,7 +290,12 @@ function getRequestDateRange(request) {
 }
 
 function canApproveTravelRequest(request, user = getUser()) {
-  if (!user || user.role !== 'admin' || request?.status !== 'pending') return false;
+  if (
+    !user ||
+    user.role !== 'admin' ||
+    request?.status !== 'pending' ||
+    (request?.approvalStage || 'line_manager') !== 'line_manager'
+  ) return false;
   const uid = String(user.id || user._id || '');
   const approverIds = request.selected_approver_ids?.length
     ? request.selected_approver_ids.map((approver) => String(getEntityId(approver) || approver))
@@ -445,6 +456,21 @@ function bindTravelApprovalActions(root, options = {}) {
   });
 }
 
+async function populateBudgetHolderOptions(select, selectedId = '') {
+  if (!select) return [];
+  const holders = await fetchBudgetHolders();
+  select.innerHTML = '<option value="">Select a budget holder</option>';
+  holders.forEach((holder) => {
+    const option = document.createElement('option');
+    option.value = String(holder._id || holder.id);
+    option.textContent = `${holder.name} — Fund code ${holder.fundCode} (${holder.email})`;
+    select.appendChild(option);
+  });
+  if (selectedId) select.value = String(selectedId);
+  select.disabled = holders.length === 0;
+  return holders;
+}
+
 function initSignaturePad(root) {
   const canvas = root.querySelector('.signature-pad');
   const upload = root.querySelector('.signature-upload');
@@ -591,6 +617,8 @@ function renderRequestDetail(request) {
   const it = request.itinerary || {};
   const approver = getRequestApproverLabel(request);
   const requester = getRequesterLabel(request);
+  const budgetHolder = request.selected_budget_holder_id || {};
+  const budgetHolderDecision = request.budgetHolderDecision || {};
   const passengers = (request.passengers || []).map((pass) => {
     const user = pass.user && typeof pass.user === 'object' ? pass.user : null;
     return {
@@ -651,7 +679,9 @@ function renderRequestDetail(request) {
         <table>
           <tbody>
             <tr><th>Employee<br>Name</th><td>${fieldValue(passengerNames, '')}</td><th>Employee<br>Number</th><td>${fieldValue(passengerNumbers, '')}</td><th>Project<br>Name</th><td>${fieldValue(p.name)}</td></tr>
-            <tr><th>Business Unit:</th><td>${fieldValue(p.businessUnit)}</td><th>Fund Code:</th><td>${fieldValue(p.fundCode)}</td><th></th><td></td></tr>
+            <tr><th>Business Unit:</th><td>${fieldValue(p.businessUnit)}</td><th>Fund Code:</th><td>${fieldValue(p.fundCode)}</td><th>Budget Holder:</th><td>${fieldValue(budgetHolder.name || budgetHolder.email || '')}</td></tr>
+            <tr><th>Budget Holder Email:</th><td colspan="5">${fieldValue(budgetHolder.email || '')}</td></tr>
+            <tr><th>Fund Code Check:</th><td colspan="5">${fieldValue(budgetHolder.fundCode ? `${budgetHolder.fundCode} — ${budgetHolderDecision.status || 'Pending review'}` : '')}${budgetHolderDecision.comment ? `<br />${fieldValue(budgetHolderDecision.comment)}` : ''}</td></tr>
             <tr><th>Project ID:</th><td>${fieldValue(p.projectId)}</td><th>Department ID:</th><td>${fieldValue(p.departmentId)}</td><th>Activity ID:</th><td>${fieldValue(p.activityId)}</td></tr>
             <tr><th>Assigned Area<br>of Operation</th><td colspan="2">${fieldValue(request.assignedAreaOfOperation)}</td><th>Employees<br>Office</th><td colspan="2">${fieldValue(office)}</td></tr>
             <tr><th>Purpose of the Trip</th><td colspan="5">${fieldValue(request.purposeOfTrip)}</td></tr>
@@ -661,6 +691,7 @@ function renderRequestDetail(request) {
             <tr><td>${fieldValue(it.dateFrom ? formatDate(it.dateFrom) : '')}</td><td>${fieldValue(it.dateTo ? formatDate(it.dateTo) : '')}</td><td colspan="2">${fieldValue(it.destination)}</td><td>${fieldValue(passengers.length || '')}</td><td>${fieldValue(it.accommodationNeeded ? 'Yes' : '')}</td></tr>
             ${(request.travelSegments || []).length ? `<tr><th colspan="6" class="tar-preview__section-title">Additional Travel Destinations</th></tr><tr><th>Arrival</th><th>Departure</th><th>From</th><th>To</th><th colspan="2">Destination</th></tr>${request.travelSegments.map((segment) => `<tr><td>${formatDate(segment.dateFrom)}</td><td>${formatDate(segment.dateTo)}</td><td>${escapeHtml(segment.from || '—')}</td><td>${escapeHtml(segment.to || '—')}</td><td colspan="2">${escapeHtml(segment.destination || '—')}</td></tr>`).join('')}` : ''}
             <tr class="tar-preview__signature-row"><th>Requested by:<br><br>Signature:</th><td colspan="3">${fieldValue(requester)}<br>${signatureCell(request.requesterSignature, 'Requester signature')}</td><td colspan="2">Date: ${fieldValue(request.submittedAt || request.createdAt ? formatDate(request.submittedAt || request.createdAt) : '')}</td></tr>
+            <tr class="tar-preview__signature-row"><th>Fund Code<br>Verified by:</th><td>Print Name:<br>${fieldValue(budgetHolderDecision.decidedBy?.name || budgetHolder.name || '')}</td><td>Fund Code:<br>${fieldValue(budgetHolder.fundCode || '')}</td><td>Signature:<br>${signatureCell(budgetHolderDecision.signature, 'Budget holder signature')}</td><td colspan="2">Date:<br>${fieldValue(budgetHolderDecision.decidedAt ? formatDate(budgetHolderDecision.decidedAt) : '')}</td></tr>
             <tr class="tar-preview__signature-row"><th>Travel<br>Authorized<br>by:</th><td>Print Name:<br>${fieldValue(approver)}</td><td>Position:<br>${fieldValue(request.decision?.decidedBy?.position || request.selected_approver_id?.position || 'Supervisor / Approver')}</td><td>Signature:<br>${signatureCell(request.decision?.signature, 'Approver signature')}</td><td colspan="2">Date:<br>${fieldValue(request.decision?.decidedAt || request.submittedAt ? formatDate(request.decision?.decidedAt || request.submittedAt) : '')}</td></tr>
             <tr><td colspan="6" class="tar-preview__center-note">To be signed by supervisor once all is completed</td></tr>
             <tr><td colspan="6" class="tar-preview__fine-print">Note: This form must be produced in 3 or 4 copies BEFORE travel is undertaken. The signed original is to be submitted to the Finance Unit when seeking an advance or claiming reimbursement, another photocopy provided to the Security Officer and the Fleet Officer if requesting a CARE vehicle for travel, and the third copy for employee's records/file.</td></tr>

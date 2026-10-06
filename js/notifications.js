@@ -31,30 +31,30 @@ function updateBadgeElement(count) {
 }
 
 async function getPendingApprovalCounts() {
-  if (typeof isAdmin !== 'function' || !isAdmin()) {
-    return { travel: 0, reimbursement: 0 };
-  }
-
   try {
-    const [travelResult, reimbursementResult] = await Promise.all([
-      api.get('/requests/pending-my-approval'),
-      api.get('/reimbursements/pending-approvals'),
+    const isManager = typeof isAdmin === 'function' && isAdmin();
+    const role = getUser()?.role;
+    const canReviewBudget = ['user', 'admin'].includes(role);
+    const [travelResult, reimbursementResult, budgetResult] = await Promise.all([
+      isManager ? api.get('/requests/pending-my-approval') : Promise.resolve({ requests: [] }),
+      isManager ? api.get('/reimbursements/pending-approvals') : Promise.resolve({ reports: [] }),
+      canReviewBudget ? api.get('/requests/pending-my-budget-approval') : Promise.resolve({ requests: [] }),
     ]);
     return {
       travel: unwrapListResult(travelResult, ['requests']).length,
       reimbursement: unwrapListResult(reimbursementResult, ['reports']).length,
+      budget: unwrapListResult(budgetResult, ['requests']).length,
     };
   } catch {
-    return { travel: 0, reimbursement: 0 };
+    return { travel: 0, reimbursement: 0, budget: 0 };
   }
 }
 
 async function refreshApprovalBadges() {
-  if (typeof isAdmin !== 'function' || !isAdmin()) return;
   const counts = await getPendingApprovalCounts();
   updateCountBadge(
     document.getElementById('approvals-badge'),
-    counts.travel + counts.reimbursement
+    counts.travel + counts.reimbursement + counts.budget
   );
 }
 

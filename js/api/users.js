@@ -63,3 +63,7 @@ async function fetchApprovers() {
 async function fetchPassengers() {
   return api.get('/users/passengers');
 }
+
+async function fetchBudgetHolders() {
+  return api.get('/users/budget-holders');
+}

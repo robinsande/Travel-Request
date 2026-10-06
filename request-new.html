@@ -38,7 +38,18 @@
 
     <form id="request-form" autocomplete="off" novalidate>
       <section class="form-section">
-        <h2>Approver</h2>
+        <h2>Budget Holder Review</h2>
+        <div class="form-group">
+          <label for="selected_budget_holder_id">Select Budget Holder</label>
+          <select class="form-control" id="selected_budget_holder_id" name="selected_budget_holder_id" required>
+            <option value="">Loading budget holders…</option>
+          </select>
+          <p class="form-hint">The selected budget holder verifies the fund code first. After approval, the TAR is sent to the selected line manager/approver.</p>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>Line Manager / Approver</h2>
         <div class="form-group">
           <label for="selected-approver-search">Select Approver</label>
           <div id="approver-select"></div>
@@ -431,6 +442,22 @@
     }
 
     async function bootstrapForm() {
+      try {
+        const budgetHolders = await populateBudgetHolderOptions(
+          form.elements.selected_budget_holder_id
+        );
+        if (!budgetHolders.length) {
+          renderApiErrors(errorEl, {
+            message: 'No active budget holders are available. Contact a superadmin to import the budget holder list.',
+          });
+          submitBtn.disabled = true;
+        }
+      } catch (error) {
+        renderApiErrors(errorEl, error);
+        submitBtn.disabled = true;
+        return;
+      }
+
       const officeInput = form.elements.employeeOffice;
       if (officeInput && !officeInput.value) officeInput.value = sessionUser.office || '';
 
@@ -506,6 +533,10 @@
 
       const payload = buildRequestPayload(form);
 
+      if (!payload.selected_budget_holder_id) {
+        renderApiErrors(errorEl, { message: 'Please select a budget holder to verify the fund code.' });
+        return;
+      }
       if (!requireSelectedApprover(errorEl, payload.selected_approver_id)) return;
       if (!requireSelectedTravelMode(errorEl, payload.modeOfTravel)) return;
 

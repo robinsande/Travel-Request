@@ -15,6 +15,10 @@ async function fetchPendingApprovals() {
   return api.get('/requests/pending-my-approval');
 }
 
+async function fetchPendingBudgetHolderApprovals() {
+  return api.get('/requests/pending-my-budget-approval');
+}
+
 async function fetchRequest(id) {
   return api.get(`/requests/${id}`);
 }
@@ -65,6 +69,14 @@ async function rejectRequest(id, commentOrPayload) {
       ? { comment: commentOrPayload }
       : commentOrPayload || {};
   return api.patch(`/requests/${id}/reject`, payload);
+}
+
+async function approveBudgetHolderRequest(id, payload = {}) {
+  return api.patch(`/requests/${id}/budget-holder/approve`, payload);
+}
+
+async function rejectBudgetHolderRequest(id, comment) {
+  return api.patch(`/requests/${id}/budget-holder/reject`, { comment });
 }
 
 async function remindApprover(id) {

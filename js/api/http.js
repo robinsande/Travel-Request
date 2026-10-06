@@ -65,6 +65,7 @@ async function performApiRequest(path, options = {}) {
 
     const url = buildApiUrl(path);
     const headers = { ...(options.headers || {}) };
+    const requestOptions = { ...options, headers };
 
     const token = typeof getToken === 'function' ? getToken() : null;
     if (token && !headers.Authorization) {
@@ -73,7 +74,7 @@ async function performApiRequest(path, options = {}) {
 
     if (options.body && !(options.body instanceof FormData)) {
       headers['Content-Type'] = 'application/json';
-      options.body = JSON.stringify(options.body);
+      requestOptions.body = JSON.stringify(options.body);
     }
 
     const controller = new AbortController();
@@ -82,7 +83,7 @@ async function performApiRequest(path, options = {}) {
     let response;
     let wasTimeout = false;
     try {
-      response = await fetch(url, { ...options, headers, signal: controller.signal });
+      response = await fetch(url, { ...requestOptions, signal: controller.signal });
     } catch (fetchError) {
       clearTimeout(timeoutId);
       wasTimeout = fetchError?.name === 'AbortError';

@@ -47,7 +47,18 @@
 
       <form id="resubmit-form" autocomplete="off" novalidate>
         <section class="form-section">
-          <h2>Approver</h2>
+          <h2>Budget Holder Review</h2>
+          <div class="form-group">
+            <label for="resubmit-budget-holder">Select Budget Holder</label>
+            <select class="form-control" id="resubmit-budget-holder" name="selected_budget_holder_id" required>
+              <option value="">Loading budget holders…</option>
+            </select>
+            <p class="form-hint">The selected budget holder verifies the fund code before the TAR returns to its line manager.</p>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <h2>Line Manager / Approver</h2>
           <div class="form-group">
             <label for="resubmit-approver-search">Select Approver</label>
             <div id="resubmit-approver-select"></div>
@@ -234,6 +245,7 @@
     const resubmitBtn = document.getElementById('resubmit-btn');
     const resubmitApproverContainer = document.getElementById('resubmit-approver-select');
     let resubmitApproverSelect = null;
+    const resubmitBudgetHolderSelect = document.getElementById('resubmit-budget-holder');
     let currentRequest = null;
 
     async function loadApprovers(selectedId) {
@@ -353,6 +365,10 @@
 
         if (['pending', 'rejected'].includes(currentRequest.status) && (isRequester(currentRequest) || user.role === 'superadmin') && canCreateRequests()) {
           resubmitSection.hidden = false;
+          await populateBudgetHolderOptions(
+            resubmitBudgetHolderSelect,
+            currentRequest.selected_budget_holder_id?._id || currentRequest.selected_budget_holder_id
+          );
           await populateRequestForm(resubmitForm, currentRequest);
           initSignaturePad(resubmitForm);
           await loadApprovers(getSelectedApproverId(currentRequest));
@@ -415,6 +431,10 @@
 
       const payload = buildRequestPayload(resubmitForm);
 
+      if (!payload.selected_budget_holder_id) {
+        renderApiErrors(resubmitError, { message: 'Please select a budget holder to verify the fund code.' });
+        return;
+      }
       if (!requireSelectedApprover(resubmitError, payload.selected_approver_id)) return;
       if (!requireSelectedTravelMode(resubmitError, payload.modeOfTravel)) return;
 

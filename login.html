@@ -62,37 +62,6 @@
     const loginBtn = document.getElementById('login-btn');
     const bgVideo = document.querySelector('.auth-bg-video');
 
-    let backendWarmPromise = null;
-    let backendWarmStatus = { ok: false, warming: false };
-
-    async function warmBackendWithStatus() {
-      if (backendWarmPromise) return backendWarmPromise;
-      backendWarmStatus.warming = true;
-
-      backendWarmPromise = (async () => {
-        for (let attempt = 0; attempt < 6; attempt += 1) {
-          try {
-            const result = await checkBackendConnection(attempt === 0 ? 12000 : 8000);
-            if (result.ok) {
-              backendWarmStatus.ok = true;
-              backendStatusEl.hidden = true;
-              backendWarmStatus.warming = false;
-              return result;
-            }
-          } catch {}
-          await new Promise((resolve) => setTimeout(resolve, attempt === 0 ? 4000 : 2500));
-        }
-
-        backendWarmStatus.warming = false;
-        backendStatusEl.hidden = true;
-        return null;
-      })();
-
-      return backendWarmPromise;
-    }
-
-    warmBackendWithStatus();
-
     const enableVideoAudio = () => {
       if (!bgVideo) return;
       bgVideo.muted = false;
@@ -114,6 +83,7 @@
       const submitStartedAt = performance.now();
       performance.mark('login-submit');
       errorEl.hidden = true;
+      backendStatusEl.hidden = true;
 
       const email = form.email.value.trim();
       const password = form.password.value;
@@ -121,16 +91,6 @@
       if (!email || !password) {
         renderApiErrors(errorEl, { message: 'Please enter your email and password.' });
         return;
-      }
-
-      if (backendWarmStatus.warming) {
-        backendStatusEl.hidden = false;
-        backendStatusEl.className = 'alert alert--info';
-        backendStatusEl.innerHTML = `
-          <strong>Still connecting to the service…</strong>
-          <p style="margin:0.4rem 0 0;font-size:0.85rem;">Your sign-in will begin automatically in a moment. Please wait.</p>
-        `;
-        try { await backendWarmPromise; } catch {}
       }
 
       const loadingUpdateTimer = setInterval(() => {
@@ -162,7 +122,7 @@
           backendStatusEl.className = 'alert alert--warning';
           backendStatusEl.innerHTML = `
             <strong>The service took too long to respond.</strong>
-            <p style="margin:0.4rem 0 0;font-size:0.85rem;">This usually happens when it has been idle. Click <strong>Sign In</strong> again — it should be much faster the second time.</p>
+            <p style="margin:0.4rem 0 0;font-size:0.85rem;">This can happen when the service is waking up. Please check your connection and try again.</p>
           `;
         }
         renderApiErrors(errorEl, err);
