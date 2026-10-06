@@ -37,14 +37,14 @@
     <hr />
     <h2>Import budget holders</h2>
     <p class="text-muted">
-      Upload an Excel file with budget holder name, email, and fund code columns. Each email must match an active CARE TAR user account so the holder can sign in and approve assigned requests.
+      Upload an Excel file with budget holder name and email columns only. Each email must match an active CARE TAR user account so the holder can sign in and review assigned requests.
     </p>
     <div id="budget-import-error" class="alert alert--error" hidden role="alert"></div>
     <form id="budget-import-form" class="form-section" style="max-width: 500px;">
       <div class="form-group">
         <label for="budget-holder-file">Budget holder spreadsheet</label>
         <input type="file" id="budget-holder-file" name="file" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" required />
-        <p class="form-hint">Required fields: name, email, and fund code. Accepted formats: .xlsx, .xls</p>
+        <p class="form-hint">Required fields: name and email. Fund codes are entered on each TAR and confirmed by its selected budget holder. Accepted formats: .xlsx, .xls</p>
       </div>
       <button type="submit" class="btn btn--primary" id="budget-import-btn">Upload budget holders</button>
     </form>

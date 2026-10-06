@@ -83,8 +83,8 @@
       budgetListEl.innerHTML = '';
 
       try {
-        const canSeeManagerQueue = ['admin', 'superadmin'].includes(user.role);
-        const canReviewBudget = ['user', 'admin'].includes(user.role);
+        const canSeeManagerQueue = ['admin', 'approver_budget_holder', 'superadmin'].includes(user.role);
+        const canReviewBudget = ['user', 'admin', 'approver_budget_holder'].includes(user.role);
         const managerRequests = canSeeManagerQueue
           ? unwrapListResult(await fetchPendingApprovals(), ['requests'])
           : [];
@@ -98,9 +98,9 @@
           showEmptyState(listEl, EMPTY_MESSAGE);
         } else if (managerRequests.length) {
           listEl.innerHTML = managerRequests
-            .map((request) => renderRequestRow(request, { showApproveActions: user.role === 'admin' }))
+            .map((request) => renderRequestRow(request, { showApproveActions: ['admin', 'approver_budget_holder'].includes(user.role) }))
             .join('');
-          if (user.role === 'admin') {
+          if (['admin', 'approver_budget_holder'].includes(user.role)) {
             bindTravelApprovalActions(listEl, {
               onSuccess: (card) => removeApprovalCard(card),
             });
@@ -139,27 +139,33 @@
                 </div><span class="badge">Fund-code review</span>
               </div>
               <dl class="detail-grid"><dt>Submitted fund code</dt><dd>${escapeHtml(fundCode)}</dd>
-                <dt>Registered fund code</dt><dd>${escapeHtml(holder.fundCode || '—')}</dd>
                 <dt>Budget holder</dt><dd>${escapeHtml(holder.name || user.name)}</dd></dl>
               <a class="btn btn--secondary btn--sm" href="request-detail.html?id=${encodeURIComponent(id)}">View TAR</a>
+              <div class="form-group"><label>Confirm or correct the TAR fund code</label><input class="budget-holder-fund-code" type="text" value="${escapeHtml(fundCode === 'Not provided' ? '' : fundCode)}" required /></div>
+              <p class="form-hint">Confirm or correct this code. The confirmed code will be saved on the TAR before it is sent to the line manager.</p>
               <div class="form-group"><label>Signature (type your full name)</label><input class="budget-holder-signature" type="text" autocomplete="name" required minlength="2" /></div>
-              <div class="form-group"><label>Comment <span class="text-muted">(required when rejecting)</span></label><textarea class="budget-holder-comment" rows="2"></textarea></div>
-              <div class="btn-group"><button type="button" class="btn btn--primary budget-holder-approve">Verify and approve</button>
-                <button type="button" class="btn btn--danger budget-holder-reject">Reject TAR</button></div>
+              <div class="form-group"><label>Reason / comment <span class="text-muted">(required when rejecting)</span></label><textarea class="budget-holder-comment" rows="2"></textarea></div>
+              <div class="btn-group"><button type="button" class="btn btn--primary budget-holder-approve">Confirm fund code and approve</button>
+                <button type="button" class="btn btn--danger budget-holder-reject">Decline with reason</button></div>
             </article>`;
           }).join('');
           budgetListEl.querySelectorAll('.budget-holder-approve').forEach((button) => {
             button.addEventListener('click', async () => {
               const card = button.closest('[data-budget-request-id]');
               const signature = card.querySelector('.budget-holder-signature').value.trim();
+              const fundCode = card.querySelector('.budget-holder-fund-code').value.trim();
               if (signature.length < 2) {
                 showToast('Enter your full name as a signature before approving.', 'error');
                 return;
               }
+              if (!fundCode) {
+                showToast('Enter the fund code to use on the TAR before approving.', 'error');
+                return;
+              }
               setLoading(button, true, 'Approving…');
               try {
-                await approveBudgetHolderRequest(card.dataset.budgetRequestId, { signature });
-                showToast('Fund code verified. The TAR has been sent to its selected line manager.', 'success');
+                await approveBudgetHolderRequest(card.dataset.budgetRequestId, { signature, fundCode });
+                showToast('Fund code saved. The TAR has been sent to its selected line manager.', 'success');
                 card.remove();
                 if (!budgetListEl.children.length) showEmptyState(budgetListEl, 'No travel requests are waiting for your fund-code verification.');
                 if (typeof refreshApprovalBadges === 'function') refreshApprovalBadges();

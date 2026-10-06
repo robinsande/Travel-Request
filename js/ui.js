@@ -615,7 +615,7 @@ function getNavItems() {
       { href: 'requests.html', label: 'My Travel Requests', id: 'my-requests' }
     );
 
-    if (user.role === 'admin') {
+    if (['admin', 'approver_budget_holder'].includes(user.role)) {
       items.push(
         { href: 'approvals.html', label: 'Approvals', id: 'approvals' },
         { href: 'requests.html?scope=team', label: 'Team', id: 'team-requests' }

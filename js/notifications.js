@@ -32,11 +32,12 @@ function updateBadgeElement(count) {
 
 async function getPendingApprovalCounts() {
   try {
-    const isManager = typeof isAdmin === 'function' && isAdmin();
     const role = getUser()?.role;
-    const canReviewBudget = ['user', 'admin'].includes(role);
+    const isManager = role === 'admin';
+    const isTravelApprover = ['admin', 'approver_budget_holder'].includes(role);
+    const canReviewBudget = ['user', 'admin', 'approver_budget_holder'].includes(role);
     const [travelResult, reimbursementResult, budgetResult] = await Promise.all([
-      isManager ? api.get('/requests/pending-my-approval') : Promise.resolve({ requests: [] }),
+      isTravelApprover ? api.get('/requests/pending-my-approval') : Promise.resolve({ requests: [] }),
       isManager ? api.get('/reimbursements/pending-approvals') : Promise.resolve({ reports: [] }),
       canReviewBudget ? api.get('/requests/pending-my-budget-approval') : Promise.resolve({ requests: [] }),
     ]);

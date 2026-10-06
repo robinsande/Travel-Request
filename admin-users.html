@@ -21,7 +21,7 @@
     <div class="users-overview" aria-label="User account overview">
       <article class="users-overview__card users-overview__card--total"><span class="users-overview__label">Directory</span><strong id="users-total-count">—</strong><span>accounts</span></article>
       <article class="users-overview__card"><span class="users-overview__label">Active</span><strong id="users-active-count">—</strong><span>available now</span></article>
-      <article class="users-overview__card"><span class="users-overview__label">Approvers</span><strong id="users-admin-count">—</strong><span>line managers</span></article>
+      <article class="users-overview__card"><span class="users-overview__label">Approvers</span><strong id="users-admin-count">—</strong><span>line managers / budget holders</span></article>
       <article class="users-overview__card"><span class="users-overview__label">Needs attention</span><strong id="users-inactive-count">—</strong><span>inactive accounts</span></article>
     </div>
 
@@ -45,7 +45,7 @@
           <div class="form-group"><label for="new-position">Position</label><input id="new-position" /></div>
           <div class="form-group"><label for="new-office">Office</label><input id="new-office" /></div>
           <div class="form-group"><label for="new-department">Department</label><input id="new-department" /></div>
-          <div class="form-group"><label for="new-role">Role</label><select id="new-role"><option value="user">Staff user</option><option value="admin">Admin / line manager / approver</option><option value="superadmin">Super admin</option><option value="super_superadmin">Super super admin (read-only)</option></select></div>
+          <div class="form-group"><label for="new-role">Role</label><select id="new-role"><option value="user">Staff user</option><option value="admin">Admin / line manager / approver</option><option value="approver_budget_holder">Approver / Budget Holder</option><option value="superadmin">Super admin</option><option value="super_superadmin">Super super admin (read-only)</option></select></div>
         </div>
         <button type="submit" class="btn btn--primary create-account-button" id="create-user-btn">Create account</button>
       </form>
@@ -59,10 +59,11 @@
         </div>
         <span class="section-mark section-mark--dark" aria-hidden="true">↕</span>
       </div>
-      <p class="section-intro">Superadmins can change access levels. Admins are line managers and TAR approvers.</p>
+      <p class="section-intro">Superadmins can change access levels. Assign Approver / Budget Holder to an account that may receive either approval stage. Import and select the budget holder to route fund-code reviews to them.</p>
       <div class="role-guide" aria-label="Role descriptions">
         <div class="role-guide__item"><strong>Staff user</strong><span>Creates and tracks personal TARs.</span></div>
         <div class="role-guide__item"><strong>Admin / approver</strong><span>Reviews, approves, or declines assigned TARs.</span></div>
+        <div class="role-guide__item"><strong>Approver / Budget Holder</strong><span>Can receive line-manager approvals and budget-holder fund-code reviews. To receive fund-code reviews, also add them to the budget-holder spreadsheet.</span></div>
         <div class="role-guide__item"><strong>Superadmin</strong><span>Manages users, roles, and system access.</span></div>
         <div class="role-guide__item"><strong>Super super admin</strong><span>Views approved TARs only and receives approved flight TAR emails.</span></div>
       </div>
@@ -280,7 +281,7 @@
         loadingEl.innerHTML = '';
         document.getElementById('users-total-count').textContent = users.length;
         document.getElementById('users-active-count').textContent = users.filter((user) => user.isActive !== false).length;
-        document.getElementById('users-admin-count').textContent = users.filter((user) => user.role === 'admin').length;
+        document.getElementById('users-admin-count').textContent = users.filter((user) => ['admin', 'approver_budget_holder'].includes(user.role)).length;
         document.getElementById('users-inactive-count').textContent = users.filter((user) => user.isActive === false).length;
         document.getElementById('users-empty').hidden = true;
 
@@ -397,7 +398,7 @@
               const managerSelect = document.getElementById('edit-user-manager');
               managerSearch.value = '';
               managerSelect.innerHTML = '<option value="">No line manager</option>' + users
-                .filter((candidate) => candidate.role === 'admin' && candidate.isActive !== false && String(candidate._id || candidate.id) !== button.dataset.userId)
+                .filter((candidate) => ['admin', 'approver_budget_holder'].includes(candidate.role) && candidate.isActive !== false && String(candidate._id || candidate.id) !== button.dataset.userId)
                 .map((candidate) => {
                   const candidateId = String(candidate._id || candidate.id);
                   const selected = String(user.managerId?._id || user.managerId || '') === candidateId;
@@ -415,7 +416,7 @@
               const alternateSelect = document.getElementById('edit-user-alternates');
               alternateSearch.value = '';
               alternateSelect.innerHTML = users
-                .filter((candidate) => candidate.role === 'admin' && candidate.isActive !== false && String(candidate._id || candidate.id) !== button.dataset.userId)
+                .filter((candidate) => ['admin', 'approver_budget_holder'].includes(candidate.role) && candidate.isActive !== false && String(candidate._id || candidate.id) !== button.dataset.userId)
                 .map((candidate) => {
                   const candidateId = String(candidate._id || candidate.id);
                   const selected = (user.alternateApproverIds || []).some((id) => String(id?._id || id) === candidateId);
