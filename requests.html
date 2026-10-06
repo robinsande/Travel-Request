@@ -73,6 +73,14 @@
         <label for="filter-email" id="filter-email-label">Requested by</label>
         <input type="text" id="filter-email" placeholder="Name or email…" autocomplete="off" />
       </div>
+      <div class="form-group" id="filter-date-from-group" hidden>
+        <label for="filter-date-from">Travel from</label>
+        <input type="date" id="filter-date-from" />
+      </div>
+      <div class="form-group" id="filter-date-to-group" hidden>
+        <label for="filter-date-to">Travel to</label>
+        <input type="date" id="filter-date-to" />
+      </div>
       <button type="button" class="btn btn--ghost" id="clear-filters">Clear</button>
     </div>
 
@@ -196,6 +204,10 @@
     if (showFilters) {
       filtersBar.hidden = false;
       if (scope === 'all') document.getElementById('all-sort-group').hidden = false;
+      if (scope === 'all' && isAllRequestsViewer) {
+        document.getElementById('filter-date-from-group').hidden = false;
+        document.getElementById('filter-date-to-group').hidden = false;
+      }
       if (scope === 'team' || isAllRequestsViewer) {
         document.getElementById('filter-email-group').hidden = false;
         if (isAllRequestsViewer) {
@@ -244,11 +256,15 @@
       const search = document.getElementById('filter-search').value.trim();
       const destination = document.getElementById('filter-destination').value.trim();
       const email = document.getElementById('filter-email').value.trim();
+      const dateFrom = document.getElementById('filter-date-from').value;
+      const dateTo = document.getElementById('filter-date-to').value;
 
       if (status) filters.status = status;
       if (search) filters.search = search;
       if (destination) filters.destination = destination;
       if (email) filters.requestedByEmail = email;
+      if (dateFrom) filters.dateFrom = dateFrom;
+      if (dateTo) filters.dateTo = dateTo;
 
       return filters;
     }
@@ -450,6 +466,21 @@
       loadPage();
     }, 300);
 
+    const dateFromInput = document.getElementById('filter-date-from');
+    const dateToInput = document.getElementById('filter-date-to');
+    dateFromInput.addEventListener('change', () => {
+      dateToInput.min = dateFromInput.value;
+      if (dateFromInput.value && dateToInput.value && dateToInput.value < dateFromInput.value) {
+        dateToInput.value = '';
+      }
+    });
+    dateToInput.addEventListener('change', () => {
+      dateFromInput.max = dateToInput.value;
+      if (dateFromInput.value && dateToInput.value && dateFromInput.value > dateToInput.value) {
+        dateFromInput.value = '';
+      }
+    });
+
     if (scope === 'all' && isAllRequestsViewer) {
       exportActionsEl.hidden = false;
       exportAllTarsButton.addEventListener('click', async () => {
@@ -466,7 +497,7 @@
       });
     }
 
-    ['all-sort', 'filter-status', 'filter-search', 'filter-destination', 'filter-email'].forEach((id) => {
+    ['all-sort', 'filter-status', 'filter-search', 'filter-destination', 'filter-email', 'filter-date-from', 'filter-date-to'].forEach((id) => {
       document.getElementById(id)?.addEventListener('input', triggerFilter);
       document.getElementById(id)?.addEventListener('change', triggerFilter);
     });
@@ -476,6 +507,10 @@
       document.getElementById('filter-search').value = '';
       document.getElementById('filter-destination').value = '';
       document.getElementById('filter-email').value = '';
+      dateFromInput.value = '';
+      dateToInput.value = '';
+      dateFromInput.max = '';
+      dateToInput.min = '';
       currentPage = 1;
       loadPage();
     });

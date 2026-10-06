@@ -352,10 +352,6 @@ function renderTravelDecisionButtons(requestId) {
 function renderRequestTable(requests) {
   const rows = requests.map((request) => {
     const id = getRequestId(request);
-    const passengers = (request.passengers || [])
-      .map((passenger) => passenger.name || passenger.user?.name)
-      .filter(Boolean);
-    const travelerNames = passengers.length ? passengers.join(', ') : getRequesterLabel(request);
     const budgetHolder = request.selected_budget_holder_id?.name ||
       request.selected_budget_holder_id?.email ||
       '—';
@@ -364,7 +360,6 @@ function renderRequestTable(requests) {
 
     return `
       <tr>
-        <td data-label="Traveler(s)"><strong>${escapeHtml(travelerNames)}</strong></td>
         <td data-label="Requester">${escapeHtml(getRequesterLabel(request))}</td>
         <td data-label="Project">${escapeHtml(request.project?.name || '—')}</td>
         <td data-label="Fund code">${escapeHtml(request.project?.fundCode || '—')}</td>
@@ -387,7 +382,6 @@ function renderRequestTable(requests) {
       <table class="data-table request-table">
         <thead>
           <tr>
-            <th scope="col">Traveler(s)</th>
             <th scope="col">Requester</th>
             <th scope="col">Project</th>
             <th scope="col">Fund code</th>
