@@ -459,7 +459,7 @@ function bindTravelApprovalActions(root, options = {}) {
 async function populateBudgetHolderOptions(select, selectedId = '') {
   if (!select) return [];
   const holders = await fetchBudgetHolders();
-  select.innerHTML = '<option value="">Select a budget holder</option>';
+  select.innerHTML = '<option value="">No budget holder — send directly to line manager</option>';
   holders.forEach((holder) => {
     const option = document.createElement('option');
     option.value = String(holder._id || holder.id);
@@ -467,7 +467,7 @@ async function populateBudgetHolderOptions(select, selectedId = '') {
     select.appendChild(option);
   });
   if (selectedId) select.value = String(selectedId);
-  select.disabled = holders.length === 0;
+  select.disabled = false;
   return holders;
 }
 

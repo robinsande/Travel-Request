@@ -50,10 +50,10 @@
           <h2>Budget Holder Review</h2>
           <div class="form-group">
             <label for="resubmit-budget-holder">Select Budget Holder</label>
-            <select class="form-control" id="resubmit-budget-holder" name="selected_budget_holder_id" required>
+            <select class="form-control" id="resubmit-budget-holder" name="selected_budget_holder_id">
               <option value="">Loading budget holders…</option>
             </select>
-            <p class="form-hint">The selected budget holder verifies the fund code before the TAR returns to its line manager.</p>
+            <p class="form-hint">Optional. If selected, this person reviews the fund code before the TAR returns to its line manager. Leave blank to send it directly to the line manager.</p>
           </div>
         </section>
 
@@ -431,10 +431,6 @@
 
       const payload = buildRequestPayload(resubmitForm);
 
-      if (!payload.selected_budget_holder_id) {
-        renderApiErrors(resubmitError, { message: 'Please select a budget holder to verify the fund code.' });
-        return;
-      }
       if (!requireSelectedApprover(resubmitError, payload.selected_approver_id)) return;
       if (!requireSelectedTravelMode(resubmitError, payload.modeOfTravel)) return;
 

@@ -41,10 +41,10 @@
         <h2>Budget Holder Review</h2>
         <div class="form-group">
           <label for="selected_budget_holder_id">Select Budget Holder</label>
-          <select class="form-control" id="selected_budget_holder_id" name="selected_budget_holder_id" required>
+          <select class="form-control" id="selected_budget_holder_id" name="selected_budget_holder_id">
             <option value="">Loading budget holders…</option>
           </select>
-          <p class="form-hint">The selected budget holder verifies the fund code first. After approval, the TAR is sent to the selected line manager/approver.</p>
+          <p class="form-hint">Optional. If selected, this person receives the TAR first to verify the fund code; after approval, it goes to the selected line manager/approver. Leave blank to send it directly to the line manager.</p>
         </div>
       </section>
 
@@ -443,19 +443,14 @@
 
     async function bootstrapForm() {
       try {
-        const budgetHolders = await populateBudgetHolderOptions(
+        await populateBudgetHolderOptions(
           form.elements.selected_budget_holder_id
         );
-        if (!budgetHolders.length) {
-          renderApiErrors(errorEl, {
-            message: 'No active budget holders are available. Contact a superadmin to import the budget holder list.',
-          });
-          submitBtn.disabled = true;
-        }
       } catch (error) {
-        renderApiErrors(errorEl, error);
-        submitBtn.disabled = true;
-        return;
+        console.error('Failed to load budget holders', error);
+        renderApiErrors(errorEl, {
+          message: 'Budget holder options could not be loaded. You can still submit directly to your selected line manager.',
+        });
       }
 
       const officeInput = form.elements.employeeOffice;
@@ -533,10 +528,6 @@
 
       const payload = buildRequestPayload(form);
 
-      if (!payload.selected_budget_holder_id) {
-        renderApiErrors(errorEl, { message: 'Please select a budget holder to verify the fund code.' });
-        return;
-      }
       if (!requireSelectedApprover(errorEl, payload.selected_approver_id)) return;
       if (!requireSelectedTravelMode(errorEl, payload.modeOfTravel)) return;
 
