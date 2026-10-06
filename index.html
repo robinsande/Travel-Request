@@ -8,12 +8,22 @@
 </head>
 <body>
   <p>Redirecting to <a id="sign-in-link" href="login.html">sign in</a>…</p>
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
   <script>
-    const signInUrl = new URL('login.html', window.location.href);
-    signInUrl.search = window.location.search;
-    signInUrl.hash = window.location.hash;
-    document.getElementById('sign-in-link').href = signInUrl.href;
-    window.location.replace(signInUrl.href);
+    const user = getUser();
+    const destination = getToken()
+      ? user?.mustSetPassword
+        ? 'profile.html'
+        : getLastAuthenticatedPage() || 'dashboard.html'
+      : 'login.html';
+    const destinationUrl = new URL(destination, window.location.href);
+    if (!getToken()) {
+      destinationUrl.search = window.location.search;
+      destinationUrl.hash = window.location.hash;
+    }
+    document.getElementById('sign-in-link').href = destinationUrl.href;
+    window.location.replace(destinationUrl.href);
   </script>
 </body>
 </html>

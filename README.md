@@ -115,6 +115,7 @@ See `.env.example` for documentation only (the browser does not load `.env` file
 ## Authentication
 
 - JWT is stored in `localStorage` after login or activation.
+- The app remembers the last authenticated page and restores it when the root page is opened or refreshed.
 - Protected pages redirect to `login.html` when no token is present.
 - `401` responses clear the session and redirect to login.
 - Accounts are created by a superadmin; self-registration is not available.

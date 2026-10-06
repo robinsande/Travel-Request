@@ -1,5 +1,27 @@
+const LAST_AUTHENTICATED_PAGE_KEY = 'tar_last_authenticated_page';
+
 function getToken() {
   return localStorage.getItem(CONFIG.TOKEN_KEY);
+}
+
+function getLastAuthenticatedPage() {
+  const savedPage = localStorage.getItem(LAST_AUTHENTICATED_PAGE_KEY);
+  if (!savedPage) return null;
+
+  try {
+    const pageUrl = new URL(savedPage, window.location.origin);
+    if (
+      pageUrl.origin !== window.location.origin ||
+      !pageUrl.pathname.endsWith('.html') ||
+      ['/index.html', '/login.html', '/activate.html'].includes(pageUrl.pathname)
+    ) {
+      return null;
+    }
+
+    return `${pageUrl.pathname}${pageUrl.search}${pageUrl.hash}`;
+  } catch {
+    return null;
+  }
 }
 
 function getUser() {
@@ -21,6 +43,7 @@ function setAuth(token, user) {
 function clearAuth() {
   localStorage.removeItem(CONFIG.TOKEN_KEY);
   localStorage.removeItem(CONFIG.USER_KEY);
+  localStorage.removeItem(LAST_AUTHENTICATED_PAGE_KEY);
 }
 
 function logout() {
@@ -50,12 +73,23 @@ function requireAuth(allowedRoles) {
     }
   }
 
+  const currentPage = new URL(window.location.href);
+  if (currentPage.pathname.endsWith('.html')) {
+    localStorage.setItem(
+      LAST_AUTHENTICATED_PAGE_KEY,
+      `${currentPage.pathname}${currentPage.search}${currentPage.hash}`
+    );
+  }
+
   return true;
 }
 
 function redirectIfAuthenticated() {
   if (getToken()) {
-    window.location.replace(getUser()?.mustSetPassword ? 'profile.html' : 'dashboard.html');
+    const destination = getUser()?.mustSetPassword
+      ? 'profile.html'
+      : getLastAuthenticatedPage() || 'dashboard.html';
+    window.location.replace(destination);
   }
 }
 
