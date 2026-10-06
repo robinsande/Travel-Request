@@ -459,7 +459,7 @@ function bindTravelApprovalActions(root, options = {}) {
 async function populateBudgetHolderOptions(select, selectedId = '') {
   if (!select) return [];
   const holders = await fetchBudgetHolders();
-  select.innerHTML = '<option value="">No budget holder — send directly to line manager</option>';
+  select.innerHTML = '<option value="">Select an Approver / Budget Holder</option>';
   holders.forEach((holder) => {
     const option = document.createElement('option');
     option.value = String(holder._id || holder.id);

@@ -41,10 +41,10 @@
         <h2>Budget Holder Review</h2>
         <div class="form-group">
           <label for="selected_budget_holder_id">Select Budget Holder</label>
-          <select class="form-control" id="selected_budget_holder_id" name="selected_budget_holder_id">
+          <select class="form-control" id="selected_budget_holder_id" name="selected_budget_holder_id" required>
             <option value="">Loading budget holders…</option>
           </select>
-          <p class="form-hint">Optional. Select an active staff or approver account already in the system; no separate budget-holder import is needed. They receive the TAR first to verify the fund code, then it goes to the selected line manager/approver. Leave blank to send it directly to the line manager.</p>
+          <p class="form-hint">Required. Select an active user assigned the Approver / Budget Holder role. They receive the TAR first for review, then it goes to the selected line manager/approver.</p>
         </div>
       </section>
 
