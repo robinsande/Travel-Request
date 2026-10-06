@@ -17,10 +17,6 @@ async function loginRequest(email, password) {
   }
 }
 
-async function registerRequest(name, email, password) {
-  return api.post('/auth/register', { name, email, password });
-}
-
 async function activateAccountRequest(email, token, newPassword) {
   return api.post('/auth/activate', { email, token, newPassword });
 }

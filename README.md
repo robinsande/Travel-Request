@@ -57,7 +57,7 @@ node scripts/setPassword.js email@care.org YourPassword123
 
 ```
 frontend/
-  index.html                 → redirects to login or dashboard
+  index.html                 → redirects to sign in
   login.html                 → sign in
   activate.html              → account activation / set password
   dashboard.html             → my profile (role-aware shell home)
@@ -97,7 +97,7 @@ frontend/
 |------|-------------|
 | **user** | Create requests, submit reimbursements, view own requests and reimbursements, resubmit rejected requests, notifications |
 | **admin** | Everything user can do, plus approve/reject team requests, reimbursement approvals, team request filters |
-| **superadmin** | Read-only all requests and reimbursements, list users, import employees (no create/approve) |
+| **superadmin** | Read-only all requests and reimbursements, create accounts, manage users, import employees |
 
 ## API configuration
 
@@ -117,5 +117,6 @@ See `.env.example` for documentation only (the browser does not load `.env` file
 - JWT is stored in `localStorage` after login or activation.
 - Protected pages redirect to `login.html` when no token is present.
 - `401` responses clear the session and redirect to login.
-- Logout clears `localStorage` and returns to the landing page.
+- Accounts are created by a superadmin; self-registration is not available.
+- Logout clears `localStorage` and returns to the sign-in page.
 - Request list scopes: `?scope=mine|team|all` are sent to `GET /api/requests` so admin “My Requests” and “Team Requests” stay distinct.
