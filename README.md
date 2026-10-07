@@ -93,9 +93,11 @@ frontend/
 ```
 
 Reimbursement details provide a dedicated single-page **Payment Voucher Form** PDF
-for printing or download. The standard reimbursement PDF remains the merged
-voucher, Travel Expense Report, approved TAR, and any uploaded Other Expenses
-support document in that order.
+for printing or download; this voucher-only PDF does not include receipts or
+other supporting documents. To download the combined file, use **Download Merged
+Reimbursement Package**. It contains the voucher, Travel Expense Report, approved
+TAR, and uploaded receipt/ticket PDFs and images, followed by any uploaded Other
+Expenses support document.
 
 Requester signatures are prefilled from the requester's latest approved TAR when
 available, with the saved account signature as a fallback. Typed Payment Voucher

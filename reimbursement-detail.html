@@ -101,9 +101,9 @@
         loadingEl.innerHTML = '';
         contentEl.innerHTML = renderReimbursementDetail(currentReport);
         const extraActions = [];
-        extraActions.push('<button type="button" class="btn btn--secondary" id="download-reimbursement-pdf">Download PDF</button>');
-        extraActions.push('<button type="button" class="btn btn--secondary" id="download-payment-voucher">Download Payment Voucher</button>');
-        extraActions.push('<button type="button" class="btn btn--secondary" id="print-payment-voucher">Print Payment Voucher</button>');
+        extraActions.push('<button type="button" class="btn btn--secondary" id="download-reimbursement-pdf">Download Merged Reimbursement Package</button>');
+        extraActions.push('<button type="button" class="btn btn--secondary" id="download-payment-voucher">Download Payment Voucher Only</button>');
+        extraActions.push('<button type="button" class="btn btn--secondary" id="print-payment-voucher">Print Payment Voucher Only</button>');
         const submittedById = currentReport.submittedBy?._id ||
           currentReport.submittedBy?.id ||
           currentReport.submittedBy;
