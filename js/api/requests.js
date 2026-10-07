@@ -23,6 +23,10 @@ async function fetchRequest(id) {
   return api.get(`/requests/${id}`);
 }
 
+async function fetchMyRequesterSignature() {
+  return api.get('/requests/my-signature');
+}
+
 async function createRequest(payload) {
   return api.post('/requests', payload);
 }

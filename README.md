@@ -96,6 +96,11 @@ Reimbursement details provide a dedicated single-page **Payment Voucher Form** P
 for printing or download. The standard reimbursement PDF remains the merged
 voucher, Travel Expense Report, and approved TAR package.
 
+Requester signatures are prefilled from the requester's latest approved TAR when
+available, with the saved account signature as a fallback. TAR and reimbursement
+approver signature pads load the approver's saved account signature automatically;
+drawn or uploaded PNG signatures are reused on future approvals.
+
 ## User roles
 
 | Role | Capabilities |

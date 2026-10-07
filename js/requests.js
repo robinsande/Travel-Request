@@ -449,6 +449,7 @@ function renderRequestRow(request, options = {}) {
 }
 
 function bindTravelApprovalCard(card, options = {}) {
+  const signatureReady = initializeApprovalSignaturePads(card);
   const id = card.dataset.requestId;
   const rejectForm = card.querySelector('.reject-form');
   const commentEl = card.querySelector('.reject-comment');
@@ -461,6 +462,7 @@ function bindTravelApprovalCard(card, options = {}) {
   if (!approveBtn || !rejectToggleBtn || !confirmRejectBtn) return;
 
   approveBtn.addEventListener('click', async () => {
+    await signatureReady;
     const signature = signatureEl?.value.trim() || '';
     const decisionDate = approvalDateEl?.value || '';
     if (!signature) {
@@ -535,6 +537,7 @@ async function populateBudgetHolderOptions(select, selectedId = '') {
 }
 
 let reusableSignatureSaveTimer = null;
+let approvalSignatureProfilePromise = null;
 
 function saveReusableSignature(signature) {
   if (!/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(signature || "")) return;
@@ -551,16 +554,42 @@ function saveReusableSignature(signature) {
   }, 500);
 }
 
-async function initializeRequesterSignature(root) {
-  let savedSignature = getUser()?.savedSignature || null;
+async function initializeRequesterSignature(root, options = {}) {
+  let savedSignature = options.preferredSignature || null;
   try {
     const profile = await fetchCurrentUser();
     setAuth(getToken(), { ...getUser(), ...profile });
-    savedSignature = profile.savedSignature || null;
+    if (!savedSignature) {
+      const previous = await fetchMyRequesterSignature();
+      savedSignature = previous.signature || profile.savedSignature || null;
+    }
   } catch (error) {
     showToast(error.message || "Could not load your saved signature. You can still sign manually.", "warning");
+    savedSignature = savedSignature || getUser()?.savedSignature || null;
   }
   return initSignaturePad(root, { persistForFuture: true, savedSignature });
+}
+
+async function initializeApprovalSignaturePads(root) {
+  if (!approvalSignatureProfilePromise) {
+    approvalSignatureProfilePromise = fetchCurrentUser()
+      .then((profile) => {
+        setAuth(getToken(), { ...getUser(), ...profile });
+        return profile.savedSignature || null;
+      })
+      .catch((error) => {
+        approvalSignatureProfilePromise = null;
+        showToast(error.message || "Could not load your saved signature. You can still sign manually.", "warning");
+        return getUser()?.savedSignature || null;
+      });
+  }
+  const savedSignature = await approvalSignatureProfilePromise;
+  const pads = [];
+  if (root.matches?.('.approval-signature-field')) pads.push(root);
+  pads.push(...root.querySelectorAll('.approval-signature-field'));
+  return pads
+    .map((pad) => initSignaturePad(pad, { persistForFuture: true, savedSignature }))
+    .find((getSignature) => typeof getSignature === "function") || (() => "");
 }
 
 function initSignaturePad(root, options = {}) {
@@ -583,18 +612,23 @@ function initSignaturePad(root, options = {}) {
   context.lineJoin = 'round';
 
   if (savedSignature && valueInput) {
-    const image = new Image();
-    image.onload = () => {
-      context.clearRect(0, 0, canvas.width, canvas.height);
-      const scale = Math.min(canvas.width / image.width, canvas.height / image.height);
-      const width = image.width * scale;
-      const height = image.height * scale;
-      context.drawImage(image, (canvas.width - width) / 2, (canvas.height - height) / 2, width, height);
-      hasSignature = true;
+    if (savedSignature.startsWith('data:image/png;base64,')) {
       valueInput.value = savedSignature;
-    };
-    image.onerror = () => showToast("Your saved signature could not be loaded. Please upload it again.", "warning");
-    image.src = savedSignature;
+      const image = new Image();
+      image.onload = () => {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        const scale = Math.min(canvas.width / image.width, canvas.height / image.height);
+        const width = image.width * scale;
+        const height = image.height * scale;
+        context.drawImage(image, (canvas.width - width) / 2, (canvas.height - height) / 2, width, height);
+        hasSignature = true;
+      };
+      image.onerror = () => showToast("Your saved signature could not be loaded. Please upload it again.", "warning");
+      image.src = savedSignature;
+    } else if (textInput) {
+      textInput.value = savedSignature;
+      valueInput.value = savedSignature;
+    }
   }
 
   const saveForFuture = () => {

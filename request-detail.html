@@ -16,7 +16,7 @@
     <div id="decision-section" class="detail-section" hidden>
       <h2>Review Decision</h2>
       <div id="decision-error" class="alert alert--error" hidden role="alert"></div>
-      <div class="form-group">
+      <div class="form-group approval-signature-field">
         <label for="decision-signature">Approver Signature</label>
         <canvas class="signature-pad" width="520" height="150" aria-label="Draw approver signature"></canvas>
         <input type="file" class="signature-upload" accept="image/*,.svg,.pdf,application/pdf,image/svg+xml" />
@@ -225,12 +225,17 @@
     const decisionSection = document.getElementById('decision-section');
     const decisionError = document.getElementById('decision-error');
     const commentEl = document.getElementById('decision-comment');
-    const getDecisionSignature = initSignaturePad(decisionSection);
+    let getDecisionSignature = () => '';
+    const decisionSignatureReady = initializeApprovalSignaturePads(decisionSection);
+    decisionSignatureReady.then((getSignature) => {
+      getDecisionSignature = getSignature || (() => '');
+    });
     const approveBtn = document.getElementById('approve-btn');
     const rejectBtn = document.getElementById('reject-btn');
     document.getElementById('decision-date').value = new Date().toISOString().slice(0, 10);
     const resubmitSection = document.getElementById('resubmit-section');
     const resubmitForm = document.getElementById('resubmit-form');
+    let resubmitSignatureReady = Promise.resolve();
     bindDatePickers(resubmitForm);
     document.getElementById('add-travel-segment')?.addEventListener('click', () => {
       addTravelSegment(document.getElementById('travel-segments'));
@@ -371,7 +376,9 @@
             currentRequest.selected_budget_holder_id?._id || currentRequest.selected_budget_holder_id
           );
           await populateRequestForm(resubmitForm, currentRequest);
-          initSignaturePad(resubmitForm);
+          resubmitSignatureReady = initializeRequesterSignature(resubmitForm, {
+            preferredSignature: currentRequest.requesterSignature,
+          });
           await loadApprovers(getRequestApproverIds(currentRequest));
         } else {
           resubmitSection.hidden = true;
@@ -385,6 +392,7 @@
     async function submitDecision(status, button) {
       decisionError.hidden = true;
       const comment = commentEl.value.trim();
+      if (status === 'approved') await decisionSignatureReady;
       const signature = getDecisionSignature();
       const decisionDate = document.getElementById('decision-date').value;
 
@@ -428,6 +436,7 @@
 
     resubmitForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+      await resubmitSignatureReady;
       resubmitError.hidden = true;
 
       const payload = buildRequestPayload(resubmitForm);

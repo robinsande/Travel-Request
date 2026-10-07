@@ -34,6 +34,7 @@
 
   <script src="js/config.js"></script>
   <script src="js/api/http.js"></script>
+  <script src="js/api/users.js"></script>
   <script src="js/api/requests.js"></script>
   <script src="js/api/notifications.js"></script>
   <script src="js/auth.js"></script>
@@ -151,18 +152,27 @@
                 <dt>Budget holder</dt><dd>${escapeHtml(holder.name || user.name)}</dd></dl>
               <a class="btn btn--secondary btn--sm" href="request-detail.html?id=${encodeURIComponent(id)}">View TAR</a>
               <p class="form-hint">Review the fund code entered by the requester. No re-entry is needed.</p>
-              <div class="form-group"><label>Signature (type your full name)</label><input class="budget-holder-signature" type="text" autocomplete="name" required minlength="2" /></div>
+              <div class="form-group approval-signature-field">
+                <label>Budget Holder Signature</label>
+                <canvas class="signature-pad" width="520" height="150" aria-label="Draw budget holder signature"></canvas>
+                <input type="file" class="signature-upload" accept="image/*,.svg,image/svg+xml" />
+                <input type="text" class="signature-text-input" placeholder="Or type your full name as a digital signature" autocomplete="off" />
+                <input type="hidden" class="signature-value budget-holder-signature" />
+                <button type="button" class="btn btn--ghost btn--sm clear-signature-btn">Clear signature</button>
+              </div>
               <div class="form-group"><label>Reason / comment <span class="text-muted">(required when rejecting)</span></label><textarea class="budget-holder-comment" rows="2"></textarea></div>
               <div class="btn-group"><button type="button" class="btn btn--primary budget-holder-approve">Approve budget review</button>
                 <button type="button" class="btn btn--danger budget-holder-reject">Decline with reason</button></div>
             </article>`;
           }).join('');
+          const budgetSignatureReady = initializeApprovalSignaturePads(budgetListEl);
           budgetListEl.querySelectorAll('.budget-holder-approve').forEach((button) => {
             button.addEventListener('click', async () => {
               const card = button.closest('[data-budget-request-id]');
+              await budgetSignatureReady;
               const signature = card.querySelector('.budget-holder-signature').value.trim();
               if (signature.length < 2) {
-                showToast('Enter your full name as a signature before approving.', 'error');
+                showToast('Your saved or drawn signature is required before approving.', 'error');
                 return;
               }
               setLoading(button, true, 'Approving…');

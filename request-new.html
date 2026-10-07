@@ -124,7 +124,7 @@
           <input type="hidden" name="requesterSignature" class="signature-value" />
           <button type="button" class="btn btn--ghost btn--sm clear-signature-btn">Clear signature</button>
           <button type="button" class="btn btn--ghost btn--sm clear-saved-signature-btn">Remove saved signature from my account</button>
-          <p class="form-hint">Your saved signature is loaded automatically and printed in the Requested by section of the TAR. Upload or draw a new signature to replace it for future TARs and reimbursements.</p>
+          <p class="form-hint">Your signature from your latest approved TAR is loaded automatically when available; otherwise, your saved account signature is used. Draw or upload a replacement to update it for future TARs and reimbursements.</p>
         </div>
       </section>
 
@@ -258,7 +258,7 @@
     const approverSelectContainer = document.getElementById('approver-select');
     const previousTarSelect = document.getElementById('previous-tar-select');
     const loadPreviousTarButton = document.getElementById('load-previous-tar-btn');
-    void initializeRequesterSignature(form);
+    const requesterSignatureReady = initializeRequesterSignature(form);
     bindDatePickers(form);
     const sessionUser = getUser() || {};
     let approverSelect = null;
@@ -538,6 +538,7 @@
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      await requesterSignatureReady;
       errorEl.hidden = true;
 
       const payload = buildRequestPayload(form);

@@ -16,6 +16,15 @@
     <div id="decision-section" class="detail-section" hidden>
       <h2>Review Decision</h2>
       <div id="decision-error" class="alert alert--error" hidden role="alert"></div>
+      <div class="form-group approval-signature-field" id="reimbursement-approval-signature-field" hidden>
+        <label>Approver Signature</label>
+        <canvas class="signature-pad" width="520" height="150" aria-label="Draw approval signature"></canvas>
+        <input type="file" class="signature-upload" accept="image/*,.svg,image/svg+xml" />
+        <input type="text" class="signature-text-input" placeholder="Or type your full name as a digital signature" autocomplete="off" />
+        <input type="hidden" class="signature-value" />
+        <button type="button" class="btn btn--ghost btn--sm clear-signature-btn">Clear signature</button>
+        <p class="form-hint">Your saved account signature is loaded automatically. Draw or upload a replacement if needed.</p>
+      </div>
       <div class="form-group">
         <label for="decision-comment">Comment / decline reason</label>
         <textarea id="decision-comment" rows="3" placeholder="A reason is required when declining."></textarea>
@@ -30,10 +39,13 @@
 
   <script src="js/config.js"></script>
   <script src="js/api/http.js"></script>
+  <script src="js/api/users.js"></script>
+  <script src="js/api/requests.js"></script>
   <script src="js/api/reimbursements.js"></script>
   <script src="js/api/notifications.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/ui.js"></script>
+  <script src="js/requests.js"></script>
   <script src="js/reimbursements.js"></script>
   <script src="js/notifications.js"></script>
   <script>
@@ -66,6 +78,12 @@
     const approveBtn = document.getElementById('approve-btn');
     const rejectBtn = document.getElementById('reject-btn');
     const completePaymentBtn = document.getElementById('complete-payment-btn');
+    const approvalSignatureField = document.getElementById('reimbursement-approval-signature-field');
+    let getApprovalSignature = () => '';
+    const approvalSignatureReady = initializeApprovalSignaturePads(decisionSection);
+    approvalSignatureReady.then((getSignature) => {
+      getApprovalSignature = getSignature || (() => '');
+    });
 
     let currentReport = null;
 
@@ -178,6 +196,7 @@
         approveBtn.textContent = needsReviewStart ? 'Start Review' : 'Approve';
         rejectBtn.textContent = 'Reject';
         rejectBtn.hidden = canComplete || needsReviewStart;
+        approvalSignatureField.hidden = canComplete || needsReviewStart;
       } catch (err) {
         loadingEl.innerHTML = '';
         showToast(err.message || 'Failed to load reimbursement request.', 'error');
@@ -190,6 +209,12 @@
 
       if (status === 'rejected' && !comment) {
         renderApiErrors(decisionError, { message: 'A rejection comment is required.' });
+        return;
+      }
+      if (status === 'approved') await approvalSignatureReady;
+      const signature = status === 'approved' ? getApprovalSignature().trim() : '';
+      if (status === 'approved' && !signature) {
+        renderApiErrors(decisionError, { message: 'Your saved or drawn signature is required before approval.' });
         return;
       }
 
@@ -217,6 +242,7 @@
         await updateReimbursementStatus(reimbursementId, {
           status,
           comment: comment || undefined,
+          signature: signature || undefined,
         });
         showToast(
           status === 'review_started'
