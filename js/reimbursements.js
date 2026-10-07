@@ -172,6 +172,7 @@ function buildReimbursementPayload(form) {
     requesterSignedName: getUser()?.name?.trim() || '',
     requesterSignature: fd.get('requesterSignature')?.trim() || '',
     paymentRequestPurpose: fd.get('paymentRequestPurpose')?.trim() || '',
+    peopleSoftAccount: fd.get('peopleSoftAccount')?.trim() || '',
     paymentDetails: {
       paymentMethod: 'mpesa',
       mpesaNumber: fd.get('mpesaNumber')?.trim() || '',
@@ -555,6 +556,7 @@ function renderReimbursementDetail(report) {
       <dl class="detail-grid">
         <dt>Report ID</dt><dd>${escapeHtml(id)}</dd>
         <dt>Payment Request Purpose</dt><dd>${escapeHtml(report.paymentRequestPurpose || '—')}</dd>
+        <dt>PeopleSoft Account</dt><dd>${escapeHtml(report.peopleSoftAccount || '—')}</dd>
         <dt>Linked Travel</dt><dd>${escapeHtml(getTravelRequestLabel(report))}</dd>
         <dt>Submitted By</dt><dd>${escapeHtml(requester)}</dd>
         <dt>PeopleSoft Fund Account</dt><dd>${escapeHtml(report.travelRequest?.project?.fundCode || '—')}</dd>
@@ -595,6 +597,7 @@ function renderReimbursementDetail(report) {
               .map((attachment) => {
                 const documentTypeLabels = {
                   receipt_ticket: 'Receipt / ticket',
+                  expense_document: 'Other expense support (merged for Finance)',
                   back_to_office: 'Back-to-Office Report',
                   terms_of_reference: 'Terms of Reference',
                   other: attachment.category.replace(/_/g, ' '),

@@ -57,7 +57,7 @@
           <select id="travelRequestId" name="travelRequestId" required>
             <option value="">Select an approved trip</option>
           </select>
-          <p class="form-hint">The selected approved TAR is appended as Document 3. Its approved PeopleSoft account codes and Line Manager are used on this Payment Request.</p>
+          <p class="form-hint">The selected approved TAR is appended as Document 3. Its Fund Account, Project ID, Activity ID, Department ID, and Line Manager are used on this Payment Request.</p>
         </div>
         <div class="form-group">
           <label for="paymentRequestPurpose">Purpose</label>
@@ -80,7 +80,12 @@
             <div><span class="readonly-field__label">PeopleSoft Activity ID</span><div class="readonly-field__value" id="activity-id-display">—</div></div>
             <div><span class="readonly-field__label">PeopleSoft Department ID</span><div class="readonly-field__value" id="department-id-display">—</div></div>
           </div>
-          <p class="form-hint">Selecting an approved TAR automatically fills these codes from that TAR. They are displayed for reference and cannot be entered or changed here.</p>
+          <p class="form-hint">Selecting an approved TAR automatically fills these four codes. They are displayed for reference and cannot be entered or changed here.</p>
+        </div>
+        <div class="form-group">
+          <label for="peopleSoftAccount">PeopleSoft Account</label>
+          <input id="peopleSoftAccount" name="peopleSoftAccount" type="text" maxlength="80" required />
+          <p class="form-hint">Enter the PeopleSoft account code to show in the voucher alongside the approved TAR codes.</p>
         </div>
       </section>
 
@@ -359,6 +364,7 @@
         });
         await initReimbursementLineItems(lineItemsBody, data.lineItems || []);
         paymentRequestPurpose.value = data.paymentRequestPurpose || data.travelRequest?.purposeOfTrip || '';
+        form.elements.peopleSoftAccount.value = data.peopleSoftAccount || '';
         for (const [field, value] of Object.entries(data.paymentDetails || {})) {
           const input = form.elements[field];
           if (input && input.type !== 'radio') input.value = value || '';
@@ -402,6 +408,11 @@
       if (!payload.paymentRequestPurpose) {
         renderApiErrors(errorEl, { message: 'Please enter the Payment Request purpose.' });
         paymentRequestPurpose.focus();
+        return;
+      }
+      if (!payload.peopleSoftAccount) {
+        renderApiErrors(errorEl, { message: 'Please enter the PeopleSoft Account for the Payment Voucher.' });
+        form.elements.peopleSoftAccount.focus();
         return;
       }
 

@@ -110,16 +110,20 @@
         }
         contentEl.innerHTML += `<div class="detail-actions">${extraActions.join('')}</div>`;
         if (isOwner && currentReport.status !== 'COMPLETED') {
+          const hasOtherExpenses = (currentReport.lineItems || []).some(
+            (item) => item.category === 'OTHER EXPENSES'
+          );
           contentEl.innerHTML += `
             <section class="detail-section">
               <h2>Upload Optional Supporting Document</h2>
-              <p class="form-hint">Receipts/tickets stay separate from the merged PDF and are available to Finance. Back-to-Office Reports and Terms of Reference stay separate and are available to the Line Manager.</p>
+              <p class="form-hint">Upload only documents you have. Receipts/tickets stay separate for Finance. If this report includes an Other Expenses line, its supporting PDF or image is added after the approved TAR in the merged PDF. Back-to-Office Reports and Terms of Reference stay separate for the Line Manager.</p>
               <form id="reimbursement-attachment-form">
                 <div class="form-grid">
                   <div class="form-group">
                     <label for="attachment-document-type">Document type</label>
                     <select id="attachment-document-type" required>
                       <option value="receipt_ticket">Receipt / ticket (Finance)</option>
+                      ${hasOtherExpenses ? '<option value="expense_document">Other expense support (merged for Finance)</option>' : ''}
                       <option value="back_to_office">Back-to-Office Report (Line Manager)</option>
                       <option value="terms_of_reference">Terms of Reference (Line Manager)</option>
                       <option value="other">Other supporting document</option>
@@ -144,10 +148,14 @@
           const attachmentTypeSelect = document.getElementById('attachment-document-type');
           const otherAudienceGroup = document.getElementById('other-attachment-audience-group');
           const attachmentCategorySelect = document.getElementById('attachment-category');
+          const attachmentFileInput = document.getElementById('reimbursement-attachment-file');
           const updateOtherAttachmentAudience = () => {
             const isOther = attachmentTypeSelect.value === 'other';
             otherAudienceGroup.hidden = !isOther;
             attachmentCategorySelect.required = isOther;
+            attachmentFileInput.accept = attachmentTypeSelect.value === 'expense_document'
+              ? '.pdf,.png,.jpg,.jpeg'
+              : '.pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx';
           };
           attachmentTypeSelect.addEventListener('change', updateOtherAttachmentAudience);
           updateOtherAttachmentAudience();
@@ -158,6 +166,7 @@
             const documentType = attachmentTypeSelect.value;
             const defaultAudience = {
               receipt_ticket: 'financial',
+              expense_document: 'financial',
               back_to_office: 'line_manager',
               terms_of_reference: 'line_manager',
             };
