@@ -104,7 +104,11 @@
         extraActions.push('<button type="button" class="btn btn--secondary" id="download-reimbursement-pdf">Download PDF</button>');
         extraActions.push('<button type="button" class="btn btn--secondary" id="download-payment-voucher">Download Payment Voucher</button>');
         extraActions.push('<button type="button" class="btn btn--secondary" id="print-payment-voucher">Print Payment Voucher</button>');
-        const isOwner = String(currentReport.submittedBy?._id || currentReport.submittedBy?.id) === String(user.id);
+        const submittedById = currentReport.submittedBy?._id ||
+          currentReport.submittedBy?.id ||
+          currentReport.submittedBy;
+        const currentUserId = user.id || user._id;
+        const isOwner = String(submittedById || '') === String(currentUserId || '');
         if (isOwner && ['pending', 'rejected', 'SUPERVISOR_DECLINED', 'LINE_MANAGER_DECLINED', 'FINANCE_DECLINED'].includes(currentReport.status)) {
           extraActions.push(`<a href="reimbursement-new.html?id=${encodeURIComponent(reimbursementId)}" class="btn btn--primary" id="edit-reimbursement-btn">Edit</a>`);
         }

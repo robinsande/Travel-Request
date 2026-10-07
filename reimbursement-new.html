@@ -48,6 +48,30 @@
           </table>
         </div>
         <button type="button" class="btn btn--secondary btn--sm" id="add-line-item-btn">+ Add Line Item</button>
+        <h3>Optional supporting documents</h3>
+        <p class="form-hint">Upload only documents you have. You can also add them later from the reimbursement details page.</p>
+        <div class="form-grid" style="margin-top: 1rem;">
+          <div class="form-group">
+            <label for="receipt-ticket-files">Receipts / tickets (optional)</label>
+            <input id="receipt-ticket-files" type="file" accept=".pdf,.png,.jpg,.jpeg" multiple />
+            <p class="form-hint">Kept separate and provided to Finance.</p>
+          </div>
+          <div class="form-group" id="expense-support-group" hidden>
+            <label for="expense-support-file">Other expense supporting document</label>
+            <input id="expense-support-file" type="file" accept=".pdf,.png,.jpg,.jpeg" />
+            <p class="form-hint">Available when an OTHER EXPENSES line is included. PDF or image is appended to the merged payment package.</p>
+          </div>
+          <div class="form-group">
+            <label for="back-to-office-file">Back-to-Office Report (optional)</label>
+            <input id="back-to-office-file" type="file" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx" />
+            <p class="form-hint">Uploaded separately for the Line Manager when you have one.</p>
+          </div>
+          <div class="form-group">
+            <label for="terms-of-reference-file">Terms of Reference (optional)</label>
+            <input id="terms-of-reference-file" type="file" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx" />
+            <p class="form-hint">Uploaded separately for the Line Manager when you have one.</p>
+          </div>
+        </div>
       </section>
 
       <section class="form-section">
@@ -218,6 +242,16 @@
     const paymentRequestPurpose = document.getElementById('paymentRequestPurpose');
     const previewMergedDocumentsBtn = document.getElementById('preview-merged-documents-btn');
     const reimbursementId = new URLSearchParams(window.location.search).get('id');
+    const expenseSupportGroup = document.getElementById('expense-support-group');
+
+    function updateExpenseSupportVisibility() {
+      const hasOtherExpenses = [...lineItemsBody.querySelectorAll('[data-line-item="category"]')]
+        .some((select) => select.value === 'OTHER EXPENSES');
+      expenseSupportGroup.hidden = !hasOtherExpenses;
+      if (!hasOtherExpenses) {
+        document.getElementById('expense-support-file').value = '';
+      }
+    }
 
     function setEmployeeDetails(details = {}) {
       const name = details.name || '—';
@@ -363,6 +397,7 @@
           baseLocation: data.baseLocation || sessionUser.office,
         });
         await initReimbursementLineItems(lineItemsBody, data.lineItems || []);
+        updateExpenseSupportVisibility();
         paymentRequestPurpose.value = data.paymentRequestPurpose || data.travelRequest?.purposeOfTrip || '';
         form.elements.peopleSoftAccount.value = data.peopleSoftAccount || '';
         for (const [field, value] of Object.entries(data.paymentDetails || {})) {
@@ -459,11 +494,57 @@
             ? updateReimbursement(reimbursementId, payload)
             : createReimbursement(payload)
         );
-        showToast(reimbursementId ? 'Reimbursement request updated successfully.' : 'Reimbursement request submitted successfully.', 'success');
         const id = getReimbursementId(result);
+        if (!id) throw new Error('The reimbursement was saved but its report ID was not returned.');
+        const optionalDocuments = [
+          {
+            inputId: 'receipt-ticket-files',
+            documentType: 'receipt_ticket',
+            category: 'financial',
+          },
+          {
+            inputId: 'expense-support-file',
+            documentType: 'expense_document',
+            category: 'financial',
+          },
+          {
+            inputId: 'back-to-office-file',
+            documentType: 'back_to_office',
+            category: 'line_manager',
+          },
+          {
+            inputId: 'terms-of-reference-file',
+            documentType: 'terms_of_reference',
+            category: 'line_manager',
+          },
+        ];
+        try {
+          for (const upload of optionalDocuments) {
+            const files = [...document.getElementById(upload.inputId).files];
+            for (const file of files) {
+              await uploadReimbursementAttachment(
+                id,
+                file,
+                upload.category,
+                upload.documentType
+              );
+            }
+          }
+        } catch (uploadError) {
+          errorEl.innerHTML = `${escapeHtml(uploadError.message || 'A supporting document could not be uploaded.')} <a href="reimbursement-detail.html?id=${encodeURIComponent(id)}">Open the saved reimbursement to upload documents.</a>`;
+          errorEl.hidden = false;
+          return;
+        }
+        showToast(reimbursementId ? 'Reimbursement request updated successfully.' : 'Reimbursement request submitted successfully.', 'success');
         window.location.href = id ? `reimbursement-detail.html?id=${encodeURIComponent(id)}` : 'reimbursements.html';
       } catch (err) {
         renderApiErrors(errorEl, buildManagerAssignmentError(err) || err);
+      }
+    });
+
+    lineItemsBody.addEventListener('change', (event) => {
+      if (event.target.matches('[data-line-item="category"]')) {
+        updateExpenseSupportVisibility();
       }
     });
 
@@ -483,6 +564,7 @@
       } catch (err) {
         renderApiErrors(errorEl, err);
       }
+      updateExpenseSupportVisibility();
       updateSelectedTravelDetails();
     }
 
