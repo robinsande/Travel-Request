@@ -41,36 +41,24 @@
           <label for="paymentRequestPurpose">Purpose</label>
           <textarea id="paymentRequestPurpose" name="paymentRequestPurpose" required placeholder="Purpose of this payment request"></textarea>
         </div>
-        <fieldset class="form-group">
-          <legend>Payment Method</legend>
-          <label><input type="radio" name="paymentMethod" value="cheque" /> Payment by Cheque</label>
-          <label><input type="radio" name="paymentMethod" value="bank_transfer" checked /> Bank Transfer</label>
-          <label><input type="radio" name="paymentMethod" value="safe_cash" /> Safe Cash</label>
-        </fieldset>
-        <div class="form-grid">
-          <div class="form-group"><label for="chequeNumber">Cheque No.</label><input id="chequeNumber" name="chequeNumber" type="text" maxlength="80" /></div>
-          <div class="form-group"><label for="pickedUpBy">Picked Up By</label><input id="pickedUpBy" name="pickedUpBy" type="text" maxlength="120" /></div>
-          <div class="form-group"><label for="mailedTo">Mailed To</label><input id="mailedTo" name="mailedTo" type="text" maxlength="200" /></div>
-          <div class="form-group"><label for="mobileNumber">Mobile Number</label><input id="mobileNumber" name="mobileNumber" type="text" maxlength="40" /></div>
-          <div class="form-group"><label for="bankName">Bank Name</label><input id="bankName" name="bankName" type="text" maxlength="120" /></div>
-          <div class="form-group"><label for="bankAddress">Bank Address</label><input id="bankAddress" name="bankAddress" type="text" maxlength="200" /></div>
-          <div class="form-group"><label for="bankAccountNumber">Bank Account No.</label><input id="bankAccountNumber" name="bankAccountNumber" type="text" maxlength="80" /></div>
-          <div class="form-group"><label for="swiftCode">SWIFT Code</label><input id="swiftCode" name="swiftCode" type="text" maxlength="40" /></div>
-          <div class="form-group"><label for="beneficiaryName">Beneficiary Name</label><input id="beneficiaryName" name="beneficiaryName" type="text" maxlength="120" /></div>
-          <div class="form-group"><label for="sortCode">Sort Code</label><input id="sortCode" name="sortCode" type="text" maxlength="40" /></div>
-          <div class="form-group"><label for="intermediaryBankAddress">Intermediary Bank Address</label><input id="intermediaryBankAddress" name="intermediaryBankAddress" type="text" maxlength="200" /></div>
-          <div class="form-group"><label for="intermediaryBankAccountNumber">Intermediary Bank Account No.</label><input id="intermediaryBankAccountNumber" name="intermediaryBankAccountNumber" type="text" maxlength="80" /></div>
-          <div class="form-group"><label for="intermediarySwiftAba">Intermediary SWIFT / ABA</label><input id="intermediarySwiftAba" name="intermediarySwiftAba" type="text" maxlength="40" /></div>
+        <div class="readonly-field">
+          <span class="readonly-field__label">Payment Method</span>
+          <div class="readonly-field__value">M-PESA</div>
+        </div>
+        <div class="form-group">
+          <label for="mpesaNumber">M-PESA Mobile Number</label>
+          <input id="mpesaNumber" name="mpesaNumber" type="tel" maxlength="40" autocomplete="tel" required />
+          <p class="form-hint">Enter the mobile number registered for M-PESA.</p>
         </div>
         <div class="readonly-field">
           <span class="readonly-field__label">Account Classification from the Approved TAR</span>
           <div class="readonly-grid">
-            <div><span class="readonly-field__label">PeopleSoft Fund Account</span><div class="readonly-field__value" id="fund-code-display">Select an approved TAR</div></div>
+            <div><span class="readonly-field__label">PeopleSoft Fund Account</span><div class="readonly-field__value" id="fund-code-display">Choose an approved TAR to display</div></div>
             <div><span class="readonly-field__label">PeopleSoft Project ID</span><div class="readonly-field__value" id="project-id-display">—</div></div>
             <div><span class="readonly-field__label">PeopleSoft Activity ID</span><div class="readonly-field__value" id="activity-id-display">—</div></div>
             <div><span class="readonly-field__label">PeopleSoft Department ID</span><div class="readonly-field__value" id="department-id-display">—</div></div>
           </div>
-          <p class="form-hint">These accounting codes come from the selected approved TAR and cannot be changed on the reimbursement.</p>
+          <p class="form-hint">Selecting an approved TAR automatically fills these codes from that TAR. They are displayed for reference and cannot be entered or changed here.</p>
         </div>
       </section>
 
@@ -384,10 +372,6 @@
           if (input && input.type !== 'radio') input.value = value || '';
           if (input?.type === 'radio') input.checked = input.value === value;
         }
-        const paymentMethodInput = form.querySelector(
-          `input[name="paymentMethod"][value="${CSS.escape(data.paymentDetails?.paymentMethod || 'bank_transfer')}"]`
-        );
-        if (paymentMethodInput) paymentMethodInput.checked = true;
         await loadSupervisors(data.supervisorId);
         submitBtn.textContent = 'Update Reimbursement';
       } catch (err) {
