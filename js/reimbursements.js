@@ -129,10 +129,22 @@ function getSelectedTravelDestination(form) {
   return option?.dataset?.destination?.trim() || option?.textContent?.trim() || '';
 }
 
+function getAutoExpenseDescription(destination) {
+  return destination ? `Per diem while in ${destination}` : 'Per diem';
+}
+
+function updateReimbursementLineItemDescriptions(form) {
+  const description = getAutoExpenseDescription(getSelectedTravelDestination(form));
+  form?.querySelectorAll('[data-line-item="description"]').forEach((input) => {
+    input.value = description;
+  });
+}
+
 function buildReimbursementPayload(form) {
   const fd = new FormData(form);
   const rows = form.querySelectorAll('[data-line-item-row]');
   const tripLocation = getSelectedTravelDestination(form);
+  const expenseDescription = getAutoExpenseDescription(tripLocation);
   const lineItems = [];
 
   rows.forEach((row) => {
@@ -145,7 +157,7 @@ function buildReimbursementPayload(form) {
         expenseDate,
         location: tripLocation,
         category,
-        description: row.querySelector('[data-line-item="description"]')?.value?.trim() || '',
+        description: expenseDescription,
         invoiceNumber: row.querySelector('[data-line-item="invoiceNumber"]')?.value?.trim() || '',
         amount: Number(amount || 0),
       });
@@ -185,7 +197,6 @@ function addReimbursementLineItemRow(container, item = {}, categories = expenseC
     categories
   );
   const initialDescription = String(item.description || '').trim();
-  const descriptionIsCategory = initialDescription.toLowerCase() === selectedCategory.toLowerCase();
   const standardRate = STANDARD_EXPENSE_RATES[selectedCategory];
   const initialAmount = standardRate ?? item.amount ?? '';
   const row = document.createElement('tr');
@@ -211,8 +222,8 @@ function addReimbursementLineItemRow(container, item = {}, categories = expenseC
       <div class="form-group">
         <label class="mobile-only-label" for="expense-description-${idx}">Description</label>
         <input type="text" id="expense-description-${idx}" data-line-item="description" value="${escapeHtml(
-          descriptionIsCategory ? '' : initialDescription
-        )}" placeholder="e.g., Per diem in Dadaab" maxlength="200" required />
+          initialDescription
+        )}" maxlength="200" readonly aria-readonly="true" required />
       </div>
     </td>
     <td data-label="Invoice No.">
@@ -260,6 +271,7 @@ function addReimbursementLineItemRow(container, item = {}, categories = expenseC
   });
 
   container.appendChild(row);
+  updateReimbursementLineItemDescriptions(container.closest('form'));
 }
 
 async function initReimbursementLineItems(container, items = []) {

@@ -28,7 +28,7 @@
     <form id="reimbursement-form" novalidate>
       <section class="form-section">
         <h2>Travel Expense Report — Document 2</h2>
-        <p class="form-hint">Complete your expenses by date. Daily totals from this report are used in the Payment Voucher Form. Voucher descriptions use the destination from the approved TAR.</p>
+        <p class="form-hint">Complete your expenses by date. Daily totals from this report are used in the Payment Voucher Form. Each expense description is filled from the selected approved TAR destination.</p>
         <p class="form-hint">Enter expenses by category; add multiple expense entries on the same date when needed. A report supports up to 30 travel days.</p>
         <p class="form-hint">Breakfast is KSH 1,000, lunch is KSH 1,000, and dinner is KSH 1,500. Those amounts fill automatically; enter other expense amounts manually.</p>
         <p class="form-hint" data-expense-day-count>0 of 30 travel days</p>
@@ -317,6 +317,7 @@
 
     function updateSelectedTravelDetails() {
       const selectedOption = travelSelect.selectedOptions[0];
+      updateReimbursementLineItemDescriptions(form);
       const lineManagerId = selectedOption?.dataset.lineManagerId || '';
       for (const option of supervisorSelect.options) {
         option.disabled = Boolean(option.value && option.value === lineManagerId);
