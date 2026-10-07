@@ -75,10 +75,11 @@ async function updateReimbursementStatus(id, payload) {
   return api.patch(`/reimbursements/${id}/status`, payload);
 }
 
-async function uploadReimbursementAttachment(id, file, category) {
+async function uploadReimbursementAttachment(id, file, category, documentType = 'other') {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('category', category);
+  formData.append('documentType', documentType);
   return api.upload(`/reimbursements/${id}/attachments`, formData);
 }
 
@@ -87,6 +88,10 @@ async function downloadReimbursementAttachment(id, attachmentId, filename) {
     `/reimbursements/${id}/attachments/${attachmentId}`,
     filename || `reimbursement-attachment-${attachmentId}`
   );
+}
+
+async function previewReimbursementAttachment(id, attachmentId) {
+  return viewFile(`/reimbursements/${id}/attachments/${attachmentId}?view=true`);
 }
 
 async function fetchReimbursementPdf(id) {

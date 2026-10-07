@@ -592,7 +592,16 @@ function renderReimbursementDetail(report) {
       ${
         report.attachments?.length
           ? `<ul class="attachment-list">${report.attachments
-              .map((attachment) => `<li><span>${escapeHtml(attachment.originalName)} · ${escapeHtml(attachment.category.replace(/_/g, ' '))}</span><button type="button" class="btn btn--secondary btn--sm" data-download-attachment="${escapeHtml(attachment._id)}" data-attachment-name="${escapeHtml(attachment.originalName)}">Download</button></li>`)
+              .map((attachment) => {
+                const documentTypeLabels = {
+                  receipt_ticket: 'Receipt / ticket',
+                  back_to_office: 'Back-to-Office Report',
+                  terms_of_reference: 'Terms of Reference',
+                  other: attachment.category.replace(/_/g, ' '),
+                };
+                const canPreview = attachment.mimeType === 'application/pdf' || attachment.mimeType?.startsWith('image/');
+                return `<li><span>${escapeHtml(documentTypeLabels[attachment.documentType] || attachment.category.replace(/_/g, ' '))}: ${escapeHtml(attachment.originalName)}</span>${canPreview ? `<button type="button" class="btn btn--secondary btn--sm" data-preview-attachment="${escapeHtml(attachment._id)}">Preview</button>` : ''}<button type="button" class="btn btn--secondary btn--sm" data-download-attachment="${escapeHtml(attachment._id)}" data-attachment-name="${escapeHtml(attachment.originalName)}">Download</button></li>`;
+              })
               .join('')}</ul>`
           : '<p class="text-muted">No supporting documents are available to you.</p>'
       }

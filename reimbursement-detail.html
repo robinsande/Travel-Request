@@ -112,12 +112,22 @@
         if (isOwner && currentReport.status !== 'COMPLETED') {
           contentEl.innerHTML += `
             <section class="detail-section">
-              <h2>Upload Supporting Document</h2>
+              <h2>Upload Optional Supporting Document</h2>
+              <p class="form-hint">Receipts/tickets stay separate from the merged PDF and are available to Finance. Back-to-Office Reports and Terms of Reference stay separate and are available to the Line Manager.</p>
               <form id="reimbursement-attachment-form">
                 <div class="form-grid">
                   <div class="form-group">
+                    <label for="attachment-document-type">Document type</label>
+                    <select id="attachment-document-type" required>
+                      <option value="receipt_ticket">Receipt / ticket (Finance)</option>
+                      <option value="back_to_office">Back-to-Office Report (Line Manager)</option>
+                      <option value="terms_of_reference">Terms of Reference (Line Manager)</option>
+                      <option value="other">Other supporting document</option>
+                    </select>
+                  </div>
+                  <div class="form-group" id="other-attachment-audience-group" hidden>
                     <label for="attachment-category">Visible to</label>
-                    <select id="attachment-category" required>
+                    <select id="attachment-category">
                       <option value="financial">Finance Admin</option>
                       <option value="line_manager">Line Manager</option>
                       <option value="supervisor">Supervisor</option>
@@ -131,15 +141,33 @@
                 <button type="submit" class="btn btn--secondary">Upload document</button>
               </form>
             </section>`;
+          const attachmentTypeSelect = document.getElementById('attachment-document-type');
+          const otherAudienceGroup = document.getElementById('other-attachment-audience-group');
+          const attachmentCategorySelect = document.getElementById('attachment-category');
+          const updateOtherAttachmentAudience = () => {
+            const isOther = attachmentTypeSelect.value === 'other';
+            otherAudienceGroup.hidden = !isOther;
+            attachmentCategorySelect.required = isOther;
+          };
+          attachmentTypeSelect.addEventListener('change', updateOtherAttachmentAudience);
+          updateOtherAttachmentAudience();
           document.getElementById('reimbursement-attachment-form')?.addEventListener('submit', async (event) => {
             event.preventDefault();
             const file = document.getElementById('reimbursement-attachment-file').files[0];
             if (!file) return;
+            const documentType = attachmentTypeSelect.value;
+            const defaultAudience = {
+              receipt_ticket: 'financial',
+              back_to_office: 'line_manager',
+              terms_of_reference: 'line_manager',
+            };
+            const category = defaultAudience[documentType] || attachmentCategorySelect.value;
             try {
               await uploadReimbursementAttachment(
                 reimbursementId,
                 file,
-                document.getElementById('attachment-category').value
+                category,
+                documentType
               );
               showToast('Supporting document uploaded.', 'success');
               await loadDetail();
@@ -158,6 +186,18 @@
               );
             } catch (error) {
               showToast(error.message || 'Failed to download the document.', 'error');
+            }
+          });
+        });
+        contentEl.querySelectorAll('[data-preview-attachment]').forEach((button) => {
+          button.addEventListener('click', async () => {
+            try {
+              await previewReimbursementAttachment(
+                reimbursementId,
+                button.dataset.previewAttachment
+              );
+            } catch (error) {
+              showToast(error.message || 'Failed to preview the document.', 'error');
             }
           });
         });

@@ -458,21 +458,19 @@
 
     async function initForm() {
       try {
-        await initReimbursementLineItems(lineItemsBody);
+        initSignaturePad(form, {
+          persistForFuture: true,
+          savedSignature: getUser()?.savedSignature,
+        });
+        await Promise.all([
+          initReimbursementLineItems(lineItemsBody),
+          loadProfileDefaults(),
+          loadSupervisors(''),
+          reimbursementId ? loadExistingReport() : loadFinanceAdmins(''),
+          reimbursementId ? Promise.resolve() : loadApprovedTravelRequests(),
+        ]);
       } catch (err) {
         renderApiErrors(errorEl, err);
-      }
-      await loadProfileDefaults();
-      initSignaturePad(form, {
-        persistForFuture: true,
-        savedSignature: getUser()?.savedSignature,
-      });
-      await loadSupervisors('');
-      await loadFinanceAdmins('');
-      if (reimbursementId) {
-        await loadExistingReport();
-      } else {
-        await loadApprovedTravelRequests();
       }
       updateSelectedTravelDetails();
     }
