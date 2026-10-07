@@ -167,12 +167,14 @@ function buildReimbursementPayload(form) {
   return {
     travelRequestId: fd.get('travelRequestId')?.trim() || '',
     supervisorId: fd.get('supervisorId')?.trim() || '',
-    financeAdminId: fd.get('financeAdminId')?.trim() || '',
-    financeCcAdminId: fd.get('financeCcAdminId')?.trim() || '',
     requesterSignedName: getUser()?.name?.trim() || '',
     requesterSignature: fd.get('requesterSignature')?.trim() || '',
     paymentRequestPurpose: fd.get('paymentRequestPurpose')?.trim() || '',
     peopleSoftAccount: fd.get('peopleSoftAccount')?.trim() || '',
+    peopleSoftFundCode: fd.get('peopleSoftFundCode')?.trim() || '',
+    peopleSoftProjectId: fd.get('peopleSoftProjectId')?.trim() || '',
+    peopleSoftActivityId: fd.get('peopleSoftActivityId')?.trim() || '',
+    peopleSoftDepartmentId: fd.get('peopleSoftDepartmentId')?.trim() || '',
     paymentDetails: {
       paymentMethod: 'mpesa',
       mpesaNumber: fd.get('mpesaNumber')?.trim() || '',

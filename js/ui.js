@@ -21,6 +21,7 @@ const STATUS_LABELS = {
   FINANCE_APPROVED: 'Finance approved',
   FINANCE_DECLINED: 'Finance declined',
   PAYMENT_PROCESSING: 'Payment processing',
+  APPROVED_FOR_FINANCE_SUBMISSION: 'Approved — send package to Finance',
   COMPLETED: 'Completed',
 };
 

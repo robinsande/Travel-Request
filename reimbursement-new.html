@@ -82,7 +82,7 @@
           <select id="travelRequestId" name="travelRequestId" required>
             <option value="">Select an approved trip</option>
           </select>
-          <p class="form-hint">The selected approved TAR is appended as Document 3. Its Fund Account, Project ID, Activity ID, Department ID, and Line Manager are used on this Payment Request.</p>
+          <p class="form-hint">The selected approved TAR is appended as Document 3. Its Fund Account, Project ID, Activity ID, Department ID, and Line Manager are prefilled on this Payment Request.</p>
         </div>
         <div class="form-group">
           <label for="paymentRequestPurpose">Purpose</label>
@@ -100,12 +100,12 @@
         <div class="readonly-field">
           <span class="readonly-field__label">Account Classification from the Approved TAR</span>
           <div class="readonly-grid">
-            <div><span class="readonly-field__label">PeopleSoft Fund Account</span><div class="readonly-field__value" id="fund-code-display">Choose an approved TAR to display</div></div>
-            <div><span class="readonly-field__label">PeopleSoft Project ID</span><div class="readonly-field__value" id="project-id-display">—</div></div>
-            <div><span class="readonly-field__label">PeopleSoft Activity ID</span><div class="readonly-field__value" id="activity-id-display">—</div></div>
-            <div><span class="readonly-field__label">PeopleSoft Department ID</span><div class="readonly-field__value" id="department-id-display">—</div></div>
+            <div class="form-group"><label for="peopleSoftFundCode">PeopleSoft Fund Account</label><input id="peopleSoftFundCode" name="peopleSoftFundCode" type="text" maxlength="80" /></div>
+            <div class="form-group"><label for="peopleSoftProjectId">PeopleSoft Project ID</label><input id="peopleSoftProjectId" name="peopleSoftProjectId" type="text" maxlength="80" /></div>
+            <div class="form-group"><label for="peopleSoftActivityId">PeopleSoft Activity ID</label><input id="peopleSoftActivityId" name="peopleSoftActivityId" type="text" maxlength="80" /></div>
+            <div class="form-group"><label for="peopleSoftDepartmentId">PeopleSoft Department ID</label><input id="peopleSoftDepartmentId" name="peopleSoftDepartmentId" type="text" maxlength="80" /></div>
           </div>
-          <p class="form-hint">Selecting an approved TAR automatically fills these four codes. They are displayed for reference and cannot be entered or changed here.</p>
+          <p class="form-hint">These codes are prefilled from the approved TAR and can be edited for this reimbursement.</p>
         </div>
         <div class="form-group">
           <label for="peopleSoftAccount">PeopleSoft Account</label>
@@ -160,19 +160,9 @@
           <div class="readonly-field__value" id="line-manager-display">Select an approved TAR to view its Line Manager.</div>
           <p class="form-hint">The Budget Holder must approve and sign first. A different Line Manager receives a copy for acknowledgement after Budget Holder approval. If both roles are held by the same person, no duplicate acknowledgement is needed.</p>
         </div>
-        <div class="form-group">
-          <label for="financeAdminId">Finance Approver</label>
-          <select id="financeAdminId" name="financeAdminId" required>
-            <option value="">Select a Finance Department approver</option>
-          </select>
-          <p class="form-hint">Finance review will be assigned only to the selected active Finance Department approver.</p>
-        </div>
-        <div class="form-group">
-          <label for="financeCcAdminId">Copy another Finance Department contact for acknowledgement (Optional)</label>
-          <select id="financeCcAdminId" name="financeCcAdminId">
-            <option value="">Do not copy another Finance Department contact</option>
-          </select>
-          <p class="form-hint">The selected Finance Department approver approves and signs. A copied Finance Department contact can acknowledge with a signature but cannot approve or release payment.</p>
+        <div class="readonly-field" aria-disabled="true">
+          <span class="readonly-field__label">Finance Processing (handled outside this system)</span>
+          <div class="readonly-field__value">Finance approval is disabled here. After the Budget Holder approves and the Line Manager acknowledges (when they are different people), you will receive an email. Download the approved merged package and email it to Finance for payment processing.</div>
         </div>
       </section>
 
@@ -234,8 +224,6 @@
     const submitBtn = document.getElementById('submit-btn');
     const lineItemsBody = document.getElementById('line-items-body');
     const travelSelect = document.getElementById('travelRequestId');
-    const financeAdminSelect = document.getElementById('financeAdminId');
-    const financeCcAdminSelect = document.getElementById('financeCcAdminId');
     const lineManagerDisplay = document.getElementById('line-manager-display');
     const budgetHolderDisplay = document.getElementById('budget-holder-display');
     const paymentRequestPurpose = document.getElementById('paymentRequestPurpose');
@@ -247,7 +235,6 @@
     const draftStatus = document.getElementById('reimbursement-draft-status');
     let draftSaveTimer = null;
     let isSubmissionComplete = false;
-    const financeDefaultsKey = `reimbursement-finance-defaults-${sessionUser.id || sessionUser._id || sessionUser.email || 'current-user'}`;
 
     function saveDraft() {
       if (isSubmissionComplete) return true;
@@ -427,40 +414,7 @@
       }
     }
 
-    async function loadFinanceAdmins(selectedId, selectedCcId) {
-      try {
-        const result = await fetchFinanceAdmins();
-        const financeAdmins = result.data || result.users || result || [];
-        let savedDefaults = {};
-        try {
-          savedDefaults = JSON.parse(localStorage.getItem(financeDefaultsKey) || '{}');
-        } catch (error) {
-          console.error('Failed to read saved Finance approver defaults', error);
-        }
-        const financeAdminOptions = financeAdmins.map((financeAdmin) =>
-          `<option value="${escapeHtml(financeAdmin._id || financeAdmin.id)}">${escapeHtml(financeAdmin.name)} (${escapeHtml(financeAdmin.email)})</option>`
-        ).join('');
-        financeAdminSelect.innerHTML = '<option value="">Select a Finance Department approver</option>' + financeAdminOptions;
-        financeCcAdminSelect.innerHTML = '<option value="">Do not copy another Finance Department contact</option>' + financeAdminOptions;
-        financeAdminSelect.value = selectedId?._id || selectedId || savedDefaults.financeAdminId || '';
-        financeCcAdminSelect.value = selectedCcId?._id || selectedCcId || savedDefaults.financeCcAdminId || '';
-        updateFinanceCcOptions();
-      } catch (err) {
-        renderApiErrors(errorEl, err);
-      }
-    }
-
-    function updateFinanceCcOptions() {
-      const assignedFinanceId = financeAdminSelect.value;
-      for (const option of financeCcAdminSelect.options) {
-        option.disabled = Boolean(option.value && option.value === assignedFinanceId);
-      }
-      if (financeCcAdminSelect.value === assignedFinanceId) {
-        financeCcAdminSelect.value = '';
-      }
-    }
-
-    function updateSelectedTravelDetails() {
+    function updateSelectedTravelDetails(resetProjectCodes = false) {
       const selectedOption = travelSelect.selectedOptions[0];
       updateReimbursementLineItemDescriptions(form);
       const lineManagerId = selectedOption?.dataset.lineManagerId || '';
@@ -473,10 +427,17 @@
       if (lineManagerId && budgetHolderId && lineManagerId === budgetHolderId) {
         lineManagerDisplay.textContent += ' (same person as Budget Holder; no separate copy is needed)';
       }
-      document.getElementById('fund-code-display').textContent = selectedOption?.dataset.fundCode || '—';
-      document.getElementById('project-id-display').textContent = selectedOption?.dataset.projectId || '—';
-      document.getElementById('activity-id-display').textContent = selectedOption?.dataset.activityId || '—';
-      document.getElementById('department-id-display').textContent = selectedOption?.dataset.departmentId || '—';
+      if (resetProjectCodes && selectedOption?.value) {
+        form.elements.peopleSoftFundCode.value = selectedOption.dataset.fundCode || '';
+        form.elements.peopleSoftProjectId.value = selectedOption.dataset.projectId || '';
+        form.elements.peopleSoftActivityId.value = selectedOption.dataset.activityId || '';
+        form.elements.peopleSoftDepartmentId.value = selectedOption.dataset.departmentId || '';
+      } else if (resetProjectCodes) {
+        form.elements.peopleSoftFundCode.value = '';
+        form.elements.peopleSoftProjectId.value = '';
+        form.elements.peopleSoftActivityId.value = '';
+        form.elements.peopleSoftDepartmentId.value = '';
+      }
       if (selectedOption?.dataset.purpose && !paymentRequestPurpose.value.trim()) {
         paymentRequestPurpose.value = selectedOption.dataset.purpose;
       }
@@ -493,7 +454,6 @@
         }
         const selectedTravelRequestId = getLinkedTravelId(data.travelRequest);
         await loadApprovedTravelRequests(selectedTravelRequestId);
-        await loadFinanceAdmins(data.financeAdminId, data.financeCcAdminId);
         const sessionUser = getUser() || {};
         setEmployeeDetails({
           name: sessionUser.name,
@@ -507,6 +467,10 @@
         updateExpenseSupportVisibility();
         paymentRequestPurpose.value = data.paymentRequestPurpose || data.travelRequest?.purposeOfTrip || '';
         form.elements.peopleSoftAccount.value = data.peopleSoftAccount || '';
+        form.elements.peopleSoftFundCode.value = data.peopleSoftFundCode ?? data.travelRequest?.project?.fundCode ?? '';
+        form.elements.peopleSoftProjectId.value = data.peopleSoftProjectId ?? data.travelRequest?.project?.projectId ?? '';
+        form.elements.peopleSoftActivityId.value = data.peopleSoftActivityId ?? data.travelRequest?.project?.activityId ?? '';
+        form.elements.peopleSoftDepartmentId.value = data.peopleSoftDepartmentId ?? data.travelRequest?.project?.departmentId ?? '';
         for (const [field, value] of Object.entries(data.paymentDetails || {})) {
           const input = form.elements[field];
           if (input && input.type !== 'radio') input.value = value || '';
@@ -523,12 +487,6 @@
       errorEl.hidden = true;
 
       const payload = buildReimbursementPayload(form);
-
-      if (!payload.financeAdminId) {
-        renderApiErrors(errorEl, { message: 'Please select an active Finance Department approver.' });
-        financeAdminSelect.focus();
-        return;
-      }
 
       if (!payload.requesterSignedName) {
         renderApiErrors(errorEl, { message: 'Your staff account name is not available for the requester signature.' });
@@ -672,7 +630,7 @@
         await Promise.all([
           initReimbursementLineItems(lineItemsBody),
           loadProfileDefaults(),
-          reimbursementId ? loadExistingReport() : loadFinanceAdmins(''),
+          reimbursementId ? loadExistingReport() : Promise.resolve(),
           reimbursementId ? Promise.resolve() : loadApprovedTravelRequests(),
         ]);
       } catch (err) {
@@ -685,22 +643,7 @@
       updateSelectedTravelDetails();
     }
 
-    travelSelect.addEventListener('change', updateSelectedTravelDetails);
-    const saveFinanceDefaults = () => {
-      try {
-        localStorage.setItem(financeDefaultsKey, JSON.stringify({
-          financeAdminId: financeAdminSelect.value,
-          financeCcAdminId: financeCcAdminSelect.value,
-        }));
-      } catch (error) {
-        console.error('Failed to save Finance approver defaults', error);
-      }
-    };
-    financeAdminSelect.addEventListener('change', () => {
-      updateFinanceCcOptions();
-      saveFinanceDefaults();
-    });
-    financeCcAdminSelect.addEventListener('change', saveFinanceDefaults);
+    travelSelect.addEventListener('change', () => updateSelectedTravelDetails(true));
 
     initForm();
     previewMergedDocumentsBtn.addEventListener('click', async () => {
