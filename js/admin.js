@@ -52,7 +52,7 @@ function renderUserRow(user) {
   const roleOptions = roles
     .map(
       (role) =>
-        `<option value="${role}" ${role === user.role ? 'selected' : ''}>${role === 'admin' ? 'Admin / Line Manager' : role === 'approver_budget_holder' ? 'Approver / Budget Holder (both roles)' : role === 'super_superadmin' ? 'Super super admin (read-only)' : role}</option>`
+        `<option value="${role}" ${role === user.role ? 'selected' : ''}>${escapeHtml(role === 'approver_budget_holder' ? 'Approver / Budget Holder' : formatRoleLabel(role))}</option>`
     )
     .join('');
 
@@ -67,20 +67,23 @@ function renderUserRow(user) {
         </select>
         <div class="workflow-role-select" data-user-id="${escapeHtml(user._id || user.id)}" aria-label="Workflow roles for ${escapeHtml(user.name)}">
           <label><input type="checkbox" value="supervisor" ${user.roles?.includes('supervisor') ? 'checked' : ''} /> Supervisor</label>
-          <label><input type="checkbox" value="finance_admin" ${user.roles?.includes('finance_admin') ? 'checked' : ''} /> Finance Admin</label>
+          <label><input type="checkbox" value="finance_admin" ${user.roles?.includes('finance_admin') ? 'checked' : ''} /> Finance Department</label>
           <label><input type="checkbox" value="auditor" ${user.roles?.includes('auditor') ? 'checked' : ''} /> Auditor</label>
         </div>
       </td>
       <td data-label="Manager">${escapeHtml(formatManagerLabel(user) || '—')}</td>
       <td data-label="Status">
         <span class="account-status account-status--${user.isActive === false ? 'inactive' : 'active'}"><span></span>${user.isActive === false ? 'Inactive' : 'Active'}</span>
-        <div class="user-actions">
+        <details class="user-actions-dropdown">
+          <summary class="btn btn--secondary user-actions-dropdown__toggle">Actions</summary>
+          <div class="user-actions">
           <button type="button" class="btn btn--secondary user-status-button" data-user-id="${escapeHtml(user._id || user.id)}" data-active="${user.isActive !== false}">${user.isActive === false ? 'Activate' : 'Deactivate'}</button>
           <button type="button" class="btn btn--secondary user-edit-button" data-user-id="${escapeHtml(user._id || user.id)}">Edit profile</button>
           <button type="button" class="btn btn--secondary user-draft-button" data-user-id="${escapeHtml(user._id || user.id)}">View TAR draft</button>
           <button type="button" class="btn btn--secondary user-reset-password-button" data-user-id="${escapeHtml(user._id || user.id)}">Reset password</button>
           <button type="button" class="btn btn--danger user-delete-button" data-user-id="${escapeHtml(user._id || user.id)}">Delete</button>
-        </div>
+          </div>
+        </details>
       </td>
     </tr>`;
 }

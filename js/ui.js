@@ -24,6 +24,18 @@ const STATUS_LABELS = {
   COMPLETED: 'Completed',
 };
 
+function formatRoleLabel(role) {
+  const labels = {
+    user: 'Staff User',
+    admin: 'Line Manager',
+    approver_budget_holder: 'Approver / Budget Holder',
+    superadmin: 'Super Admin',
+    super_superadmin: 'Travel Coordinator',
+    finance_admin: 'Finance Department',
+  };
+  return labels[role] || String(role || '');
+}
+
 function showToast(message, type = 'info', duration = 4000) {
   let container = document.getElementById('toast-container');
 
@@ -854,7 +866,7 @@ function renderAppShell(activeId) {
 
         <div class="user-menu">
           <span class="user-menu__name">${escapeHtml(user.name)}</span>
-          <span class="user-menu__role badge badge--role">${escapeHtml(user.role)}</span>
+          <span class="user-menu__role badge badge--role">${escapeHtml(formatRoleLabel(user.roles?.includes('finance_admin') ? 'finance_admin' : user.role))}</span>
           <button type="button" class="btn btn--danger btn--sm" id="logout-btn">Log out</button>
         </div>
       </div>

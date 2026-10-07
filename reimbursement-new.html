@@ -18,7 +18,7 @@
     </div>
 
     <p class="text-muted">
-      Complete the Travel Expense Report for an approved trip. The Budget Holder from the TAR approves first, followed by Finance; the TAR Line Manager and any copied Finance Admin can sign an acknowledgement.
+      Complete the Travel Expense Report for an approved trip. The Budget Holder from the TAR approves first, followed by Finance; the TAR Line Manager and any copied Finance Department contact can sign an acknowledgement.
     </p>
     <div class="btn-group" style="margin-bottom: 1rem;">
       <a href="ter-template.html" class="btn btn--secondary">View TER Template</a>
@@ -163,16 +163,16 @@
         <div class="form-group">
           <label for="financeAdminId">Finance Approver</label>
           <select id="financeAdminId" name="financeAdminId" required>
-            <option value="">Select a Finance Admin</option>
+            <option value="">Select a Finance Department approver</option>
           </select>
-          <p class="form-hint">Finance review will be assigned only to the selected active Finance Admin.</p>
+          <p class="form-hint">Finance review will be assigned only to the selected active Finance Department approver.</p>
         </div>
         <div class="form-group">
-          <label for="financeCcAdminId">Copy another Finance Admin for acknowledgement (Optional)</label>
+          <label for="financeCcAdminId">Copy another Finance Department contact for acknowledgement (Optional)</label>
           <select id="financeCcAdminId" name="financeCcAdminId">
-            <option value="">Do not copy another Finance Admin</option>
+            <option value="">Do not copy another Finance Department contact</option>
           </select>
-          <p class="form-hint">The selected Finance Admin approves and signs. A copied Finance Admin can acknowledge with a signature but cannot approve or release payment.</p>
+          <p class="form-hint">The selected Finance Department approver approves and signs. A copied Finance Department contact can acknowledge with a signature but cannot approve or release payment.</p>
         </div>
       </section>
 
@@ -440,8 +440,8 @@
         const financeAdminOptions = financeAdmins.map((financeAdmin) =>
           `<option value="${escapeHtml(financeAdmin._id || financeAdmin.id)}">${escapeHtml(financeAdmin.name)} (${escapeHtml(financeAdmin.email)})</option>`
         ).join('');
-        financeAdminSelect.innerHTML = '<option value="">Select a Finance Admin</option>' + financeAdminOptions;
-        financeCcAdminSelect.innerHTML = '<option value="">Do not copy another Finance Admin</option>' + financeAdminOptions;
+        financeAdminSelect.innerHTML = '<option value="">Select a Finance Department approver</option>' + financeAdminOptions;
+        financeCcAdminSelect.innerHTML = '<option value="">Do not copy another Finance Department contact</option>' + financeAdminOptions;
         financeAdminSelect.value = selectedId?._id || selectedId || savedDefaults.financeAdminId || '';
         financeCcAdminSelect.value = selectedCcId?._id || selectedCcId || savedDefaults.financeCcAdminId || '';
         updateFinanceCcOptions();
@@ -525,7 +525,7 @@
       const payload = buildReimbursementPayload(form);
 
       if (!payload.financeAdminId) {
-        renderApiErrors(errorEl, { message: 'Please select an active Finance Admin.' });
+        renderApiErrors(errorEl, { message: 'Please select an active Finance Department approver.' });
         financeAdminSelect.focus();
         return;
       }

@@ -45,7 +45,7 @@
           <div class="form-group"><label for="new-position">Position</label><input id="new-position" /></div>
           <div class="form-group"><label for="new-office">Office</label><input id="new-office" /></div>
           <div class="form-group"><label for="new-department">Department</label><input id="new-department" /></div>
-          <div class="form-group"><label for="new-role">Role</label><select id="new-role"><option value="user">Staff user</option><option value="admin">Admin / Line Manager</option><option value="approver_budget_holder">Approver / Budget Holder (both roles)</option><option value="superadmin">Super admin</option><option value="super_superadmin">Super super admin (read-only)</option></select></div>
+          <div class="form-group"><label for="new-role">Role</label><select id="new-role"><option value="user">Staff User</option><option value="admin">Line Manager</option><option value="approver_budget_holder">Approver / Budget Holder</option><option value="superadmin">Super Admin</option><option value="super_superadmin">Travel Coordinator</option></select></div>
         </div>
         <button type="submit" class="btn btn--primary create-account-button" id="create-user-btn">Create account</button>
       </form>
@@ -59,15 +59,15 @@
         </div>
         <span class="section-mark section-mark--dark" aria-hidden="true">↕</span>
       </div>
-      <p class="section-intro">Superadmins can change access levels. Only accounts assigned Approver / Budget Holder appear in the budget-holder selector; Admin / Line Manager accounts appear only in the line-manager selector.</p>
+      <p class="section-intro">Superadmins can change access levels. Only accounts assigned Approver / Budget Holder appear in the budget-holder selector; Line Manager accounts appear only in the line-manager selector.</p>
       <div class="role-guide" aria-label="Role descriptions">
         <div class="role-guide__item"><strong>Staff user</strong><span>Creates and tracks personal TARs.</span></div>
-        <div class="role-guide__item"><strong>Admin / Line Manager</strong><span>Receives TARs as the selected line manager only.</span></div>
+        <div class="role-guide__item"><strong>Line Manager</strong><span>Receives TARs as the selected line manager only.</span></div>
         <div class="role-guide__item"><strong>Approver / Budget Holder</strong><span>Can be selected as either the budget holder or line manager. This role appears in both TAR selectors.</span></div>
         <div class="role-guide__item"><strong>Superadmin</strong><span>Manages users, roles, and system access.</span></div>
-        <div class="role-guide__item"><strong>Finance Admin</strong><span>Reviews reimbursements only after Supervisor and Line Manager approval.</span></div>
+        <div class="role-guide__item"><strong>Finance Department</strong><span>Reviews reimbursement packages after the required approvals.</span></div>
         <div class="role-guide__item"><strong>Auditor</strong><span>Read-only access to all TARs, reimbursement reports, expense lines, and supporting documents.</span></div>
-        <div class="role-guide__item"><strong>Super super admin</strong><span>Views approved TARs only and receives approved flight TAR emails.</span></div>
+        <div class="role-guide__item"><strong>Travel Coordinator</strong><span>Views approved TARs only and receives approved flight TAR emails.</span></div>
       </div>
     </section>
 
@@ -474,6 +474,12 @@
               } finally {
                 button.disabled = false;
               }
+            });
+          });
+          tbody.querySelectorAll('.user-actions-dropdown button').forEach((button) => {
+            button.addEventListener('click', () => {
+              const menu = button.closest('.user-actions-dropdown');
+              if (menu) menu.open = false;
             });
           });
         }
