@@ -343,6 +343,8 @@ function renderTravelDecisionButtons(requestId) {
       <input type="text" class="signature-text-input" placeholder="Or type your full name as a digital signature" autocomplete="off" />
       <input type="hidden" class="signature-value approval-signature" />
       <button type="button" class="btn btn--ghost btn--sm clear-signature-btn">Clear signature</button>
+      <label class="checkbox-label"><input type="checkbox" class="save-signature-for-future" /> Save this image signature to my account for future use</label>
+      <p class="form-hint">Saved image signatures will load automatically on future TAR and reimbursement approvals.</p>
       <label>Approval date</label>
       <input type="date" class="approval-date" value="${new Date().toISOString().slice(0, 10)}" />
     </div>
@@ -536,23 +538,7 @@ async function populateBudgetHolderOptions(select, selectedId = '') {
   return holders;
 }
 
-let reusableSignatureSaveTimer = null;
 let approvalSignatureProfilePromise = null;
-
-function saveReusableSignature(signature) {
-  if (!/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(signature || "")) return;
-
-  clearTimeout(reusableSignatureSaveTimer);
-  reusableSignatureSaveTimer = setTimeout(async () => {
-    try {
-      const profile = await updateCurrentUser({ savedSignature: signature });
-      setAuth(getToken(), { ...getUser(), ...profile });
-      showToast("Your signature was saved for future TARs and reimbursements.", "success");
-    } catch (error) {
-      showToast(error.message || "Could not save your signature for future forms.", "error");
-    }
-  }, 500);
-}
 
 async function initializeRequesterSignature(root, options = {}) {
   let savedSignature = options.preferredSignature || null;
@@ -567,7 +553,7 @@ async function initializeRequesterSignature(root, options = {}) {
     showToast(error.message || "Could not load your saved signature. You can still sign manually.", "warning");
     savedSignature = savedSignature || getUser()?.savedSignature || null;
   }
-  return initSignaturePad(root, { persistForFuture: true, savedSignature });
+  return initSignaturePad(root, { savedSignature });
 }
 
 async function initializeApprovalSignaturePads(root) {
@@ -588,7 +574,7 @@ async function initializeApprovalSignaturePads(root) {
   if (root.matches?.('.approval-signature-field')) pads.push(root);
   pads.push(...root.querySelectorAll('.approval-signature-field'));
   return pads
-    .map((pad) => initSignaturePad(pad, { persistForFuture: true, savedSignature }))
+    .map((pad) => initSignaturePad(pad, { savedSignature }))
     .find((getSignature) => typeof getSignature === "function") || (() => "");
 }
 
@@ -599,12 +585,14 @@ function initSignaturePad(root, options = {}) {
   const valueInput = root.querySelector('.signature-value');
   const clearButton = root.querySelector('.clear-signature-btn');
   const clearSavedButton = root.querySelector('.clear-saved-signature-btn');
+  const saveForFutureCheckbox = root.querySelector('.save-signature-for-future');
   if (!canvas) return () => '';
 
   const context = canvas.getContext('2d');
   let hasSignature = false;
   let drawing = false;
   const savedSignature = options.savedSignature || getUser()?.savedSignature;
+  let reusableSignatureSaveTimer = null;
 
   context.strokeStyle = '#0000FF';
   context.lineWidth = 2.5;
@@ -632,9 +620,24 @@ function initSignaturePad(root, options = {}) {
   }
 
   const saveForFuture = () => {
-    if (options.persistForFuture && valueInput?.value.startsWith("data:image/png;base64,")) {
-      saveReusableSignature(valueInput.value);
+    if (!saveForFutureCheckbox?.checked) return;
+    const signature = valueInput?.value || '';
+    if (!signature.startsWith("data:image/png;base64,")) {
+      saveForFutureCheckbox.checked = false;
+      showToast("Only a drawn or image signature can be saved for future use. PDF and typed signatures are not reusable.", "warning");
+      return;
     }
+    clearTimeout(reusableSignatureSaveTimer);
+    reusableSignatureSaveTimer = setTimeout(async () => {
+      if (!saveForFutureCheckbox.checked || valueInput?.value !== signature) return;
+      try {
+        const profile = await updateCurrentUser({ savedSignature: signature });
+        setAuth(getToken(), { ...getUser(), ...profile });
+        showToast("Your signature was saved for future TARs and reimbursements.", "success");
+      } catch (error) {
+        showToast(error.message || "Could not save your signature for future forms.", "error");
+      }
+    }, 500);
   };
 
   function pointFromEvent(event) {
@@ -752,6 +755,20 @@ function initSignaturePad(root, options = {}) {
       if (upload) upload.value = '';
     }
     if (valueInput) valueInput.value = value;
+    if (value) saveForFuture();
+  });
+
+  saveForFutureCheckbox?.addEventListener('change', () => {
+    if (!saveForFutureCheckbox.checked) {
+      clearTimeout(reusableSignatureSaveTimer);
+      return;
+    }
+    if (!valueInput?.value.startsWith("data:image/png;base64,")) {
+      saveForFutureCheckbox.checked = false;
+      showToast("Draw or upload an image signature to save it for future use.", "warning");
+      return;
+    }
+    saveForFuture();
   });
 
   clearButton?.addEventListener('click', () => {
@@ -760,12 +777,15 @@ function initSignaturePad(root, options = {}) {
     if (valueInput) valueInput.value = '';
     if (upload) upload.value = '';
     if (textInput) textInput.value = '';
+    if (saveForFutureCheckbox) saveForFutureCheckbox.checked = false;
+    clearTimeout(reusableSignatureSaveTimer);
   });
 
   clearSavedButton?.addEventListener('click', async () => {
     try {
       const profile = await updateCurrentUser({ savedSignature: null });
       setAuth(getToken(), { ...getUser(), ...profile });
+      if (saveForFutureCheckbox) saveForFutureCheckbox.checked = false;
       showToast("Saved signature removed from your account.", "success");
     } catch (error) {
       showToast(error.message || "Could not remove your saved signature.", "error");
