@@ -83,6 +83,8 @@
         contentEl.innerHTML = renderReimbursementDetail(currentReport);
         const extraActions = [];
         extraActions.push('<button type="button" class="btn btn--secondary" id="download-reimbursement-pdf">Download PDF</button>');
+        extraActions.push('<button type="button" class="btn btn--secondary" id="download-payment-voucher">Download Payment Voucher</button>');
+        extraActions.push('<button type="button" class="btn btn--secondary" id="print-payment-voucher">Print Payment Voucher</button>');
         const isOwner = String(currentReport.submittedBy?._id || currentReport.submittedBy?.id) === String(user.id);
         if (isOwner && ['pending', 'rejected', 'SUPERVISOR_DECLINED', 'LINE_MANAGER_DECLINED', 'FINANCE_DECLINED'].includes(currentReport.status)) {
           extraActions.push(`<a href="reimbursement-new.html?id=${encodeURIComponent(reimbursementId)}" class="btn btn--primary" id="edit-reimbursement-btn">Edit</a>`);
@@ -146,6 +148,20 @@
             await fetchReimbursementPdf(reimbursementId);
           } catch (err) {
             showToast(err.message || 'Failed to download PDF.', 'error');
+          }
+        });
+        document.getElementById('download-payment-voucher')?.addEventListener('click', async () => {
+          try {
+            await fetchPaymentVoucherPdf(reimbursementId);
+          } catch (err) {
+            showToast(err.message || 'Failed to download payment voucher.', 'error');
+          }
+        });
+        document.getElementById('print-payment-voucher')?.addEventListener('click', async () => {
+          try {
+            await previewPaymentVoucherPdf(reimbursementId);
+          } catch (err) {
+            showToast(err.message || 'Failed to open payment voucher for printing.', 'error');
           }
         });
 

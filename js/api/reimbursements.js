@@ -92,3 +92,14 @@ async function downloadReimbursementAttachment(id, attachmentId, filename) {
 async function fetchReimbursementPdf(id) {
   return downloadFile(`/reimbursements/${id}/pdf`, `reimbursement-${id}.pdf`);
 }
+
+async function fetchPaymentVoucherPdf(id) {
+  return downloadFile(
+    `/reimbursements/${id}/payment-voucher.pdf`,
+    `payment-voucher-${id}.pdf`
+  );
+}
+
+async function previewPaymentVoucherPdf(id) {
+  return viewFile(`/reimbursements/${id}/payment-voucher.pdf`);
+}

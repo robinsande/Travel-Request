@@ -534,22 +534,74 @@ async function populateBudgetHolderOptions(select, selectedId = '') {
   return holders;
 }
 
-function initSignaturePad(root) {
+let reusableSignatureSaveTimer = null;
+
+function saveReusableSignature(signature) {
+  if (!/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(signature || "")) return;
+
+  clearTimeout(reusableSignatureSaveTimer);
+  reusableSignatureSaveTimer = setTimeout(async () => {
+    try {
+      const profile = await updateCurrentUser({ savedSignature: signature });
+      setAuth(getToken(), { ...getUser(), ...profile });
+      showToast("Your signature was saved for future TARs and reimbursements.", "success");
+    } catch (error) {
+      showToast(error.message || "Could not save your signature for future forms.", "error");
+    }
+  }, 500);
+}
+
+async function initializeRequesterSignature(root) {
+  let savedSignature = getUser()?.savedSignature || null;
+  try {
+    const profile = await fetchCurrentUser();
+    setAuth(getToken(), { ...getUser(), ...profile });
+    savedSignature = profile.savedSignature || null;
+  } catch (error) {
+    showToast(error.message || "Could not load your saved signature. You can still sign manually.", "warning");
+  }
+  return initSignaturePad(root, { persistForFuture: true, savedSignature });
+}
+
+function initSignaturePad(root, options = {}) {
   const canvas = root.querySelector('.signature-pad');
   const upload = root.querySelector('.signature-upload');
   const textInput = root.querySelector('.signature-text-input');
   const valueInput = root.querySelector('.signature-value');
   const clearButton = root.querySelector('.clear-signature-btn');
+  const clearSavedButton = root.querySelector('.clear-saved-signature-btn');
   if (!canvas) return () => '';
 
   const context = canvas.getContext('2d');
   let hasSignature = false;
   let drawing = false;
+  const savedSignature = options.savedSignature || getUser()?.savedSignature;
 
   context.strokeStyle = '#0000FF';
   context.lineWidth = 2.5;
   context.lineCap = 'round';
   context.lineJoin = 'round';
+
+  if (savedSignature && valueInput) {
+    const image = new Image();
+    image.onload = () => {
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      const scale = Math.min(canvas.width / image.width, canvas.height / image.height);
+      const width = image.width * scale;
+      const height = image.height * scale;
+      context.drawImage(image, (canvas.width - width) / 2, (canvas.height - height) / 2, width, height);
+      hasSignature = true;
+      valueInput.value = savedSignature;
+    };
+    image.onerror = () => showToast("Your saved signature could not be loaded. Please upload it again.", "warning");
+    image.src = savedSignature;
+  }
+
+  const saveForFuture = () => {
+    if (options.persistForFuture && valueInput?.value.startsWith("data:image/png;base64,")) {
+      saveReusableSignature(valueInput.value);
+    }
+  };
 
   function pointFromEvent(event) {
     const bounds = canvas.getBoundingClientRect();
@@ -578,6 +630,7 @@ function initSignaturePad(root) {
   canvas.addEventListener('pointerup', () => {
     drawing = false;
     if (valueInput && hasSignature) valueInput.value = canvas.toDataURL('image/png');
+    saveForFuture();
   });
   canvas.addEventListener('pointercancel', () => { drawing = false; });
 
@@ -609,6 +662,7 @@ function initSignaturePad(root) {
           hasSignature = true;
           if (textInput) textInput.value = '';
           if (valueInput) valueInput.value = dataUrl;
+          saveForFuture();
           context.font = "16px 'Segoe Script', 'Brush Script MT', cursive";
           context.textAlign = 'center';
           context.textBaseline = 'middle';
@@ -623,6 +677,7 @@ function initSignaturePad(root) {
           hasSignature = true;
           if (textInput) textInput.value = '';
           if (valueInput) valueInput.value = canvas.toDataURL('image/png');
+          saveForFuture();
         };
         if (isSvg || dataUrl.startsWith('data:image/svg+xml')) {
           image.src = dataUrl;
@@ -648,6 +703,7 @@ function initSignaturePad(root) {
         hasSignature = true;
         if (textInput) textInput.value = '';
         if (valueInput) valueInput.value = canvas.toDataURL('image/png');
+        saveForFuture();
       };
       image.src = dataUrl;
     };
@@ -670,6 +726,16 @@ function initSignaturePad(root) {
     if (valueInput) valueInput.value = '';
     if (upload) upload.value = '';
     if (textInput) textInput.value = '';
+  });
+
+  clearSavedButton?.addEventListener('click', async () => {
+    try {
+      const profile = await updateCurrentUser({ savedSignature: null });
+      setAuth(getToken(), { ...getUser(), ...profile });
+      showToast("Saved signature removed from your account.", "success");
+    } catch (error) {
+      showToast(error.message || "Could not remove your saved signature.", "error");
+    }
   });
 
   return () => valueInput?.value || (hasSignature ? canvas.toDataURL('image/png') : '');
