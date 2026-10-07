@@ -20,10 +20,13 @@
     <p class="text-muted">
       Complete the Travel Expense Report for an approved trip. Your report will be reviewed by the selected Supervisor, the Line Manager from the approved TAR, and Finance.
     </p>
+    <div class="btn-group" style="margin-bottom: 1rem;">
+      <a href="ter-template.html" class="btn btn--secondary">View TER Template</a>
+      <button type="button" class="btn btn--secondary" id="download-empty-ter-template">Download Blank TER Template</button>
+    </div>
 
     <div id="form-error" class="alert alert--error" hidden role="alert"></div>
     <button type="button" class="btn btn--primary" id="show-reimbursement-form">Create New Reimbursement</button>
-    <button type="button" class="btn btn--secondary" id="download-empty-ter-template">Download blank TER template</button>
 
     <form id="reimbursement-form" novalidate hidden>
       <section class="form-section">
@@ -197,7 +200,7 @@
 
     async function loadApprovedTravelRequests(selectedTravelRequestId = '') {
       try {
-        const result = await fetchMyRequests({ status: 'approved', limit: 100 });
+        const result = await fetchMyRequests({ scope: 'mine', status: 'approved', limit: 100 });
         const sessionId = String(getUser()?.id || getUser()?._id || '');
         const requests = (result.data || []).filter((request) =>
           isUserPassengerOnRequest(request, sessionId)

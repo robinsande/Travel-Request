@@ -63,32 +63,36 @@
     const user = getUser();
     const params = new URLSearchParams(window.location.search);
     const isSuperadminView = params.get('scope') === 'all';
-    const activeNav = isSuperadminView ? 'all-reimbursements' : 'my-reimbursements';
+    const canViewAllReimbursements =
+      ['superadmin', 'super_superadmin'].includes(user.role) ||
+      user.roles?.includes('auditor');
+    const isAuthorizedAllView = isSuperadminView && canViewAllReimbursements;
+    const activeNav = isAuthorizedAllView ? 'all-reimbursements' : 'my-reimbursements';
 
     initProtectedPage(activeNav);
 
-    document.getElementById('page-title').textContent = isSuperadminView
+    document.getElementById('page-title').textContent = isAuthorizedAllView
       ? 'All Reimbursement Requests'
       : 'My Reimbursement Requests';
-    document.title = isSuperadminView
+    document.title = isAuthorizedAllView
       ? 'All Reimbursement Requests — CARE TAR'
       : 'My Reimbursement Requests — CARE TAR';
 
     const subtitleEl = document.getElementById('page-subtitle');
     if (subtitleEl) {
-      subtitleEl.textContent = isSuperadminView
+      subtitleEl.textContent = isAuthorizedAllView
         ? 'All reimbursement requests across the organization.'
         : 'Reimbursement requests you have submitted.';
     }
 
-    if (isSuperadminView) {
+    if (isAuthorizedAllView) {
       document.getElementById('filter-email-group').hidden = false;
       document.getElementById('filter-search').placeholder = 'Trip, base location, requester…';
     }
 
     const newReimbursementBtn = document.getElementById('new-reimbursement-btn');
     if (newReimbursementBtn) {
-      newReimbursementBtn.hidden = !(canCreateRequests() && !isSuperadminView);
+      newReimbursementBtn.hidden = !canCreateRequests();
     }
 
     const loadingEl = document.getElementById('reimbursements-loading');
@@ -102,7 +106,8 @@
 
       if (status) filters.status = status;
       if (search) filters.search = search;
-      if (email && isSuperadminView) filters.submittedByEmail = email;
+      if (email && isAuthorizedAllView) filters.submittedByEmail = email;
+      if (isAuthorizedAllView) filters.scope = 'all';
 
       return filters;
     }
@@ -150,10 +155,10 @@
             listEl,
             hasFilters
               ? 'No reimbursement requests match your filters.'
-              : isSuperadminView
+              : isAuthorizedAllView
                 ? 'No reimbursement requests found.'
                 : 'No reimbursement requests submitted yet.',
-            hasFilters || isSuperadminView || !canCreateRequests()
+            hasFilters || isAuthorizedAllView || !canCreateRequests()
               ? ''
               : '<a href="reimbursement-new.html" class="btn btn--primary">Create your first reimbursement request</a>'
           );

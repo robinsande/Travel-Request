@@ -329,8 +329,8 @@ async function downloadFile(path, filenameFallback = 'download.pdf') {
   }
 }
 
-async function viewFile(path) {
-  const viewer = window.open('', '_blank');
+async function viewFile(path, target = null) {
+  const viewer = target ? null : window.open('', '_blank');
   try {
     const token = typeof getToken === 'function' ? getToken() : null;
     const response = await fetch(buildApiUrl(path), {
@@ -338,8 +338,10 @@ async function viewFile(path) {
     });
     if (!response.ok) throw new Error(`Unable to open document (${response.status})`);
     const blobUrl = URL.createObjectURL(await response.blob());
-    if (viewer) viewer.location = blobUrl;
+    if (target) target.src = blobUrl;
+    else if (viewer) viewer.location = blobUrl;
     else window.open(blobUrl, '_blank');
+    return blobUrl;
   } catch (error) {
     viewer?.close();
     throw error;

@@ -13,7 +13,7 @@
     <div class="page-header">
       <div>
         <span class="section-kicker">DECISION QUEUE</span>
-        <h1>Travel approvals</h1>
+        <h1 id="approvals-page-title">Travel approvals</h1>
         <p class="page-header__subtitle">Review requests waiting for an authorized decision.</p>
       </div>
     </div>
@@ -21,13 +21,13 @@
       <button type="button" class="btn btn--secondary" id="remind-all-pending-btn">Email reminders to assigned reviewers</button>
     </div>
     <div id="approvals-subnav"></div>
-    <p class="text-muted">Assigned budget holders verify the fund code first. Once verified, selected admins can approve or reject. Superadmins have a read-only oversight view.</p>
+    <p class="text-muted" id="approvals-description">Assigned Budget Holders approve TARs before selected Line Managers review them. Superadmins have a read-only oversight view.</p>
 
     <div id="approvals-loading"></div>
     <div id="approvals-list"></div>
     <section id="budget-holder-approvals-section" class="detail-section" hidden>
-      <h2>Fund-code verification</h2>
-      <p class="text-muted">Review the registered fund code, then approve or reject each assigned TAR before it reaches the selected line manager.</p>
+      <h2>Budget Holder Approvals</h2>
+      <p class="text-muted">Review and approve or decline each TAR assigned to you as Budget Holder before it reaches the selected Line Manager.</p>
       <div id="budget-holder-approvals-list"></div>
     </section>
   </div>
@@ -46,6 +46,15 @@
     const user = getUser();
     initProtectedPage('approvals');
     document.getElementById('approvals-subnav').innerHTML = renderApprovalsSubnav('travel');
+    if (user.role === 'user') {
+      document.getElementById('approvals-page-title').textContent = 'Budget Holder Approvals';
+      document.querySelector('#budget-holder-approvals-section > p').textContent =
+        'Review and approve or decline TARs assigned to you as the Budget Holder.';
+      document.getElementById('approvals-list').hidden = true;
+      document.getElementById('approvals-loading').hidden = true;
+      document.getElementById('approvals-description').textContent =
+        'Budget Holder approvals are part of the TAR review workflow.';
+    }
 
     const loadingEl = document.getElementById('approvals-loading');
     const listEl = document.getElementById('approvals-list');
@@ -126,7 +135,7 @@
         }
         budgetSection.hidden = !canReviewBudget;
         if (!budgetRequests.length) {
-          showEmptyState(budgetListEl, 'No travel requests are waiting for your fund-code verification.');
+          showEmptyState(budgetListEl, 'No travel requests are waiting for your Budget Holder approval.');
         } else {
           budgetListEl.innerHTML = budgetRequests.map((request) => {
             const id = request._id || request.id;
@@ -163,7 +172,7 @@
                   ? 'Budget review and line-manager approval completed.'
                   : 'Budget review approved. The TAR has been sent to its selected line manager.', 'success');
                 card.remove();
-                if (!budgetListEl.children.length) showEmptyState(budgetListEl, 'No travel requests are waiting for your fund-code verification.');
+                if (!budgetListEl.children.length) showEmptyState(budgetListEl, 'No travel requests are waiting for your Budget Holder approval.');
                 if (typeof refreshApprovalBadges === 'function') refreshApprovalBadges();
               } catch (err) {
                 showToast(err.message || 'Could not approve this TAR.', 'error');

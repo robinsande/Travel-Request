@@ -66,6 +66,7 @@ frontend/
   request-detail.html        → view request, edit & resubmit if rejected
   reimbursements.html        → my / all reimbursement reports
   reimbursement-new.html     → submit reimbursement
+  ter-template.html         → preview and download the blank Travel Expense Report template
   reimbursement-detail.html  → reimbursement detail and decisions
   reimbursement-approvals.html → admin reimbursement approval queue
   approvals.html             → admin pending travel approval queue
@@ -97,12 +98,15 @@ frontend/
 |------|-------------|
 | **user** | Create requests, submit reimbursements, view own requests and reimbursements, resubmit rejected requests, notifications |
 | **admin** | Everything user can do, plus approve/reject assigned team requests |
+| **Approver / Budget Holder** | Review and approve assigned TAR fund-code requests |
 | **Supervisor** (workflow role) | Review assigned reimbursements before their TAR Line Manager |
 | **Finance Admin** (workflow role) | Review financial reimbursement packages after Supervisor and Line Manager approval; complete payment processing |
 | **Auditor** (workflow role) | Read-only access to all TARs, reimbursement reports, approval history, and supporting documents |
 | **superadmin** | Read-only all requests and reimbursements, create accounts, manage users and workflow roles, import employees |
 
-Reimbursements use a separate approvals panel and must pass through Supervisor → the Line Manager assigned on the approved TAR → Finance Admin. Staff select only an eligible existing Supervisor. The blank Travel Expense Report template is available from the reimbursement form; generated reports paginate six expense days per landscape page, up to 30 distinct expense days. The backend filters attachments by approval audience so finance does not receive Line Manager-only documents.
+Every staff account has a **My Reimbursements** navigation entry and can create a report for an approved TAR listing them as a passenger. From the reimbursement form, **View TER Template** opens an in-page preview of the blank form and **Download Blank TER Template** saves the PDF. Reimbursements use a separate approvals panel and must pass through Supervisor → the Line Manager assigned on the approved TAR → Finance Admin. Staff select only an eligible existing Supervisor. Generated reports paginate six expense days per landscape page, up to 30 distinct expense days. The backend filters attachments by approval audience so finance does not receive Line Manager-only documents.
+
+Superadmins and super-superadmins can also create their own TARs and reimbursements as staff. Their navigation keeps separate links for personal reimbursement reports and the organization-wide reimbursement view; starting a new report is available from either view.
 
 ## API configuration
 

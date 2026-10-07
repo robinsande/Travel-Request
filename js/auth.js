@@ -147,7 +147,7 @@ function canViewAllRequests() {
 
 function isUserOrAdmin() {
   const user = getUser();
-  return user && ['user', 'admin', 'approver_budget_holder', 'superadmin'].includes(user.role);
+  return user && ['user', 'admin', 'approver_budget_holder', 'superadmin', 'super_superadmin'].includes(user.role);
 }
 
 function canCreateRequests() {

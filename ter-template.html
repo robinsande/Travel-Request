@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TER Template — CARE TAR</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div id="app-shell"></div>
+
+  <main class="page-content" id="page-content" hidden>
+    <div class="page-header">
+      <div>
+        <a href="reimbursement-new.html" class="back-link">&larr; New Reimbursement</a>
+        <h1>Travel Expense Report Template</h1>
+        <p class="page-header__subtitle">Blank landscape TER form used for reimbursement reports.</p>
+      </div>
+      <button type="button" class="btn btn--primary" id="download-ter-template">Download Blank TER Template</button>
+    </div>
+
+    <div id="template-error" class="alert alert--error" hidden role="alert"></div>
+    <iframe
+      id="ter-template-preview"
+      title="Blank Travel Expense Report template preview"
+      style="width: 100%; min-height: 75vh; border: 1px solid #d8d8d8; border-radius: 0.5rem;"
+    ></iframe>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/api/http.js"></script>
+  <script src="js/api/reimbursements.js"></script>
+  <script src="js/api/notifications.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/notifications.js"></script>
+  <script>
+    if (!requireAuth()) throw new Error('auth');
+
+    initProtectedPage('my-reimbursements');
+    const preview = document.getElementById('ter-template-preview');
+    const errorEl = document.getElementById('template-error');
+
+    previewEmptyTerTemplate(preview).catch((error) => {
+      errorEl.hidden = false;
+      errorEl.textContent = error.message || 'Failed to load the blank TER template.';
+    });
+
+    document.getElementById('download-ter-template').addEventListener('click', async (event) => {
+      const button = event.currentTarget;
+      try {
+        await withLoading(button, 'Preparing…', downloadEmptyTerTemplate);
+      } catch (error) {
+        errorEl.hidden = false;
+        errorEl.textContent = error.message || 'Failed to download the blank TER template.';
+      }
+    });
+  </script>
+</body>
+</html>

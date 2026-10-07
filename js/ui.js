@@ -621,11 +621,17 @@ function getNavItems() {
       { href: 'requests.html', label: 'My Travel Requests', id: 'my-requests' },
       { href: 'requests.html?scope=all', label: 'All Travel Requests', id: 'all-requests' },
       { href: 'approvals.html', label: 'All Approvals', id: 'approvals' },
+      { href: 'reimbursements.html', label: 'My Reimbursements', id: 'my-reimbursements' },
       { href: 'reimbursements.html?scope=all', label: 'All Reimbursements', id: 'all-reimbursements' },
       { href: 'admin-users.html', label: 'Users', id: 'admin-users' }
     );
   } else if (user.role === 'super_superadmin') {
-    items.push({ href: 'requests.html?scope=all&status=approved', label: 'Approved TARs', id: 'all-requests' });
+    items.push(
+      { href: 'requests.html?scope=mine', label: 'My Travel Requests', id: 'my-requests' },
+      { href: 'requests.html?scope=all&status=approved', label: 'Approved TARs', id: 'all-requests' },
+      { href: 'reimbursements.html', label: 'My Reimbursements', id: 'my-reimbursements' },
+      { href: 'reimbursements.html?scope=all', label: 'All Reimbursements', id: 'all-reimbursements' }
+    );
   } else {
     items.push(
       { href: 'requests.html', label: 'My Travel Requests', id: 'my-requests' }
@@ -650,8 +656,19 @@ function getNavItems() {
     }
 
     if (user.role === 'user') {
-      items.push({ href: 'approvals.html', label: 'Fund Code Reviews', id: 'approvals' });
+      items.push({ href: 'approvals.html#budget-holder-approvals-section', label: 'Budget Holder Approvals', id: 'approvals' });
     }
+  }
+
+  if (
+    canCreateRequests() &&
+    !items.some((item) => item.id === 'my-reimbursements')
+  ) {
+    items.push({
+      href: 'reimbursements.html',
+      label: 'My Reimbursements',
+      id: 'my-reimbursements',
+    });
   }
 
   if (user.roles?.includes('auditor')) {

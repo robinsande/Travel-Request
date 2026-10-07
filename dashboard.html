@@ -84,10 +84,13 @@
         ['admin', 'approver_budget_holder'].includes(dashboardUser?.role) ||
         (dashboardUser?.roles || []).some((role) => ['supervisor', 'finance_admin'].includes(role));
       actionsEl.innerHTML = isSuperadmin
-        ? actionLink('Manage users and roles', 'admin-users.html', '♙') + actionLink('Import employees', 'admin-import.html', '⇧') + actionLink('Review all TARs', 'requests.html?scope=all', '▣')
+        ? actionLink('Manage users and roles', 'admin-users.html', '♙') + actionLink('Import employees', 'admin-import.html', '⇧') + actionLink('Review all TARs', 'requests.html?scope=all', '▣') + (canCreateRequests() ? actionLink('Create TAR', 'request-new.html', '＋') + actionLink('Create reimbursement', 'reimbursement-new.html', '＋') + actionLink('View my reimbursements', 'reimbursements.html', '¤') : '')
         : isAuditor
-          ? actionLink('Audit all TARs', 'requests.html?scope=all', '▣') + actionLink('Audit all reimbursements', 'reimbursements.html?scope=all', '¤')
+          ? actionLink('Audit all TARs', 'requests.html?scope=all', '▣') + actionLink('Audit all reimbursements', 'reimbursements.html?scope=all', '¤') + (canCreateRequests() ? actionLink('Create TAR', 'request-new.html', '＋') + actionLink('Create reimbursement', 'reimbursement-new.html', '＋') + actionLink('View my reimbursements', 'reimbursements.html', '¤') : '')
         : actionLink('Review TAR approvals', 'approvals.html', '✓') +
+          (canCreateRequests()
+            ? actionLink('Create TAR', 'request-new.html', '＋') + actionLink('Create reimbursement', 'reimbursement-new.html', '＋') + actionLink('View my reimbursements', 'reimbursements.html', '¤')
+            : '') +
           (['admin', 'approver_budget_holder'].includes(dashboardUser?.role)
             ? actionLink('View team TARs', 'requests.html?scope=team', '♧')
             : '') +

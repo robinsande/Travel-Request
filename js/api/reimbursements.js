@@ -19,6 +19,10 @@ async function downloadEmptyTerTemplate() {
   return downloadFile('/reimbursements/template/ter.pdf', 'travel-expense-report-template.pdf');
 }
 
+async function previewEmptyTerTemplate(target) {
+  return viewFile('/reimbursements/template/ter.pdf', target);
+}
+
 async function fetchMyReimbursements(params = {}) {
   return api.get(`/reimbursements/my-requests${buildReimbursementQuery(params)}`);
 }
