@@ -17,12 +17,13 @@
       <h2>Review Decision</h2>
       <div id="decision-error" class="alert alert--error" hidden role="alert"></div>
       <div class="form-group">
-        <label for="decision-comment">Comment</label>
-        <textarea id="decision-comment" rows="3" placeholder="Required for rejection, optional for approval by the assigned admin approver."></textarea>
+        <label for="decision-comment">Comment / decline reason</label>
+        <textarea id="decision-comment" rows="3" placeholder="A reason is required when declining."></textarea>
       </div>
       <div class="detail-actions">
         <button type="button" class="btn btn--success" id="approve-btn">Approve</button>
         <button type="button" class="btn btn--danger" id="reject-btn">Reject</button>
+        <button type="button" class="btn btn--primary" id="complete-payment-btn" hidden>Mark Payment Completed</button>
       </div>
     </div>
   </div>
@@ -37,8 +38,6 @@
   <script src="js/notifications.js"></script>
   <script>
     if (!requireAuth()) throw new Error('auth');
-    window.location.replace('dashboard.html');
-    throw new Error('removed');
 
     const reimbursementId = new URLSearchParams(window.location.search).get('id');
     if (!reimbursementId) {
@@ -50,8 +49,11 @@
     const activeNav =
       user.role === 'superadmin'
         ? 'all-reimbursements'
-        : user.role === 'admin'
-          ? 'approvals'
+        : user.roles?.includes('auditor')
+          ? 'all-reimbursements'
+        : ['admin', 'approver_budget_holder'].includes(user.role) ||
+            (user.roles || []).some((role) => ['supervisor', 'finance_admin'].includes(role))
+          ? 'reimbursement-approvals'
           : 'my-reimbursements';
     renderAppShell(activeNav);
     mountPageContent('#page-content');
@@ -63,6 +65,7 @@
     const commentEl = document.getElementById('decision-comment');
     const approveBtn = document.getElementById('approve-btn');
     const rejectBtn = document.getElementById('reject-btn');
+    const completePaymentBtn = document.getElementById('complete-payment-btn');
 
     let currentReport = null;
 
@@ -80,10 +83,63 @@
         contentEl.innerHTML = renderReimbursementDetail(currentReport);
         const extraActions = [];
         extraActions.push('<button type="button" class="btn btn--secondary" id="download-reimbursement-pdf">Download PDF</button>');
-        if (currentReport.status === 'rejected' && String(currentReport.submittedBy?._id || currentReport.submittedBy?.id) === String(user.id)) {
+        const isOwner = String(currentReport.submittedBy?._id || currentReport.submittedBy?.id) === String(user.id);
+        if (isOwner && ['pending', 'rejected', 'SUPERVISOR_DECLINED', 'LINE_MANAGER_DECLINED', 'FINANCE_DECLINED'].includes(currentReport.status)) {
           extraActions.push(`<a href="reimbursement-new.html?id=${encodeURIComponent(reimbursementId)}" class="btn btn--primary" id="edit-reimbursement-btn">Edit</a>`);
         }
         contentEl.innerHTML += `<div class="detail-actions">${extraActions.join('')}</div>`;
+        if (isOwner && currentReport.status !== 'COMPLETED') {
+          contentEl.innerHTML += `
+            <section class="detail-section">
+              <h2>Upload Supporting Document</h2>
+              <form id="reimbursement-attachment-form">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label for="attachment-category">Visible to</label>
+                    <select id="attachment-category" required>
+                      <option value="financial">Finance Admin</option>
+                      <option value="line_manager">Line Manager</option>
+                      <option value="supervisor">Supervisor</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="reimbursement-attachment-file">Document</label>
+                    <input id="reimbursement-attachment-file" type="file" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx" required />
+                  </div>
+                </div>
+                <button type="submit" class="btn btn--secondary">Upload document</button>
+              </form>
+            </section>`;
+          document.getElementById('reimbursement-attachment-form')?.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const file = document.getElementById('reimbursement-attachment-file').files[0];
+            if (!file) return;
+            try {
+              await uploadReimbursementAttachment(
+                reimbursementId,
+                file,
+                document.getElementById('attachment-category').value
+              );
+              showToast('Supporting document uploaded.', 'success');
+              await loadDetail();
+            } catch (error) {
+              showToast(error.message || 'Failed to upload the supporting document.', 'error');
+            }
+          });
+        }
+        contentEl.querySelectorAll('[data-download-attachment]').forEach((button) => {
+          button.addEventListener('click', async () => {
+            try {
+              await downloadReimbursementAttachment(
+                reimbursementId,
+                button.dataset.downloadAttachment,
+                button.dataset.attachmentName
+              );
+            } catch (error) {
+              showToast(error.message || 'Failed to download the document.', 'error');
+            }
+          });
+        });
         contentEl.hidden = false;
         document.getElementById('download-reimbursement-pdf')?.addEventListener('click', async () => {
           try {
@@ -93,7 +149,31 @@
           }
         });
 
-        decisionSection.hidden = !canReview(currentReport);
+        const canComplete = canCompleteReimbursementPayment(currentReport, user);
+        decisionSection.hidden = !canReview(currentReport) && !canComplete;
+        approveBtn.hidden = canComplete;
+        rejectBtn.hidden = canComplete;
+        completePaymentBtn.hidden = !canComplete;
+        const needsReviewStart = [
+          'SUBMITTED_TO_SUPERVISOR',
+          'SUBMITTED_TO_LINE_MANAGER',
+          'SUBMITTED_TO_FINANCE',
+        ].includes(currentReport.status);
+        const combinedSupervisorAndLineManager =
+          String(currentReport.supervisorId?._id || currentReport.supervisorId) ===
+          String(currentReport.lineManagerId?._id || currentReport.lineManagerId);
+        approveBtn.textContent = needsReviewStart
+          ? combinedSupervisorAndLineManager && currentReport.status === 'SUBMITTED_TO_SUPERVISOR'
+            ? 'Start Combined Review'
+            : 'Start Review'
+          : combinedSupervisorAndLineManager && currentReport.status === 'SUPERVISOR_REVIEW'
+            ? 'Approve Both Roles'
+            : 'Approve';
+        rejectBtn.textContent =
+          combinedSupervisorAndLineManager && currentReport.status === 'SUPERVISOR_REVIEW'
+            ? 'Decline Both Roles'
+            : 'Reject';
+        rejectBtn.hidden = canComplete || needsReviewStart;
       } catch (err) {
         loadingEl.innerHTML = '';
         showToast(err.message || 'Failed to load reimbursement request.', 'error');
@@ -110,12 +190,24 @@
       }
 
       const confirmMessages = {
+        review_started: 'Start reviewing this reimbursement package?',
         approved: 'Approve this reimbursement request?',
         rejected: 'Reject this reimbursement request?',
+        completed: 'Mark this reimbursement payment as completed?',
       };
 
       if (!confirmAction(confirmMessages[status])) return;
-      setLoading(button, true, status === 'approved' ? 'Approving…' : 'Rejecting…');
+      setLoading(
+        button,
+        true,
+        status === 'review_started'
+          ? 'Starting review…'
+          : status === 'approved'
+            ? 'Approving…'
+            : status === 'rejected'
+              ? 'Declining…'
+              : 'Completing…'
+      );
 
       try {
         await updateReimbursementStatus(reimbursementId, {
@@ -123,7 +215,13 @@
           comment: comment || undefined,
         });
         showToast(
-          status === 'approved' ? 'Reimbursement request approved.' : 'Reimbursement request rejected.',
+          status === 'review_started'
+            ? 'Reimbursement review started.'
+            : status === 'approved'
+              ? 'Reimbursement request approved.'
+              : status === 'rejected'
+                ? 'Reimbursement request declined.'
+                : 'Payment marked complete.',
           'success'
         );
         commentEl.value = '';
@@ -136,8 +234,18 @@
       }
     }
 
-    approveBtn.addEventListener('click', () => submitDecision('approved', approveBtn));
+    approveBtn.addEventListener('click', () => {
+      const status = [
+        'SUBMITTED_TO_SUPERVISOR',
+        'SUBMITTED_TO_LINE_MANAGER',
+        'SUBMITTED_TO_FINANCE',
+      ].includes(currentReport?.status)
+        ? 'review_started'
+        : 'approved';
+      submitDecision(status, approveBtn);
+    });
     rejectBtn.addEventListener('click', () => submitDecision('rejected', rejectBtn));
+    completePaymentBtn.addEventListener('click', () => submitDecision('completed', completePaymentBtn));
 
     loadDetail();
   </script>

@@ -67,7 +67,11 @@ function requireAuth(allowedRoles) {
   }
 
   if (allowedRoles && allowedRoles.length) {
-    if (!user || !allowedRoles.includes(user.role)) {
+    if (
+      !user ||
+      (!allowedRoles.includes(user.role) &&
+        !allowedRoles.some((role) => user.roles?.includes(role)))
+    ) {
       window.location.replace('dashboard.html');
       return false;
     }
@@ -134,7 +138,11 @@ function isSuperSuperadmin() {
 
 function canViewAllRequests() {
   const user = getUser();
-  return Boolean(user && ['superadmin', 'super_superadmin'].includes(user.role));
+  return Boolean(
+    user &&
+      (['superadmin', 'super_superadmin'].includes(user.role) ||
+        user.roles?.includes('auditor'))
+  );
 }
 
 function isUserOrAdmin() {

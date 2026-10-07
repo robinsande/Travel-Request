@@ -118,7 +118,8 @@
     const params = new URLSearchParams(window.location.search);
     const scope = params.get('scope') || 'mine';
     const user = getUser();
-    const isReadOnlySuperAdmin = user.role === 'super_superadmin';
+    const isReadOnlySuperAdmin =
+      user.role === 'super_superadmin' && !user.roles?.includes('auditor');
     const isTeamView = scope === 'team' && isAdmin();
     const isAllRequestsViewer = canViewAllRequests();
     const teamType = params.get('type') === 'reimbursement' ? 'reimbursement' : 'travel';

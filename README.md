@@ -96,8 +96,13 @@ frontend/
 | Role | Capabilities |
 |------|-------------|
 | **user** | Create requests, submit reimbursements, view own requests and reimbursements, resubmit rejected requests, notifications |
-| **admin** | Everything user can do, plus approve/reject team requests, reimbursement approvals, team request filters |
-| **superadmin** | Read-only all requests and reimbursements, create accounts, manage users, import employees |
+| **admin** | Everything user can do, plus approve/reject assigned team requests |
+| **Supervisor** (workflow role) | Review assigned reimbursements before their TAR Line Manager |
+| **Finance Admin** (workflow role) | Review financial reimbursement packages after Supervisor and Line Manager approval; complete payment processing |
+| **Auditor** (workflow role) | Read-only access to all TARs, reimbursement reports, approval history, and supporting documents |
+| **superadmin** | Read-only all requests and reimbursements, create accounts, manage users and workflow roles, import employees |
+
+Reimbursements use a separate approvals panel and must pass through Supervisor → the Line Manager assigned on the approved TAR → Finance Admin. Staff select only an eligible existing Supervisor. The blank Travel Expense Report template is available from the reimbursement form; generated reports paginate six expense days per landscape page, up to 30 distinct expense days. The backend filters attachments by approval audience so finance does not receive Line Manager-only documents.
 
 ## API configuration
 

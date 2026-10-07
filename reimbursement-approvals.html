@@ -11,10 +11,9 @@
 
   <div id="page-content" class="page-content" hidden>
     <div class="page-header">
-      <h1>Approvals</h1>
+      <h1>Reimbursement Approvals</h1>
     </div>
-    <div id="approvals-subnav"></div>
-    <p class="text-muted">Review reimbursement requests assigned to you and take action.</p>
+    <p class="text-muted">A separate review queue from TAR approvals, containing only reimbursements currently assigned to you.</p>
 
     <div id="approvals-loading"></div>
     <div id="approvals-list"></div>
@@ -29,12 +28,9 @@
   <script src="js/reimbursements.js"></script>
   <script src="js/notifications.js"></script>
   <script>
-    if (!requireAuth(['admin'])) throw new Error('auth');
-    window.location.replace('dashboard.html');
-    throw new Error('removed');
+    if (!requireAuth(['admin', 'approver_budget_holder', 'supervisor', 'finance_admin'])) throw new Error('auth');
 
-    initProtectedPage('approvals');
-    document.getElementById('approvals-subnav').innerHTML = renderApprovalsSubnav('reimbursement');
+    initProtectedPage('reimbursement-approvals');
 
     const loadingEl = document.getElementById('approvals-loading');
     const listEl = document.getElementById('approvals-list');

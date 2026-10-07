@@ -15,6 +15,10 @@ async function fetchExpenseCategories() {
   return api.get('/reimbursements/expense-categories');
 }
 
+async function downloadEmptyTerTemplate() {
+  return downloadFile('/reimbursements/template/ter.pdf', 'travel-expense-report-template.pdf');
+}
+
 async function fetchMyReimbursements(params = {}) {
   return api.get(`/reimbursements/my-requests${buildReimbursementQuery(params)}`);
 }
@@ -41,6 +45,20 @@ async function updateReimbursement(id, payload) {
 
 async function updateReimbursementStatus(id, payload) {
   return api.patch(`/reimbursements/${id}/status`, payload);
+}
+
+async function uploadReimbursementAttachment(id, file, category) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('category', category);
+  return api.upload(`/reimbursements/${id}/attachments`, formData);
+}
+
+async function downloadReimbursementAttachment(id, attachmentId, filename) {
+  return downloadFile(
+    `/reimbursements/${id}/attachments/${attachmentId}`,
+    filename || `reimbursement-attachment-${attachmentId}`
+  );
 }
 
 async function fetchReimbursementPdf(id) {

@@ -18,18 +18,22 @@
     </div>
 
     <p class="text-muted">
-      Submit expenses for an approved trip where you are listed as a passenger, and select the admin approver who should review it.
+      Complete the Travel Expense Report for an approved trip. Your report will be reviewed by the selected Supervisor, the Line Manager from the approved TAR, and Finance.
     </p>
 
     <div id="form-error" class="alert alert--error" hidden role="alert"></div>
     <button type="button" class="btn btn--primary" id="show-reimbursement-form">Create New Reimbursement</button>
+    <button type="button" class="btn btn--secondary" id="download-empty-ter-template">Download blank TER template</button>
 
     <form id="reimbursement-form" novalidate hidden>
       <section class="form-section">
-        <h2>Approver</h2>
+        <h2>Supervisor</h2>
         <div class="form-group">
-          <label for="reimbursement-approver-search">Select Approver</label>
-          <div id="approver-select"></div>
+          <label for="supervisorId">Select Supervisor</label>
+          <select id="supervisorId" name="supervisorId" required>
+            <option value="">Select a Supervisor</option>
+          </select>
+          <p class="form-hint">Only active staff with the Supervisor role are available.</p>
         </div>
       </section>
 
@@ -80,7 +84,9 @@
       </section>
 
       <section class="form-section">
-        <h2>Expense Line Items</h2>
+        <h2>Travel Expense Report</h2>
+        <p class="form-hint">Enter expenses by date and category. A report supports up to 30 travel days; add multiple expense categories for each day as needed.</p>
+        <p class="form-hint" data-expense-day-count>0 of 30 travel days</p>
         <div class="line-items-table-wrap">
           <table class="line-items-table">
             <thead>
@@ -127,8 +133,6 @@
   <script src="js/notifications.js"></script>
   <script>
     if (!requireAuth()) throw new Error('auth');
-    window.location.replace('dashboard.html');
-    throw new Error('removed');
     if (!canCreateRequests()) {
       window.location.href = 'dashboard.html';
       throw new Error('forbidden');
@@ -142,9 +146,8 @@
     const showReimbursementFormBtn = document.getElementById('show-reimbursement-form');
     const lineItemsBody = document.getElementById('line-items-body');
     const travelSelect = document.getElementById('travelRequestId');
-    const approverSelectContainer = document.getElementById('approver-select');
+    const supervisorSelect = document.getElementById('supervisorId');
     const reimbursementId = new URLSearchParams(window.location.search).get('id');
-    let approverSelect = null;
 
     if (reimbursementId) {
       showReimbursementFormBtn.hidden = true;
@@ -215,13 +218,18 @@
       }
     }
 
-    async function loadApprovers(selectedId) {
-      const sessionUser = getUser() || {};
-      approverSelect = await loadApproverSelect(approverSelectContainer, {
-        selectedId,
-        errorContainer: errorEl,
-        excludeIds: [sessionUser.id || sessionUser._id],
-      });
+    async function loadSupervisors(selectedId) {
+      try {
+        const result = await fetchSupervisors();
+        const supervisors = result.data || result.users || result || [];
+        supervisorSelect.innerHTML = '<option value="">Select a Supervisor</option>' +
+          supervisors.map((supervisor) =>
+            `<option value="${escapeHtml(supervisor._id || supervisor.id)}">${escapeHtml(supervisor.name)} (${escapeHtml(supervisor.email)})</option>`
+          ).join('');
+        supervisorSelect.value = selectedId?._id || selectedId || '';
+      } catch (err) {
+        renderApiErrors(errorEl, err);
+      }
     }
 
     async function loadExistingReport() {
@@ -229,7 +237,7 @@
       try {
         const report = await fetchReimbursement(reimbursementId);
         const data = report.data || report;
-        if (data.status !== 'rejected') {
+        if (!['rejected', 'SUPERVISOR_DECLINED', 'LINE_MANAGER_DECLINED', 'FINANCE_DECLINED'].includes(data.status)) {
           window.location.href = `reimbursement-detail.html?id=${encodeURIComponent(reimbursementId)}`;
           return;
         }
@@ -245,7 +253,7 @@
           baseLocation: data.baseLocation || sessionUser.office,
         });
         await initReimbursementLineItems(lineItemsBody, data.lineItems || []);
-        await loadApprovers(getSelectedApproverId(data));
+        await loadSupervisors(data.supervisorId);
         submitBtn.textContent = 'Update Reimbursement';
       } catch (err) {
         renderApiErrors(errorEl, err);
@@ -258,7 +266,11 @@
 
       const payload = buildReimbursementPayload(form);
 
-      if (!requireSelectedApprover(errorEl, payload.selected_approver_id)) return;
+      if (!payload.supervisorId) {
+        renderApiErrors(errorEl, { message: 'Please select an active Supervisor.' });
+        supervisorSelect.focus();
+        return;
+      }
 
       if (!payload.travelRequestId) {
         renderApiErrors(errorEl, { message: 'Please select an approved travel request.' });
@@ -281,6 +293,14 @@
 
       if (!payload.lineItems.length) {
         renderApiErrors(errorEl, { message: 'Please add at least one expense line item.' });
+        return;
+      }
+      if (new Set(payload.lineItems.map((item) => item.expenseDate).filter(Boolean)).size > 30) {
+        renderApiErrors(errorEl, { message: 'A reimbursement can include expenses for no more than 30 travel days.' });
+        return;
+      }
+      if (payload.lineItems.length > 300) {
+        renderApiErrors(errorEl, { message: 'A reimbursement can include up to 300 expense entries.' });
         return;
       }
 
@@ -317,7 +337,7 @@
         renderApiErrors(errorEl, err);
       }
       await loadProfileDefaults();
-      await loadApprovers('');
+      await loadSupervisors('');
       if (reimbursementId) {
         await loadExistingReport();
       } else {
@@ -326,6 +346,13 @@
     }
 
     initForm();
+    document.getElementById('download-empty-ter-template').addEventListener('click', async () => {
+      try {
+        await downloadEmptyTerTemplate();
+      } catch (err) {
+        showToast(err.message || 'Failed to download the blank TER template.', 'error');
+      }
+    });
   </script>
 </body>
 </html>

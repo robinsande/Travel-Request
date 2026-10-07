@@ -65,6 +65,11 @@ function renderUserRow(user) {
         <select class="user-role-select" data-user-id="${escapeHtml(user._id || user.id)}" data-previous-role="${escapeHtml(user.role)}" aria-label="Change role for ${escapeHtml(user.name)}">
           ${roleOptions}
         </select>
+        <div class="workflow-role-select" data-user-id="${escapeHtml(user._id || user.id)}" aria-label="Workflow roles for ${escapeHtml(user.name)}">
+          <label><input type="checkbox" value="supervisor" ${user.roles?.includes('supervisor') ? 'checked' : ''} /> Supervisor</label>
+          <label><input type="checkbox" value="finance_admin" ${user.roles?.includes('finance_admin') ? 'checked' : ''} /> Finance Admin</label>
+          <label><input type="checkbox" value="auditor" ${user.roles?.includes('auditor') ? 'checked' : ''} /> Auditor</label>
+        </div>
       </td>
       <td data-label="Manager">${escapeHtml(formatManagerLabel(user) || '—')}</td>
       <td data-label="Status">

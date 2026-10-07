@@ -63,7 +63,10 @@
     }
 
     function renderDashboard(data) {
-      const isSuperadmin = ['superadmin', 'super_superadmin'].includes(dashboardUser?.role);
+      const isAuditor = dashboardUser?.roles?.includes('auditor');
+      const isSuperadmin =
+        ['superadmin', 'super_superadmin'].includes(dashboardUser?.role) &&
+        !(dashboardUser?.role === 'super_superadmin' && isAuditor);
       const requests = Array.isArray(data.requests?.data) ? data.requests.data : Array.isArray(data.requests) ? data.requests : [];
       const pending = Array.isArray(data.pending?.data) ? data.pending.data : Array.isArray(data.pending) ? data.pending : [];
       const users = Array.isArray(data.users?.data) ? data.users.data : Array.isArray(data.users) ? data.users : [];
@@ -73,11 +76,24 @@
 
       metricsEl.innerHTML = isSuperadmin
         ? metricCard('Total users', usersCount, 'users', 'admin-users.html') + metricCard('All TARs', requests.length, 'requests', 'requests.html?scope=all') + metricCard('Pending TARs', pendingCount, 'pending', 'requests.html?scope=all&status=pending') + metricCard('Approved TARs', approved, 'approved', 'requests.html?scope=all&status=approved')
+        : isAuditor
+          ? metricCard('All TARs', requests.length, 'requests', 'requests.html?scope=all') + metricCard('Approved TARs', approved, 'approved', 'requests.html?scope=all&status=approved')
         : metricCard('Team TARs', requests.length, 'requests', 'requests.html?scope=team') + metricCard('Awaiting approval', pendingCount, 'pending', 'approvals.html') + metricCard('Approved TARs', approved, 'approved', 'requests.html?scope=team&status=approved');
 
+      const canReviewReimbursements =
+        ['admin', 'approver_budget_holder'].includes(dashboardUser?.role) ||
+        (dashboardUser?.roles || []).some((role) => ['supervisor', 'finance_admin'].includes(role));
       actionsEl.innerHTML = isSuperadmin
         ? actionLink('Manage users and roles', 'admin-users.html', '♙') + actionLink('Import employees', 'admin-import.html', '⇧') + actionLink('Review all TARs', 'requests.html?scope=all', '▣')
-        : actionLink('Review TAR approvals', 'approvals.html', '✓') + actionLink('View team requests', 'requests.html?scope=team', '♧');
+        : isAuditor
+          ? actionLink('Audit all TARs', 'requests.html?scope=all', '▣') + actionLink('Audit all reimbursements', 'reimbursements.html?scope=all', '¤')
+        : actionLink('Review TAR approvals', 'approvals.html', '✓') +
+          (['admin', 'approver_budget_holder'].includes(dashboardUser?.role)
+            ? actionLink('View team TARs', 'requests.html?scope=team', '♧')
+            : '') +
+          (canReviewReimbursements
+            ? actionLink('Review reimbursement approvals', 'reimbursement-approvals.html', '¤')
+            : '');
 
       const activity = (isSuperadmin ? requests : pending).slice(0, 5);
       activityEl.innerHTML = activity.length
@@ -96,7 +112,10 @@
           return;
         }
 
-        const isSuperadmin = ['superadmin', 'super_superadmin'].includes(dashboardUser.role);
+        const isAuditor = dashboardUser.roles?.includes('auditor');
+        const isSuperadmin =
+          ['superadmin', 'super_superadmin'].includes(dashboardUser.role) &&
+          !(dashboardUser.role === 'super_superadmin' && isAuditor);
         const userListCall = isSuperadmin && typeof fetchAllUsers === 'function'
           ? fetchAllUsers().catch((error) => {
               console.warn('Dashboard user list failed to load:', error);
@@ -105,7 +124,7 @@
           : Promise.resolve([]);
 
         const [requestsResult, pendingResult] = await Promise.all([
-          fetchMyRequests(isSuperadmin ? { scope: 'all', limit: 100 } : { scope: 'team', limit: 100 }).catch((error) => {
+          fetchMyRequests(isSuperadmin || isAuditor || dashboardUser.role === 'super_superadmin' ? { scope: 'all', limit: 100 } : { scope: 'team', limit: 100 }).catch((error) => {
             console.warn('Dashboard requests failed to load:', error);
             return [];
           }),

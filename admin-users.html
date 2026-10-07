@@ -65,6 +65,8 @@
         <div class="role-guide__item"><strong>Admin / Line Manager</strong><span>Receives TARs as the selected line manager only.</span></div>
         <div class="role-guide__item"><strong>Approver / Budget Holder</strong><span>Can be selected as either the budget holder or line manager. This role appears in both TAR selectors.</span></div>
         <div class="role-guide__item"><strong>Superadmin</strong><span>Manages users, roles, and system access.</span></div>
+        <div class="role-guide__item"><strong>Finance Admin</strong><span>Reviews reimbursements only after Supervisor and Line Manager approval.</span></div>
+        <div class="role-guide__item"><strong>Auditor</strong><span>Read-only access to all TARs, reimbursement reports, expense lines, and supporting documents.</span></div>
         <div class="role-guide__item"><strong>Super super admin</strong><span>Views approved TARs only and receives approved flight TAR emails.</span></div>
       </div>
     </section>
@@ -353,6 +355,24 @@
                 showToast(error.message || 'Failed to update role.', 'error');
               } finally {
                 select.disabled = false;
+              }
+            });
+          });
+          tbody.querySelectorAll('.workflow-role-select input[type="checkbox"]').forEach((checkbox) => {
+            checkbox.addEventListener('change', async () => {
+              const roleGroup = checkbox.closest('.workflow-role-select');
+              const selectedRoles = Array.from(
+                roleGroup.querySelectorAll('input[type="checkbox"]:checked')
+              ).map((item) => item.value);
+              checkbox.disabled = true;
+              try {
+                await updateUserRoles(roleGroup.dataset.userId, selectedRoles);
+                showToast('Workflow roles updated.', 'success');
+              } catch (error) {
+                checkbox.checked = !checkbox.checked;
+                showToast(error.message || 'Failed to update workflow roles.', 'error');
+              } finally {
+                checkbox.disabled = false;
               }
             });
           });

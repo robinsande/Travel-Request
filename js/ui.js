@@ -2,6 +2,21 @@ const STATUS_LABELS = {
   pending: 'Pending',
   approved: 'Approved',
   rejected: 'Rejected',
+  DRAFT: 'Draft',
+  SUBMITTED_TO_SUPERVISOR: 'Awaiting Supervisor',
+  SUPERVISOR_REVIEW: 'Supervisor reviewing',
+  SUPERVISOR_APPROVED: 'Supervisor approved',
+  SUPERVISOR_DECLINED: 'Supervisor declined',
+  SUBMITTED_TO_LINE_MANAGER: 'Awaiting Line Manager',
+  LINE_MANAGER_REVIEW: 'Line Manager reviewing',
+  LINE_MANAGER_APPROVED: 'Line Manager approved',
+  LINE_MANAGER_DECLINED: 'Line Manager declined',
+  SUBMITTED_TO_FINANCE: 'Awaiting Finance',
+  FINANCE_REVIEW: 'Finance reviewing',
+  FINANCE_APPROVED: 'Finance approved',
+  FINANCE_DECLINED: 'Finance declined',
+  PAYMENT_PROCESSING: 'Payment processing',
+  COMPLETED: 'Completed',
 };
 
 function showToast(message, type = 'info', duration = 4000) {
@@ -606,6 +621,7 @@ function getNavItems() {
       { href: 'requests.html', label: 'My Travel Requests', id: 'my-requests' },
       { href: 'requests.html?scope=all', label: 'All Travel Requests', id: 'all-requests' },
       { href: 'approvals.html', label: 'All Approvals', id: 'approvals' },
+      { href: 'reimbursements.html?scope=all', label: 'All Reimbursements', id: 'all-reimbursements' },
       { href: 'admin-users.html', label: 'Users', id: 'admin-users' }
     );
   } else if (user.role === 'super_superadmin') {
@@ -618,12 +634,46 @@ function getNavItems() {
     if (['admin', 'approver_budget_holder'].includes(user.role)) {
       items.push(
         { href: 'approvals.html', label: 'Approvals', id: 'approvals' },
-        { href: 'requests.html?scope=team', label: 'Team', id: 'team-requests' }
+        { href: 'requests.html?scope=team', label: 'Team TARs', id: 'team-requests' }
       );
+    }
+
+    if (
+      ['admin', 'approver_budget_holder'].includes(user.role) ||
+      (user.roles || []).some((role) => ['supervisor', 'finance_admin'].includes(role))
+    ) {
+      items.push({
+        href: 'reimbursement-approvals.html',
+        label: 'Reimbursement Approvals',
+        id: 'reimbursement-approvals',
+      });
     }
 
     if (user.role === 'user') {
       items.push({ href: 'approvals.html', label: 'Fund Code Reviews', id: 'approvals' });
+    }
+  }
+
+  if (user.roles?.includes('auditor')) {
+    const allRequestsItem = items.find((item) => item.id === 'all-requests');
+    if (!allRequestsItem || allRequestsItem.href.includes('status=approved')) {
+      const auditRequestsItem = {
+        href: 'requests.html?scope=all',
+        label: 'Audit all TARs',
+        id: 'all-requests',
+      };
+      if (allRequestsItem) {
+        items[items.indexOf(allRequestsItem)] = auditRequestsItem;
+      } else {
+        items.push(auditRequestsItem);
+      }
+    }
+    if (!items.some((item) => item.id === 'all-reimbursements')) {
+      items.push({
+        href: 'reimbursements.html?scope=all',
+        label: 'Audit all Reimbursements',
+        id: 'all-reimbursements',
+      });
     }
   }
 
@@ -638,6 +688,7 @@ const NAV_ICONS = {
   'my-requests': '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5h7l4 4V18a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6.5a2 2 0 0 1 2-2Z"/><path d="M14 4.5V9h4"/><path d="M8 13h8M8 16h6"/></svg>',
   'my-reimbursements': '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 7.5A2.5 2.5 0 0 1 7 5h10a2.5 2.5 0 0 1 2.5 2.5v9A2.5 2.5 0 0 1 17 19H7a2.5 2.5 0 0 1-2.5-2.5v-9Z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>',
   approvals: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 12 3 3 5-7"/><circle cx="12" cy="12" r="8.5"/></svg>',
+  'reimbursement-approvals': '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4.5h12A2.5 2.5 0 0 1 20.5 7v10a2.5 2.5 0 0 1-2.5 2.5H6A2.5 2.5 0 0 1 3.5 17V7A2.5 2.5 0 0 1 6 4.5Z"/><path d="M8 9h8M8 13h5"/><path d="m14.5 16 1.5 1.5 3-3"/></svg>',
   'team-requests': '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M4 18v-1a4 4 0 0 1 4-4h.5"/><path d="M16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M12 18v-1a4 4 0 0 1 4-4h.5"/></svg>',
   dashboard: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 10.5 12 4l7.5 6.5V18a2 2 0 0 1-2 2h-11a2 2 0 0 1-2-2v-7.5Z"/><path d="M9.5 20v-6h5v6"/></svg>',
   profile: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 18.5a7 7 0 0 1 14 0"/></svg>',
@@ -744,7 +795,11 @@ function renderAppShell(activeId) {
   const navItems = getNavItems();
   const navHtml = navItems
     .map((item) => {
-      const badge = item.id === 'approvals' ? '<span class="nav-badge" id="approvals-badge" hidden>0</span>' : '';
+      const badge = item.id === 'approvals'
+        ? '<span class="nav-badge" id="approvals-badge" hidden>0</span>'
+        : item.id === 'reimbursement-approvals'
+          ? '<span class="nav-badge" id="reimbursement-approvals-badge" hidden>0</span>'
+          : '';
       const icon = NAV_ICONS[item.id] || '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>';
       return `<a href="${item.href}" class="nav-link${item.id === activeId ? ' nav-link--active' : ''}" data-nav="${item.id}"${item.id === activeId ? ' aria-current="page"' : ''}><span class="nav-link__content"><span class="nav-link__icon" aria-hidden="true">${icon}</span><span class="nav-link__label">${escapeHtml(item.label)}</span></span>${badge}</a>`;
     })

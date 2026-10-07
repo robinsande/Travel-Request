@@ -36,6 +36,10 @@ async function updateUserRole(userId, role) {
   return api.patch(`/users/${userId}/role`, { role });
 }
 
+async function updateUserRoles(userId, roles) {
+  return api.patch(`/users/${userId}/roles`, { roles });
+}
+
 async function updateUserProfile(userId, profile) {
   return api.patch(`/users/${userId}/profile`, profile);
 }
@@ -58,6 +62,10 @@ async function deleteUser(userId) {
 
 async function fetchApprovers() {
   return api.get('/users/approvers');
+}
+
+async function fetchSupervisors() {
+  return api.get('/users/supervisors');
 }
 
 async function fetchPassengers() {

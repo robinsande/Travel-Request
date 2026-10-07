@@ -101,6 +101,8 @@ function getReimbursementRequesterLabel(report) {
 
 function getReimbursementApproverLabel(report) {
   return (
+    report.supervisorId?.name ||
+    report.supervisorId?.email ||
     report.selected_approver_id?.name ||
     report.selected_approver_id?.email ||
     report.approver?.name ||
@@ -146,7 +148,7 @@ function buildReimbursementPayload(form) {
 
   return {
     travelRequestId: fd.get('travelRequestId')?.trim() || '',
-    selected_approver_id: fd.get('selected_approver_id')?.trim() || '',
+    supervisorId: fd.get('supervisorId')?.trim() || '',
     employeeNumber: fd.get('employeeNumber')?.trim() || '',
     department: fd.get('department')?.trim() || '',
     position: fd.get('position')?.trim() || '',
@@ -158,6 +160,10 @@ function buildReimbursementPayload(form) {
 let reimbursementLineItemIndex = 0;
 
 function addReimbursementLineItemRow(container, item = {}, categories = expenseCategoriesCache || []) {
+  if (container.querySelectorAll('[data-line-item-row]').length >= 300) {
+    showToast('A reimbursement can include up to 300 expense entries.', 'warning');
+    return;
+  }
   const idx = reimbursementLineItemIndex++;
   const selectedCategory = item.category || item.description || '';
   const row = document.createElement('tr');
@@ -233,13 +239,38 @@ function updateReimbursementTotal(form) {
 
   const payload = buildReimbursementPayload(form);
   totalEl.textContent = formatCurrency(calculateLineItemTotal(payload.lineItems));
+  const dayCount = new Set(payload.lineItems.map((item) => item.expenseDate).filter(Boolean)).size;
+  const dayCountEl = form.querySelector('[data-expense-day-count]');
+  if (dayCountEl) {
+    dayCountEl.textContent = `${dayCount} of 30 travel days`;
+    dayCountEl.classList.toggle('text-error', dayCount > 30);
+  }
 }
 
 function canApproveReimbursement(report, user = getUser()) {
-  if (!user || user.role !== 'admin' || report?.status !== 'pending') return false;
+  if (!user) return false;
   const uid = String(user.id || user._id || '');
-  const approverId = String(getSelectedApproverId(report) || '');
-  return Boolean(uid && approverId && uid === approverId);
+  const roles = user.roles || [];
+  const idOf = (value) => String(value?._id || value?.id || value || '');
+  const supervisorStatuses = ['SUBMITTED_TO_SUPERVISOR', 'SUPERVISOR_REVIEW'];
+  const lineManagerStatuses = ['SUBMITTED_TO_LINE_MANAGER', 'LINE_MANAGER_REVIEW'];
+  const financeStatuses = ['SUBMITTED_TO_FINANCE', 'FINANCE_REVIEW'];
+  return (
+    (roles.includes('supervisor') &&
+      idOf(report?.supervisorId) === uid &&
+      supervisorStatuses.includes(report?.status)) ||
+    (['admin', 'approver_budget_holder'].includes(user.role) &&
+      idOf(report?.lineManagerId || report?.selected_approver_id) === uid &&
+      lineManagerStatuses.includes(report?.status)) ||
+    (roles.includes('finance_admin') && financeStatuses.includes(report?.status))
+  );
+}
+
+function canCompleteReimbursementPayment(report, user = getUser()) {
+  return Boolean(
+    user?.roles?.includes('finance_admin') &&
+    report?.status === 'PAYMENT_PROCESSING'
+  );
 }
 
 function renderReimbursementRejectForm(reportId) {
@@ -256,12 +287,28 @@ function renderReimbursementRejectForm(reportId) {
     </div>`;
 }
 
-function renderReimbursementDecisionButtons(reportId) {
+function renderReimbursementDecisionButtons(report) {
+  const reportId = getReimbursementId(report);
+  const combinedApproval = String(report.supervisorId?._id || report.supervisorId) ===
+    String(report.lineManagerId?._id || report.lineManagerId);
+  const needsReviewStart = [
+    'SUBMITTED_TO_SUPERVISOR',
+    'SUBMITTED_TO_LINE_MANAGER',
+    'SUBMITTED_TO_FINANCE',
+  ].includes(report.status);
+  if (needsReviewStart) {
+    return `
+      <div class="btn-group" style="margin-top: 1rem;">
+        <a href="reimbursement-detail.html?id=${encodeURIComponent(reportId)}" class="btn btn--secondary btn--sm">View Details</a>
+        <button type="button" class="btn btn--primary btn--sm start-review-btn">${combinedApproval && report.status === 'SUBMITTED_TO_SUPERVISOR' ? 'Start Combined Review' : 'Start Review'}</button>
+      </div>`;
+  }
+
   return `
     <div class="btn-group" style="margin-top: 1rem;">
       <a href="reimbursement-detail.html?id=${encodeURIComponent(reportId)}" class="btn btn--secondary btn--sm">View Details</a>
-      <button type="button" class="btn btn--success btn--sm approve-btn">Approve</button>
-      <button type="button" class="btn btn--danger btn--sm reject-toggle-btn">Reject</button>
+      <button type="button" class="btn btn--success btn--sm approve-btn">${combinedApproval && report.status === 'SUPERVISOR_REVIEW' ? 'Approve Both Roles' : 'Approve'}</button>
+      <button type="button" class="btn btn--danger btn--sm reject-toggle-btn">${combinedApproval && report.status === 'SUPERVISOR_REVIEW' ? 'Decline' : 'Reject'}</button>
     </div>
     ${renderReimbursementRejectForm(reportId)}`;
 }
@@ -289,7 +336,7 @@ function renderReimbursementRow(report, options = {}) {
         </div>
         <p>Total: ${escapeHtml(formatCurrency(report.totalAmountKsh))}</p>
         <p class="text-muted">Base location: ${escapeHtml(report.baseLocation || '—')}</p>
-        ${renderReimbursementDecisionButtons(id)}
+        ${renderReimbursementDecisionButtons(report)}
       </article>`;
   }
 
@@ -319,6 +366,18 @@ function bindReimbursementApprovalCard(card, options = {}) {
   const rejectToggleBtn = card.querySelector('.reject-toggle-btn');
   const confirmRejectBtn = card.querySelector('.confirm-reject-btn');
   const cancelRejectBtn = card.querySelector('.cancel-reject-btn');
+  const startReviewBtn = card.querySelector('.start-review-btn');
+  startReviewBtn?.addEventListener('click', async () => {
+    await runDecisionAction(startReviewBtn, {
+      confirmMessage: 'Start reviewing this reimbursement package?',
+      loadingText: 'Starting review…',
+      action: () => updateReimbursementStatus(id, { status: 'review_started' }),
+      successMessage: 'Reimbursement review started.',
+      errorMessage: 'Failed to start reimbursement review.',
+      onSuccess: () => window.location.reload(),
+    });
+  });
+
   if (!approveBtn || !rejectToggleBtn || !confirmRejectBtn) return;
 
   approveBtn.addEventListener('click', async () => {
@@ -431,7 +490,8 @@ function renderReimbursementDetail(report) {
         <dt>Report ID</dt><dd>${escapeHtml(id)}</dd>
         <dt>Linked Travel</dt><dd>${escapeHtml(getTravelRequestLabel(report))}</dd>
         <dt>Submitted By</dt><dd>${escapeHtml(requester)}</dd>
-        <dt>Selected Approver</dt><dd>${escapeHtml(approver)}</dd>
+        <dt>Supervisor</dt><dd>${escapeHtml(approver)}</dd>
+        <dt>Line Manager</dt><dd>${escapeHtml(report.lineManagerId?.name || report.travelRequest?.selected_approver_id?.name || '—')}</dd>
         <dt>Submitted</dt><dd>${formatDateTime(report.submittedAt || report.createdAt)}</dd>
         <dt>Total</dt><dd>${escapeHtml(formatCurrency(report.totalAmountKsh))}</dd>
       </dl>
@@ -457,12 +517,30 @@ function renderReimbursementDetail(report) {
     </section>
 
     <section class="detail-section">
+      <h2>Supporting Documents</h2>
+      ${
+        report.attachments?.length
+          ? `<ul class="attachment-list">${report.attachments
+              .map((attachment) => `<li><span>${escapeHtml(attachment.originalName)} · ${escapeHtml(attachment.category.replace(/_/g, ' '))}</span><button type="button" class="btn btn--secondary btn--sm" data-download-attachment="${escapeHtml(attachment._id)}" data-attachment-name="${escapeHtml(attachment.originalName)}">Download</button></li>`)
+              .join('')}</ul>`
+          : '<p class="text-muted">No supporting documents are available to you.</p>'
+      }
+    </section>
+
+    <section class="detail-section">
       <h2>Workflow</h2>
       <dl class="detail-grid">
         <dt>Status</dt><dd>${statusBadge(report.status)}</dd>
         <dt>Approved At</dt><dd>${formatDateTime(report.approvedAt)}</dd>
         <dt>Decision Comment</dt><dd>${escapeHtml(rejectionComment || '—')}</dd>
       </dl>
+      ${
+        report.approvalHistory?.length
+          ? `<ol class="approval-history">${report.approvalHistory
+              .map((entry) => `<li><strong>${escapeHtml(entry.approvalLevel)} · ${escapeHtml(entry.action)}</strong><span>${escapeHtml(entry.performedBy?.name || entry.performedByRole || 'System')} · ${formatDateTime(entry.occurredAt)}</span>${entry.reason ? `<p>${escapeHtml(entry.reason)}</p>` : ''}</li>`)
+              .join('')}</ol>`
+          : ''
+      }
     </section>`;
 }
 

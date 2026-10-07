@@ -21,9 +21,17 @@
         <label for="filter-status">Status</label>
         <select id="filter-status">
           <option value="">All statuses</option>
-          <option value="pending">Pending</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
+          <option value="SUBMITTED_TO_SUPERVISOR">Awaiting Supervisor</option>
+          <option value="SUPERVISOR_REVIEW">Supervisor Review</option>
+          <option value="SUPERVISOR_DECLINED">Supervisor Declined</option>
+          <option value="SUBMITTED_TO_LINE_MANAGER">Awaiting Line Manager</option>
+          <option value="LINE_MANAGER_REVIEW">Line Manager Review</option>
+          <option value="LINE_MANAGER_DECLINED">Line Manager Declined</option>
+          <option value="SUBMITTED_TO_FINANCE">Awaiting Finance</option>
+          <option value="FINANCE_REVIEW">Finance Review</option>
+          <option value="FINANCE_DECLINED">Finance Declined</option>
+          <option value="PAYMENT_PROCESSING">Payment Processing</option>
+          <option value="COMPLETED">Completed</option>
         </select>
       </div>
       <div class="form-group">
@@ -51,8 +59,6 @@
   <script src="js/notifications.js"></script>
   <script>
     if (!requireAuth()) throw new Error('auth');
-    window.location.replace('dashboard.html');
-    throw new Error('removed');
 
     const user = getUser();
     const params = new URLSearchParams(window.location.search);
