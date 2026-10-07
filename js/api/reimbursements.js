@@ -15,10 +15,6 @@ async function fetchExpenseCategories() {
   return api.get('/reimbursements/expense-categories');
 }
 
-async function downloadEmptyTerTemplate() {
-  return downloadFile('/reimbursements/template/ter.pdf', 'travel-expense-report-template.pdf');
-}
-
 async function previewEmptyTerTemplate(target) {
   return viewFile('/reimbursements/template/ter.pdf', target);
 }
@@ -41,6 +37,34 @@ async function fetchReimbursement(id) {
 
 async function createReimbursement(payload) {
   return api.post('/reimbursements', payload);
+}
+
+async function previewReimbursementPdf(payload, previewWindow) {
+  const token = typeof getToken === 'function' ? getToken() : null;
+  const response = await fetch(buildApiUrl('/reimbursements/preview'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    let message = `Unable to prepare reimbursement preview (${response.status})`;
+    try {
+      const result = await response.json();
+      message = result.message || message;
+    } catch {
+      // Keep the status-based message when the server response is not JSON.
+    }
+    throw new Error(message);
+  }
+
+  const previewUrl = URL.createObjectURL(await response.blob());
+  if (previewWindow) previewWindow.location = previewUrl;
+  else window.open(previewUrl, '_blank');
+  return previewUrl;
 }
 
 async function updateReimbursement(id, payload) {

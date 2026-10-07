@@ -5,6 +5,11 @@
 
 /** Cached from GET /reimbursements/expense-categories */
 let expenseCategoriesCache = null;
+const STANDARD_EXPENSE_RATES = {
+  BREAKFAST: 1000,
+  LUNCH: 1000,
+  DINNER: 1500,
+};
 
 async function ensureExpenseCategories() {
   if (expenseCategoriesCache?.length) return expenseCategoriesCache;
@@ -149,6 +154,9 @@ function buildReimbursementPayload(form) {
   return {
     travelRequestId: fd.get('travelRequestId')?.trim() || '',
     supervisorId: fd.get('supervisorId')?.trim() || '',
+    financeAdminId: fd.get('financeAdminId')?.trim() || '',
+    requesterSignedName: getUser()?.name?.trim() || '',
+    requesterSignature: fd.get('requesterSignature')?.trim() || '',
     employeeNumber: fd.get('employeeNumber')?.trim() || '',
     department: fd.get('department')?.trim() || '',
     position: fd.get('position')?.trim() || '',
@@ -165,7 +173,12 @@ function addReimbursementLineItemRow(container, item = {}, categories = expenseC
     return;
   }
   const idx = reimbursementLineItemIndex++;
-  const selectedCategory = item.category || item.description || '';
+  const selectedCategory = resolveExpenseCategory(
+    item.category || item.description || '',
+    categories
+  );
+  const standardRate = STANDARD_EXPENSE_RATES[selectedCategory];
+  const initialAmount = standardRate ?? item.amount ?? '';
   const row = document.createElement('tr');
   row.dataset.lineItemRow = String(idx);
   row.innerHTML = `
@@ -189,8 +202,8 @@ function addReimbursementLineItemRow(container, item = {}, categories = expenseC
       <div class="form-group">
         <label class="mobile-only-label" for="expense-amount-${idx}">Amount (KSH)</label>
         <input type="number" id="expense-amount-${idx}" min="0.01" step="0.01" data-line-item="amount" value="${escapeHtml(
-          item.amount ?? ''
-        )}" placeholder="0.00" inputmode="decimal" required />
+          initialAmount
+        )}" placeholder="0.00" inputmode="decimal" ${standardRate ? 'readonly aria-label="Standard fixed rate"' : ''} required />
       </div>
     </td>
     <td data-label="">
@@ -198,6 +211,15 @@ function addReimbursementLineItemRow(container, item = {}, categories = expenseC
     </td>`;
 
   const bindUpdate = () => updateReimbursementTotal(container.closest('form'));
+  const categorySelect = row.querySelector('[data-line-item="category"]');
+  const amountInput = row.querySelector('[data-line-item="amount"]');
+  categorySelect.addEventListener('change', () => {
+    const rate = STANDARD_EXPENSE_RATES[categorySelect.value];
+    amountInput.readOnly = Boolean(rate);
+    amountInput.setAttribute('aria-label', rate ? 'Standard fixed rate' : 'Expense amount');
+    if (rate) amountInput.value = String(rate);
+    bindUpdate();
+  });
   row.querySelectorAll('input, select').forEach((el) => {
     el.addEventListener('input', bindUpdate);
     el.addEventListener('change', bindUpdate);
@@ -548,5 +570,6 @@ function renderApprovedTravelOption(request) {
   const requestId = getLinkedTravelId(request);
   const destination = request.itinerary?.destination || 'Trip';
   const dates = `${formatDate(request.itinerary?.dateFrom)} - ${formatDate(request.itinerary?.dateTo)}`;
-  return `<option value="${escapeHtml(requestId)}" data-destination="${escapeHtml(destination)}">${escapeHtml(destination)} (${escapeHtml(dates)})</option>`;
+  const lineManager = request.selected_approver_id?.name || '';
+  return `<option value="${escapeHtml(requestId)}" data-destination="${escapeHtml(destination)}" data-line-manager="${escapeHtml(lineManager)}">${escapeHtml(destination)} (${escapeHtml(dates)})</option>`;
 }

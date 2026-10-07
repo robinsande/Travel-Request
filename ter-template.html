@@ -16,7 +16,6 @@
         <h1>Travel Expense Report Template</h1>
         <p class="page-header__subtitle">Blank landscape TER form used for reimbursement reports.</p>
       </div>
-      <button type="button" class="btn btn--primary" id="download-ter-template">Download Blank TER Template</button>
     </div>
 
     <div id="template-error" class="alert alert--error" hidden role="alert"></div>
@@ -46,15 +45,6 @@
       errorEl.textContent = error.message || 'Failed to load the blank TER template.';
     });
 
-    document.getElementById('download-ter-template').addEventListener('click', async (event) => {
-      const button = event.currentTarget;
-      try {
-        await withLoading(button, 'Preparing…', downloadEmptyTerTemplate);
-      } catch (error) {
-        errorEl.hidden = false;
-        errorEl.textContent = error.message || 'Failed to download the blank TER template.';
-      }
-    });
   </script>
 </body>
 </html>

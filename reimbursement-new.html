@@ -22,7 +22,6 @@
     </p>
     <div class="btn-group" style="margin-bottom: 1rem;">
       <a href="ter-template.html" class="btn btn--secondary">View TER Template</a>
-      <button type="button" class="btn btn--secondary" id="download-empty-ter-template">Download Blank TER Template</button>
     </div>
 
     <div id="form-error" class="alert alert--error" hidden role="alert"></div>
@@ -30,24 +29,35 @@
 
     <form id="reimbursement-form" novalidate hidden>
       <section class="form-section">
-        <h2>Supervisor</h2>
+        <h2>Approved Travel</h2>
         <div class="form-group">
-          <label for="supervisorId">Select Supervisor</label>
+          <label for="travelRequestId">Approved TAR to Merge into this Reimbursement</label>
+          <select id="travelRequestId" name="travelRequestId" required>
+            <option value="">Select an approved trip</option>
+          </select>
+          <p class="form-hint">The selected approved TAR is appended to the merged reimbursement PDF. Only approved trips where you are a passenger can be claimed.</p>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>Approval Routing</h2>
+        <div class="form-group">
+          <label for="supervisorId">1. Select Supervisor</label>
           <select id="supervisorId" name="supervisorId" required>
             <option value="">Select a Supervisor</option>
           </select>
           <p class="form-hint">Only active staff with the Supervisor role are available.</p>
         </div>
-      </section>
-
-      <section class="form-section">
-        <h2>Approved Travel</h2>
+        <div class="readonly-field">
+          <span class="readonly-field__label">2. Line Manager from the selected TAR</span>
+          <div class="readonly-field__value" id="line-manager-display">Select an approved TAR to view its Line Manager.</div>
+        </div>
         <div class="form-group">
-          <label for="travelRequestId">Approved Travel Request</label>
-          <select id="travelRequestId" name="travelRequestId" required>
-            <option value="">Select an approved trip</option>
+          <label for="financeAdminId">3. Select Finance Approver</label>
+          <select id="financeAdminId" name="financeAdminId" required>
+            <option value="">Select a Finance Admin</option>
           </select>
-          <p class="form-hint">Only approved trips where you are a passenger can be claimed.</p>
+          <p class="form-hint">Finance review will be assigned only to the selected active Finance Admin.</p>
         </div>
       </section>
 
@@ -89,6 +99,7 @@
       <section class="form-section">
         <h2>Travel Expense Report</h2>
         <p class="form-hint">Enter expenses by date and category. A report supports up to 30 travel days; add multiple expense categories for each day as needed.</p>
+        <p class="form-hint">Breakfast is KSH 1,000, lunch is KSH 1,000, and dinner is KSH 1,500. Those amounts fill automatically; enter other expense amounts manually.</p>
         <p class="form-hint" data-expense-day-count>0 of 30 travel days</p>
         <div class="line-items-table-wrap">
           <table class="line-items-table">
@@ -116,7 +127,21 @@
         </div>
       </section>
 
+      <section class="form-section">
+        <h2>Requester Signature</h2>
+        <div class="form-group">
+          <label>Requester Signature</label>
+          <canvas class="signature-pad" width="520" height="150" aria-label="Draw requester signature"></canvas>
+          <input type="file" class="signature-upload" accept="image/png,image/jpeg,image/gif,image/svg+xml,.svg" />
+          <input type="text" class="signature-text-input" placeholder="Or type your full name as a digital signature" autocomplete="off" />
+          <input type="hidden" name="requesterSignature" class="signature-value" />
+          <button type="button" class="btn btn--ghost btn--sm clear-signature-btn">Clear signature</button>
+          <p class="form-hint">Draw, upload or type your signature as shown in the TAR form. It will appear in the requester sign-off area of the Payment Request.</p>
+        </div>
+      </section>
+
       <div class="btn-group">
+        <button type="button" class="btn btn--secondary" id="preview-merged-documents-btn">Preview Merged Documents</button>
         <button type="submit" class="btn btn--primary" id="submit-btn">Submit Reimbursement Request</button>
         <a href="reimbursements.html" class="btn btn--ghost">Cancel</a>
       </div>
@@ -150,6 +175,9 @@
     const lineItemsBody = document.getElementById('line-items-body');
     const travelSelect = document.getElementById('travelRequestId');
     const supervisorSelect = document.getElementById('supervisorId');
+    const financeAdminSelect = document.getElementById('financeAdminId');
+    const lineManagerDisplay = document.getElementById('line-manager-display');
+    const previewMergedDocumentsBtn = document.getElementById('preview-merged-documents-btn');
     const reimbursementId = new URLSearchParams(window.location.search).get('id');
 
     if (reimbursementId) {
@@ -235,6 +263,26 @@
       }
     }
 
+    async function loadFinanceAdmins(selectedId) {
+      try {
+        const result = await fetchFinanceAdmins();
+        const financeAdmins = result.data || result.users || result || [];
+        financeAdminSelect.innerHTML = '<option value="">Select a Finance Admin</option>' +
+          financeAdmins.map((financeAdmin) =>
+            `<option value="${escapeHtml(financeAdmin._id || financeAdmin.id)}">${escapeHtml(financeAdmin.name)} (${escapeHtml(financeAdmin.email)})</option>`
+          ).join('');
+        financeAdminSelect.value = selectedId?._id || selectedId || '';
+      } catch (err) {
+        renderApiErrors(errorEl, err);
+      }
+    }
+
+    function updateSelectedTravelDetails() {
+      const selectedOption = travelSelect.selectedOptions[0];
+      lineManagerDisplay.textContent = selectedOption?.dataset.lineManager ||
+        (travelSelect.value ? 'The selected TAR Line Manager will be verified by the server.' : 'Select an approved TAR to view its Line Manager.');
+    }
+
     async function loadExistingReport() {
       if (!reimbursementId) return;
       try {
@@ -246,6 +294,7 @@
         }
         const selectedTravelRequestId = getLinkedTravelId(data.travelRequest);
         await loadApprovedTravelRequests(selectedTravelRequestId);
+        await loadFinanceAdmins(data.financeAdminId);
         const sessionUser = getUser() || {};
         setEmployeeDetails({
           name: sessionUser.name,
@@ -272,6 +321,23 @@
       if (!payload.supervisorId) {
         renderApiErrors(errorEl, { message: 'Please select an active Supervisor.' });
         supervisorSelect.focus();
+        return;
+      }
+
+      if (!payload.financeAdminId) {
+        renderApiErrors(errorEl, { message: 'Please select an active Finance Admin.' });
+        financeAdminSelect.focus();
+        return;
+      }
+
+      if (!payload.requesterSignedName) {
+        renderApiErrors(errorEl, { message: 'Your staff account name is not available for the requester signature.' });
+        return;
+      }
+
+      if (!payload.requesterSignature) {
+        renderApiErrors(errorEl, { message: 'Please draw, upload, or type your requester signature.' });
+        form.querySelector('.signature-text-input')?.focus();
         return;
       }
 
@@ -336,24 +402,47 @@
     async function initForm() {
       try {
         await initReimbursementLineItems(lineItemsBody);
+        initSignaturePad(form);
       } catch (err) {
         renderApiErrors(errorEl, err);
       }
       await loadProfileDefaults();
       await loadSupervisors('');
+      await loadFinanceAdmins('');
       if (reimbursementId) {
         await loadExistingReport();
       } else {
         await loadApprovedTravelRequests();
       }
+      updateSelectedTravelDetails();
     }
 
+    travelSelect.addEventListener('change', updateSelectedTravelDetails);
+
     initForm();
-    document.getElementById('download-empty-ter-template').addEventListener('click', async () => {
+    previewMergedDocumentsBtn.addEventListener('click', async () => {
+      errorEl.hidden = true;
+      if (!form.reportValidity()) return;
+
+      const payload = buildReimbursementPayload(form);
+      if (!payload.requesterSignature) {
+        renderApiErrors(errorEl, { message: 'Please draw, upload, or type your requester signature before previewing.' });
+        form.querySelector('.signature-text-input')?.focus();
+        return;
+      }
+
+      const previewWindow = window.open('about:blank', '_blank');
+      if (!previewWindow) {
+        renderApiErrors(errorEl, { message: 'Allow pop-ups to open the merged reimbursement preview.' });
+        return;
+      }
       try {
-        await downloadEmptyTerTemplate();
+        await withLoading(previewMergedDocumentsBtn, 'Preparing Preview…', () =>
+          previewReimbursementPdf(payload, previewWindow)
+        );
       } catch (err) {
-        showToast(err.message || 'Failed to download the blank TER template.', 'error');
+        previewWindow.close();
+        renderApiErrors(errorEl, err);
       }
     });
   </script>

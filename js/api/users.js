@@ -68,6 +68,10 @@ async function fetchSupervisors() {
   return api.get('/users/supervisors');
 }
 
+async function fetchFinanceAdmins() {
+  return api.get('/users/finance-admins');
+}
+
 async function fetchPassengers() {
   return api.get('/users/passengers');
 }
