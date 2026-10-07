@@ -33,6 +33,7 @@
       <div class="detail-actions">
         <button type="button" class="btn btn--success" id="approve-btn">Approve</button>
         <button type="button" class="btn btn--danger" id="reject-btn">Reject</button>
+        <button type="button" class="btn btn--secondary" id="acknowledge-btn" hidden>Acknowledge Copy</button>
         <button type="button" class="btn btn--primary" id="complete-payment-btn" hidden>Mark Payment Completed</button>
       </div>
     </div>
@@ -78,6 +79,7 @@
     const commentEl = document.getElementById('decision-comment');
     const approveBtn = document.getElementById('approve-btn');
     const rejectBtn = document.getElementById('reject-btn');
+    const acknowledgeBtn = document.getElementById('acknowledge-btn');
     const completePaymentBtn = document.getElementById('complete-payment-btn');
     const approvalSignatureField = document.getElementById('reimbursement-approval-signature-field');
     let getApprovalSignature = () => '';
@@ -101,15 +103,18 @@
         loadingEl.innerHTML = '';
         contentEl.innerHTML = renderReimbursementDetail(currentReport);
         const extraActions = [];
-        extraActions.push('<button type="button" class="btn btn--secondary" id="download-reimbursement-pdf">Download Merged Reimbursement Package</button>');
-        extraActions.push('<button type="button" class="btn btn--secondary" id="download-payment-voucher">Download Payment Voucher Only</button>');
-        extraActions.push('<button type="button" class="btn btn--secondary" id="print-payment-voucher">Print Payment Voucher Only</button>');
+        const canViewPackage = canViewMergedReimbursementPackage(currentReport, user);
+        if (canViewPackage) {
+          extraActions.push('<button type="button" class="btn btn--secondary" id="download-reimbursement-pdf">Download Merged Reimbursement Package</button>');
+          extraActions.push('<button type="button" class="btn btn--secondary" id="download-payment-voucher">Download Payment Voucher Only</button>');
+          extraActions.push('<button type="button" class="btn btn--secondary" id="print-payment-voucher">Print Payment Voucher Only</button>');
+        }
         const submittedById = currentReport.submittedBy?._id ||
           currentReport.submittedBy?.id ||
           currentReport.submittedBy;
         const currentUserId = user.id || user._id;
         const isOwner = String(submittedById || '') === String(currentUserId || '');
-        if (isOwner && ['pending', 'rejected', 'SUPERVISOR_DECLINED', 'LINE_MANAGER_DECLINED', 'FINANCE_DECLINED'].includes(currentReport.status)) {
+        if (isOwner && ['pending', 'rejected', 'SUPERVISOR_DECLINED', 'BUDGET_HOLDER_DECLINED', 'LINE_MANAGER_DECLINED', 'FINANCE_DECLINED'].includes(currentReport.status)) {
           extraActions.push(`<a href="reimbursement-new.html?id=${encodeURIComponent(reimbursementId)}" class="btn btn--primary" id="edit-reimbursement-btn">Edit</a>`);
         }
         contentEl.innerHTML += `<div class="detail-actions">${extraActions.join('')}</div>`;
@@ -238,19 +243,31 @@
         });
 
         const canComplete = canCompleteReimbursementPayment(currentReport, user);
-        decisionSection.hidden = !canReview(currentReport) && !canComplete;
-        approveBtn.hidden = canComplete;
-        rejectBtn.hidden = canComplete;
+        const canAcknowledge = canAcknowledgeReimbursement(currentReport, user);
+        decisionSection.hidden = !canReview(currentReport) && !canComplete && !canAcknowledge;
+        approveBtn.hidden = canComplete || !canReview(currentReport);
+        rejectBtn.hidden = canComplete || !canReview(currentReport);
+        acknowledgeBtn.hidden = !canAcknowledge;
+        if (canAcknowledge && currentReport.status === 'SUBMITTED_TO_LINE_MANAGER_ACKNOWLEDGEMENT') {
+          acknowledgeBtn.textContent = 'Acknowledge Back-to-Office Report';
+        } else if (
+          canAcknowledge &&
+          ['PAYMENT_PROCESSING', 'COMPLETED'].includes(currentReport.status)
+        ) {
+          acknowledgeBtn.textContent = 'Acknowledge Payment Processing';
+        }
         completePaymentBtn.hidden = !canComplete;
         const needsReviewStart = [
           'SUBMITTED_TO_SUPERVISOR',
+          'SUBMITTED_TO_BUDGET_HOLDER',
+          'SUBMITTED_TO_LINE_MANAGER_ACKNOWLEDGEMENT',
           'SUBMITTED_TO_LINE_MANAGER',
           'SUBMITTED_TO_FINANCE',
         ].includes(currentReport.status);
         approveBtn.textContent = needsReviewStart ? 'Start Review' : 'Approve';
         rejectBtn.textContent = 'Reject';
-        rejectBtn.hidden = canComplete || needsReviewStart;
-        approvalSignatureField.hidden = canComplete || needsReviewStart;
+        rejectBtn.hidden = canComplete || !canReview(currentReport) || needsReviewStart;
+        approvalSignatureField.hidden = canComplete || (needsReviewStart && !canAcknowledge);
       } catch (err) {
         loadingEl.innerHTML = '';
         showToast(err.message || 'Failed to load reimbursement request.', 'error');
@@ -265,10 +282,10 @@
         renderApiErrors(decisionError, { message: 'A rejection comment is required.' });
         return;
       }
-      if (status === 'approved') await approvalSignatureReady;
-      const signature = status === 'approved' ? getApprovalSignature().trim() : '';
-      if (status === 'approved' && !signature) {
-        renderApiErrors(decisionError, { message: 'Your saved or drawn signature is required before approval.' });
+      if (status === 'approved' || status === 'acknowledged') await approvalSignatureReady;
+      const signature = ['approved', 'acknowledged'].includes(status) ? getApprovalSignature().trim() : '';
+      if (['approved', 'acknowledged'].includes(status) && !signature) {
+        renderApiErrors(decisionError, { message: 'Your saved or drawn signature is required before this action.' });
         return;
       }
 
@@ -277,6 +294,10 @@
         approved: 'Approve this reimbursement request?',
         rejected: 'Reject this reimbursement request?',
         completed: 'Mark this reimbursement payment as completed?',
+        acknowledged:
+          currentReport?.status === 'SUBMITTED_TO_LINE_MANAGER_ACKNOWLEDGEMENT'
+            ? 'Sign to confirm that you reviewed the Back-to-Office Report and supporting travel documents?'
+            : 'Sign to acknowledge that Finance approved the reimbursement and payment is being processed?',
       };
 
       if (!confirmAction(confirmMessages[status])) return;
@@ -289,6 +310,8 @@
             ? 'Approving…'
             : status === 'rejected'
               ? 'Declining…'
+              : status === 'acknowledged'
+                ? 'Saving acknowledgement…'
               : 'Completing…'
       );
 
@@ -305,6 +328,8 @@
               ? 'Reimbursement request approved.'
               : status === 'rejected'
                 ? 'Reimbursement request declined.'
+                : status === 'acknowledged'
+                  ? 'Your acknowledgement has been recorded.'
                 : 'Payment marked complete.',
           'success'
         );
@@ -329,6 +354,7 @@
       submitDecision(status, approveBtn);
     });
     rejectBtn.addEventListener('click', () => submitDecision('rejected', rejectBtn));
+    acknowledgeBtn.addEventListener('click', () => submitDecision('acknowledged', acknowledgeBtn));
     completePaymentBtn.addEventListener('click', () => submitDecision('completed', completePaymentBtn));
 
     loadDetail();

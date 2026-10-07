@@ -18,7 +18,7 @@
     </div>
 
     <p class="text-muted">
-      Complete the Travel Expense Report for an approved trip. Your report will be reviewed by the selected Supervisor, the Line Manager from the approved TAR, and Finance.
+      Complete the Travel Expense Report for an approved trip. The Budget Holder from the TAR approves first, followed by Finance; the TAR Line Manager and any copied Finance Admin can sign an acknowledgement.
     </p>
     <div class="btn-group" style="margin-bottom: 1rem;">
       <a href="ter-template.html" class="btn btn--secondary">View TER Template</a>
@@ -151,30 +151,28 @@
 
       <section class="form-section">
         <h2>Approval Routing</h2>
-        <div class="form-group">
-          <label for="supervisorId">1. Select Supervisor (Optional)</label>
-          <select id="supervisorId" name="supervisorId">
-            <option value="">No separate Supervisor</option>
-          </select>
-          <p class="form-hint">Choose a separate active staff member with the Supervisor role if assigned. The TAR Line Manager cannot also act as Supervisor. Leave blank when no separate Supervisor is assigned; the request will go directly to the TAR Line Manager.</p>
+        <div class="readonly-field">
+          <span class="readonly-field__label">Budget Holder approver from the selected TAR</span>
+          <div class="readonly-field__value" id="budget-holder-display">Select an approved TAR to view its Budget Holder.</div>
         </div>
         <div class="readonly-field">
-          <span class="readonly-field__label">2. Line Manager from the selected TAR</span>
+          <span class="readonly-field__label">Line Manager copy recipient from the selected TAR</span>
           <div class="readonly-field__value" id="line-manager-display">Select an approved TAR to view its Line Manager.</div>
+          <p class="form-hint">The Budget Holder must approve and sign first. A different Line Manager receives a copy for acknowledgement after Budget Holder approval. If both roles are held by the same person, no duplicate acknowledgement is needed.</p>
         </div>
         <div class="form-group">
-          <label for="financeAdminId">3. Select Finance Approver</label>
+          <label for="financeAdminId">Finance Approver</label>
           <select id="financeAdminId" name="financeAdminId" required>
             <option value="">Select a Finance Admin</option>
           </select>
           <p class="form-hint">Finance review will be assigned only to the selected active Finance Admin.</p>
         </div>
         <div class="form-group">
-          <label for="financeCcAdminId">Copy another Finance Admin (Optional)</label>
+          <label for="financeCcAdminId">Copy another Finance Admin for acknowledgement (Optional)</label>
           <select id="financeCcAdminId" name="financeCcAdminId">
             <option value="">Do not copy another Finance Admin</option>
           </select>
-          <p class="form-hint">The selected Finance Admin receives a copy when the report reaches Finance. Copy recipients can view the financial package but cannot approve or sign it.</p>
+          <p class="form-hint">The selected Finance Admin approves and signs. A copied Finance Admin can acknowledge with a signature but cannot approve or release payment.</p>
         </div>
       </section>
 
@@ -236,10 +234,10 @@
     const submitBtn = document.getElementById('submit-btn');
     const lineItemsBody = document.getElementById('line-items-body');
     const travelSelect = document.getElementById('travelRequestId');
-    const supervisorSelect = document.getElementById('supervisorId');
     const financeAdminSelect = document.getElementById('financeAdminId');
     const financeCcAdminSelect = document.getElementById('financeCcAdminId');
     const lineManagerDisplay = document.getElementById('line-manager-display');
+    const budgetHolderDisplay = document.getElementById('budget-holder-display');
     const paymentRequestPurpose = document.getElementById('paymentRequestPurpose');
     const previewMergedDocumentsBtn = document.getElementById('preview-merged-documents-btn');
     const reimbursementId = new URLSearchParams(window.location.search).get('id');
@@ -249,6 +247,7 @@
     const draftStatus = document.getElementById('reimbursement-draft-status');
     let draftSaveTimer = null;
     let isSubmissionComplete = false;
+    const financeDefaultsKey = `reimbursement-finance-defaults-${sessionUser.id || sessionUser._id || sessionUser.email || 'current-user'}`;
 
     function saveDraft() {
       if (isSubmissionComplete) return true;
@@ -428,31 +427,23 @@
       }
     }
 
-    async function loadSupervisors(selectedId) {
-      try {
-        const result = await fetchSupervisors();
-        const supervisors = result.data || result.users || result || [];
-        supervisorSelect.innerHTML = '<option value="">No separate Supervisor</option>' +
-          supervisors.map((supervisor) =>
-            `<option value="${escapeHtml(supervisor._id || supervisor.id)}">${escapeHtml(supervisor.name)} (${escapeHtml(supervisor.email)})</option>`
-          ).join('');
-        supervisorSelect.value = selectedId?._id || selectedId || '';
-      } catch (err) {
-        renderApiErrors(errorEl, err);
-      }
-    }
-
     async function loadFinanceAdmins(selectedId, selectedCcId) {
       try {
         const result = await fetchFinanceAdmins();
         const financeAdmins = result.data || result.users || result || [];
+        let savedDefaults = {};
+        try {
+          savedDefaults = JSON.parse(localStorage.getItem(financeDefaultsKey) || '{}');
+        } catch (error) {
+          console.error('Failed to read saved Finance approver defaults', error);
+        }
         const financeAdminOptions = financeAdmins.map((financeAdmin) =>
           `<option value="${escapeHtml(financeAdmin._id || financeAdmin.id)}">${escapeHtml(financeAdmin.name)} (${escapeHtml(financeAdmin.email)})</option>`
         ).join('');
         financeAdminSelect.innerHTML = '<option value="">Select a Finance Admin</option>' + financeAdminOptions;
         financeCcAdminSelect.innerHTML = '<option value="">Do not copy another Finance Admin</option>' + financeAdminOptions;
-        financeAdminSelect.value = selectedId?._id || selectedId || '';
-        financeCcAdminSelect.value = selectedCcId?._id || selectedCcId || '';
+        financeAdminSelect.value = selectedId?._id || selectedId || savedDefaults.financeAdminId || '';
+        financeCcAdminSelect.value = selectedCcId?._id || selectedCcId || savedDefaults.financeCcAdminId || '';
         updateFinanceCcOptions();
       } catch (err) {
         renderApiErrors(errorEl, err);
@@ -473,14 +464,15 @@
       const selectedOption = travelSelect.selectedOptions[0];
       updateReimbursementLineItemDescriptions(form);
       const lineManagerId = selectedOption?.dataset.lineManagerId || '';
-      for (const option of supervisorSelect.options) {
-        option.disabled = Boolean(option.value && option.value === lineManagerId);
-      }
-      if (lineManagerId && supervisorSelect.value === lineManagerId) {
-        supervisorSelect.value = '';
-      }
+      const budgetHolderId = selectedOption?.dataset.budgetHolderId || lineManagerId;
+      const budgetHolderName = selectedOption?.dataset.budgetHolder || selectedOption?.dataset.lineManager;
+      budgetHolderDisplay.textContent = budgetHolderName ||
+        (travelSelect.value ? 'The approved TAR Budget Holder will be verified by the server.' : 'Select an approved TAR to view its Budget Holder.');
       lineManagerDisplay.textContent = selectedOption?.dataset.lineManager ||
         (travelSelect.value ? 'The selected TAR Line Manager will be verified by the server.' : 'Select an approved TAR to view its Line Manager.');
+      if (lineManagerId && budgetHolderId && lineManagerId === budgetHolderId) {
+        lineManagerDisplay.textContent += ' (same person as Budget Holder; no separate copy is needed)';
+      }
       document.getElementById('fund-code-display').textContent = selectedOption?.dataset.fundCode || '—';
       document.getElementById('project-id-display').textContent = selectedOption?.dataset.projectId || '—';
       document.getElementById('activity-id-display').textContent = selectedOption?.dataset.activityId || '—';
@@ -520,7 +512,6 @@
           if (input && input.type !== 'radio') input.value = value || '';
           if (input?.type === 'radio') input.checked = input.value === value;
         }
-        await loadSupervisors(data.supervisorId);
         submitBtn.textContent = 'Update Reimbursement';
       } catch (err) {
         renderApiErrors(errorEl, err);
@@ -681,7 +672,6 @@
         await Promise.all([
           initReimbursementLineItems(lineItemsBody),
           loadProfileDefaults(),
-          loadSupervisors(''),
           reimbursementId ? loadExistingReport() : loadFinanceAdmins(''),
           reimbursementId ? Promise.resolve() : loadApprovedTravelRequests(),
         ]);
@@ -696,7 +686,21 @@
     }
 
     travelSelect.addEventListener('change', updateSelectedTravelDetails);
-    financeAdminSelect.addEventListener('change', updateFinanceCcOptions);
+    const saveFinanceDefaults = () => {
+      try {
+        localStorage.setItem(financeDefaultsKey, JSON.stringify({
+          financeAdminId: financeAdminSelect.value,
+          financeCcAdminId: financeCcAdminSelect.value,
+        }));
+      } catch (error) {
+        console.error('Failed to save Finance approver defaults', error);
+      }
+    };
+    financeAdminSelect.addEventListener('change', () => {
+      updateFinanceCcOptions();
+      saveFinanceDefaults();
+    });
+    financeCcAdminSelect.addEventListener('change', saveFinanceDefaults);
 
     initForm();
     previewMergedDocumentsBtn.addEventListener('click', async () => {

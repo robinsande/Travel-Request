@@ -313,6 +313,7 @@ function canApproveReimbursement(report, user = getUser()) {
   const roles = user.roles || [];
   const idOf = (value) => String(value?._id || value?.id || value || '');
   const supervisorStatuses = ['SUBMITTED_TO_SUPERVISOR', 'SUPERVISOR_REVIEW'];
+  const budgetHolderStatuses = ['SUBMITTED_TO_BUDGET_HOLDER', 'BUDGET_HOLDER_REVIEW'];
   const lineManagerStatuses = ['SUBMITTED_TO_LINE_MANAGER', 'LINE_MANAGER_REVIEW'];
   const financeStatuses = ['SUBMITTED_TO_FINANCE', 'FINANCE_REVIEW'];
   const financeAssignedId = idOf(report?.financeAdminId);
@@ -321,11 +322,49 @@ function canApproveReimbursement(report, user = getUser()) {
       idOf(report?.supervisorId) === uid &&
       supervisorStatuses.includes(report?.status)) ||
     (['admin', 'approver_budget_holder'].includes(user.role) &&
+      idOf(report?.selected_approver_id) === uid &&
+      budgetHolderStatuses.includes(report?.status)) ||
+    (['admin', 'approver_budget_holder'].includes(user.role) &&
       idOf(report?.lineManagerId || report?.selected_approver_id) === uid &&
       lineManagerStatuses.includes(report?.status)) ||
     (roles.includes('finance_admin') &&
       (!financeAssignedId || financeAssignedId === uid) &&
       financeStatuses.includes(report?.status))
+  );
+}
+
+function canAcknowledgeReimbursement(report, user = getUser()) {
+  if (!report || !user) return false;
+  const uid = String(user.id || user._id || '');
+  const idOf = (value) => String(value?._id || value?.id || value || '');
+  const afterBudgetHolderApproval = [
+    'SUBMITTED_TO_LINE_MANAGER_ACKNOWLEDGEMENT',
+  ].includes(report.status);
+  const lineManagerCopy =
+    idOf(report.lineManagerId) === uid &&
+    idOf(report.selected_approver_id) !== uid &&
+    ['admin', 'approver_budget_holder'].includes(user.role) &&
+    afterBudgetHolderApproval &&
+    !report.lineManagerAcknowledgedAt;
+  const financeCopy =
+    idOf(report.financeCcAdminId) === uid &&
+    (user.roles || []).includes('finance_admin') &&
+    ['PAYMENT_PROCESSING', 'COMPLETED'].includes(report.status) &&
+    !report.financeCcAcknowledgedAt;
+  return lineManagerCopy || financeCopy;
+}
+
+function canViewMergedReimbursementPackage(report, user = getUser()) {
+  if (!report || !user) return false;
+  const uid = String(user.id || user._id || '');
+  const idOf = (value) => String(value?._id || value?.id || value || '');
+  return (
+    idOf(report.submittedBy) === uid ||
+    idOf(report.selected_approver_id) === uid ||
+    idOf(report.financeAdminId) === uid ||
+    idOf(report.financeCcAdminId) === uid ||
+    ['superadmin', 'super_superadmin'].includes(user.role) ||
+    (user.roles || []).includes('auditor')
   );
 }
 
@@ -356,9 +395,16 @@ function renderReimbursementDecisionButtons(report) {
   const reportId = getReimbursementId(report);
   const needsReviewStart = [
     'SUBMITTED_TO_SUPERVISOR',
+    'SUBMITTED_TO_BUDGET_HOLDER',
     'SUBMITTED_TO_LINE_MANAGER',
     'SUBMITTED_TO_FINANCE',
   ].includes(report.status);
+  if (report.status === 'SUBMITTED_TO_LINE_MANAGER_ACKNOWLEDGEMENT') {
+    return `
+      <div class="btn-group" style="margin-top: 1rem;">
+        <a href="reimbursement-detail.html?id=${encodeURIComponent(reportId)}" class="btn btn--secondary btn--sm">View Back-to-Office Report</a>
+      </div>`;
+  }
   if (needsReviewStart) {
     return `
       <div class="btn-group" style="margin-top: 1rem;">
@@ -563,8 +609,8 @@ function renderReimbursementDetail(report) {
         <dt>PeopleSoft Project ID</dt><dd>${escapeHtml(report.travelRequest?.project?.projectId || '—')}</dd>
         <dt>PeopleSoft Activity ID</dt><dd>${escapeHtml(report.travelRequest?.project?.activityId || '—')}</dd>
         <dt>PeopleSoft Department ID</dt><dd>${escapeHtml(report.travelRequest?.project?.departmentId || '—')}</dd>
-        <dt>Supervisor</dt><dd>${escapeHtml(approver)}</dd>
-        <dt>Line Manager</dt><dd>${escapeHtml(report.lineManagerId?.name || report.travelRequest?.selected_approver_id?.name || '—')}</dd>
+        <dt>Budget Holder</dt><dd>${escapeHtml(report.selected_approver_id?.name || approver)}</dd>
+        <dt>Line Manager (copy)</dt><dd>${escapeHtml(report.lineManagerId?.name || report.travelRequest?.selected_approver_id?.name || '—')}</dd>
         <dt>Submitted</dt><dd>${formatDateTime(report.submittedAt || report.createdAt)}</dd>
         <dt>Total</dt><dd>${escapeHtml(formatCurrency(report.totalAmountKsh))}</dd>
       </dl>
@@ -580,14 +626,11 @@ function renderReimbursementDetail(report) {
       </dl>
     </section>
 
-    <section class="detail-section">
-      <h2>Expense Line Items</h2>
-      ${
-        lineItems.length
-          ? renderReimbursementLineItemsTable(lineItems)
-          : '<p class="text-muted">No line items were submitted.</p>'
-      }
-    </section>
+    ${canViewMergedReimbursementPackage(report) ? `
+      <section class="detail-section">
+        <h2>Expense Line Items</h2>
+        ${lineItems.length ? renderReimbursementLineItemsTable(lineItems) : '<p class="text-muted">No line items were submitted.</p>'}
+      </section>` : ''}
 
     <section class="detail-section">
       <h2>Supporting Documents</h2>
@@ -633,6 +676,9 @@ function renderApprovedTravelOption(request) {
   const dates = `${formatDate(request.itinerary?.dateFrom)} - ${formatDate(request.itinerary?.dateTo)}`;
   const lineManager = request.selected_approver_id?.name || '';
   const lineManagerId = request.selected_approver_id?._id || request.selected_approver_id || '';
+  const budgetHolder = request.selected_budget_holder_id?.user || null;
+  const budgetHolderName = budgetHolder?.name || '';
+  const budgetHolderId = budgetHolder?._id || budgetHolder?.id || '';
   const project = request.project || {};
-  return `<option value="${escapeHtml(requestId)}" data-destination="${escapeHtml(destination)}" data-line-manager="${escapeHtml(lineManager)}" data-line-manager-id="${escapeHtml(lineManagerId)}" data-fund-code="${escapeHtml(project.fundCode || '')}" data-project-id="${escapeHtml(project.projectId || '')}" data-activity-id="${escapeHtml(project.activityId || '')}" data-department-id="${escapeHtml(project.departmentId || '')}" data-purpose="${escapeHtml(request.purposeOfTrip || '')}">${escapeHtml(destination)} (${escapeHtml(dates)})</option>`;
+  return `<option value="${escapeHtml(requestId)}" data-destination="${escapeHtml(destination)}" data-line-manager="${escapeHtml(lineManager)}" data-line-manager-id="${escapeHtml(lineManagerId)}" data-budget-holder="${escapeHtml(budgetHolderName)}" data-budget-holder-id="${escapeHtml(budgetHolderId)}" data-fund-code="${escapeHtml(project.fundCode || '')}" data-project-id="${escapeHtml(project.projectId || '')}" data-activity-id="${escapeHtml(project.activityId || '')}" data-department-id="${escapeHtml(project.departmentId || '')}" data-purpose="${escapeHtml(request.purposeOfTrip || '')}">${escapeHtml(destination)} (${escapeHtml(dates)})</option>`;
 }
