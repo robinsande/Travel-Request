@@ -27,7 +27,31 @@
     <div id="form-error" class="alert alert--error" hidden role="alert"></div>
     <form id="reimbursement-form" novalidate>
       <section class="form-section">
-        <h2>Payment Request — Document 1</h2>
+        <h2>Travel Expense Report — Document 2</h2>
+        <p class="form-hint">Complete your expenses by date. Daily totals from this report are used in the Payment Voucher Form. Voucher descriptions use the destination from the approved TAR.</p>
+        <p class="form-hint">Enter expenses by category; add multiple expense entries on the same date when needed. A report supports up to 30 travel days.</p>
+        <p class="form-hint">Breakfast is KSH 1,000, lunch is KSH 1,000, and dinner is KSH 1,500. Those amounts fill automatically; enter other expense amounts manually.</p>
+        <p class="form-hint" data-expense-day-count>0 of 30 travel days</p>
+        <div class="line-items-table-wrap">
+          <table class="line-items-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Invoice No.</th>
+                <th>Amount (KSH)</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="line-items-body"></tbody>
+          </table>
+        </div>
+        <button type="button" class="btn btn--secondary btn--sm" id="add-line-item-btn">+ Add Line Item</button>
+      </section>
+
+      <section class="form-section">
+        <h2>Payment Voucher Form — Document 1</h2>
         <div class="form-group">
           <label for="travelRequestId">Approved TAR to Merge into this Reimbursement</label>
           <select id="travelRequestId" name="travelRequestId" required>
@@ -122,29 +146,6 @@
           </select>
           <p class="form-hint">The selected Finance Admin receives a copy when the report reaches Finance. Copy recipients can view the financial package but cannot approve or sign it.</p>
         </div>
-      </section>
-
-      <section class="form-section">
-        <h2>Travel Expense Report — Document 2</h2>
-        <p class="form-hint">Enter each expense by date, category, and a descriptive detail (for example, "Per diem in Dadaab"). Category names are not used as descriptions. A report supports up to 30 travel days; add multiple expense categories for each day as needed.</p>
-        <p class="form-hint">Breakfast is KSH 1,000, lunch is KSH 1,000, and dinner is KSH 1,500. Those amounts fill automatically; enter other expense amounts manually.</p>
-        <p class="form-hint" data-expense-day-count>0 of 30 travel days</p>
-        <div class="line-items-table-wrap">
-          <table class="line-items-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Category</th>
-                <th>Description</th>
-                <th>Invoice No.</th>
-                <th>Amount (KSH)</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="line-items-body"></tbody>
-          </table>
-        </div>
-        <button type="button" class="btn btn--secondary btn--sm" id="add-line-item-btn">+ Add Line Item</button>
       </section>
 
       <section class="form-section">
