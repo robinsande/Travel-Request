@@ -29,40 +29,53 @@
 
     <form id="reimbursement-form" novalidate hidden>
       <section class="form-section">
-        <h2>Approved Travel</h2>
+        <h2>Payment Request — Document 1</h2>
         <div class="form-group">
           <label for="travelRequestId">Approved TAR to Merge into this Reimbursement</label>
           <select id="travelRequestId" name="travelRequestId" required>
             <option value="">Select an approved trip</option>
           </select>
-          <p class="form-hint">The selected approved TAR is appended to the merged reimbursement PDF. Only approved trips where you are a passenger can be claimed.</p>
+          <p class="form-hint">The selected approved TAR is appended as Document 3. Its approved PeopleSoft account codes and Line Manager are used on this Payment Request.</p>
         </div>
-      </section>
-
-      <section class="form-section">
-        <h2>Approval Routing</h2>
         <div class="form-group">
-          <label for="supervisorId">1. Select Supervisor</label>
-          <select id="supervisorId" name="supervisorId" required>
-            <option value="">Select a Supervisor</option>
-          </select>
-          <p class="form-hint">Only active staff with the Supervisor role are available.</p>
+          <label for="paymentRequestPurpose">Purpose</label>
+          <textarea id="paymentRequestPurpose" name="paymentRequestPurpose" required placeholder="Purpose of this payment request"></textarea>
+        </div>
+        <fieldset class="form-group">
+          <legend>Payment Method</legend>
+          <label><input type="radio" name="paymentMethod" value="cheque" /> Payment by Cheque</label>
+          <label><input type="radio" name="paymentMethod" value="bank_transfer" checked /> Bank Transfer</label>
+          <label><input type="radio" name="paymentMethod" value="safe_cash" /> Safe Cash</label>
+        </fieldset>
+        <div class="form-grid">
+          <div class="form-group"><label for="chequeNumber">Cheque No.</label><input id="chequeNumber" name="chequeNumber" type="text" maxlength="80" /></div>
+          <div class="form-group"><label for="pickedUpBy">Picked Up By</label><input id="pickedUpBy" name="pickedUpBy" type="text" maxlength="120" /></div>
+          <div class="form-group"><label for="mailedTo">Mailed To</label><input id="mailedTo" name="mailedTo" type="text" maxlength="200" /></div>
+          <div class="form-group"><label for="mobileNumber">Mobile Number</label><input id="mobileNumber" name="mobileNumber" type="text" maxlength="40" /></div>
+          <div class="form-group"><label for="bankName">Bank Name</label><input id="bankName" name="bankName" type="text" maxlength="120" /></div>
+          <div class="form-group"><label for="bankAddress">Bank Address</label><input id="bankAddress" name="bankAddress" type="text" maxlength="200" /></div>
+          <div class="form-group"><label for="bankAccountNumber">Bank Account No.</label><input id="bankAccountNumber" name="bankAccountNumber" type="text" maxlength="80" /></div>
+          <div class="form-group"><label for="swiftCode">SWIFT Code</label><input id="swiftCode" name="swiftCode" type="text" maxlength="40" /></div>
+          <div class="form-group"><label for="beneficiaryName">Beneficiary Name</label><input id="beneficiaryName" name="beneficiaryName" type="text" maxlength="120" /></div>
+          <div class="form-group"><label for="sortCode">Sort Code</label><input id="sortCode" name="sortCode" type="text" maxlength="40" /></div>
+          <div class="form-group"><label for="intermediaryBankAddress">Intermediary Bank Address</label><input id="intermediaryBankAddress" name="intermediaryBankAddress" type="text" maxlength="200" /></div>
+          <div class="form-group"><label for="intermediaryBankAccountNumber">Intermediary Bank Account No.</label><input id="intermediaryBankAccountNumber" name="intermediaryBankAccountNumber" type="text" maxlength="80" /></div>
+          <div class="form-group"><label for="intermediarySwiftAba">Intermediary SWIFT / ABA</label><input id="intermediarySwiftAba" name="intermediarySwiftAba" type="text" maxlength="40" /></div>
         </div>
         <div class="readonly-field">
-          <span class="readonly-field__label">2. Line Manager from the selected TAR</span>
-          <div class="readonly-field__value" id="line-manager-display">Select an approved TAR to view its Line Manager.</div>
-        </div>
-        <div class="form-group">
-          <label for="financeAdminId">3. Select Finance Approver</label>
-          <select id="financeAdminId" name="financeAdminId" required>
-            <option value="">Select a Finance Admin</option>
-          </select>
-          <p class="form-hint">Finance review will be assigned only to the selected active Finance Admin.</p>
+          <span class="readonly-field__label">Account Classification from the Approved TAR</span>
+          <div class="readonly-grid">
+            <div><span class="readonly-field__label">PeopleSoft Fund Account</span><div class="readonly-field__value" id="fund-code-display">Select an approved TAR</div></div>
+            <div><span class="readonly-field__label">PeopleSoft Project ID</span><div class="readonly-field__value" id="project-id-display">—</div></div>
+            <div><span class="readonly-field__label">PeopleSoft Activity ID</span><div class="readonly-field__value" id="activity-id-display">—</div></div>
+            <div><span class="readonly-field__label">PeopleSoft Department ID</span><div class="readonly-field__value" id="department-id-display">—</div></div>
+          </div>
+          <p class="form-hint">These accounting codes come from the selected approved TAR and cannot be changed on the reimbursement.</p>
         </div>
       </section>
 
       <section class="form-section">
-        <h2>Employee Details</h2>
+        <h2>Payment Request — Payee Details</h2>
         <p class="form-hint">These fields are filled from your profile and cannot be edited here.</p>
         <div class="readonly-grid">
           <div class="readonly-field">
@@ -97,7 +110,36 @@
       </section>
 
       <section class="form-section">
-        <h2>Travel Expense Report</h2>
+        <h2>Approval Routing</h2>
+        <div class="form-group">
+          <label for="supervisorId">1. Select Supervisor (Optional)</label>
+          <select id="supervisorId" name="supervisorId">
+            <option value="">No separate Supervisor</option>
+          </select>
+          <p class="form-hint">Choose a separate active staff member with the Supervisor role if assigned. The TAR Line Manager cannot also act as Supervisor. Leave blank when no separate Supervisor is assigned; the request will go directly to the TAR Line Manager.</p>
+        </div>
+        <div class="readonly-field">
+          <span class="readonly-field__label">2. Line Manager from the selected TAR</span>
+          <div class="readonly-field__value" id="line-manager-display">Select an approved TAR to view its Line Manager.</div>
+        </div>
+        <div class="form-group">
+          <label for="financeAdminId">3. Select Finance Approver</label>
+          <select id="financeAdminId" name="financeAdminId" required>
+            <option value="">Select a Finance Admin</option>
+          </select>
+          <p class="form-hint">Finance review will be assigned only to the selected active Finance Admin.</p>
+        </div>
+        <div class="form-group">
+          <label for="financeCcAdminId">Copy another Finance Admin (Optional)</label>
+          <select id="financeCcAdminId" name="financeCcAdminId">
+            <option value="">Do not copy another Finance Admin</option>
+          </select>
+          <p class="form-hint">The selected Finance Admin receives a copy when the report reaches Finance. Copy recipients can view the financial package but cannot approve or sign it.</p>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>Travel Expense Report — Document 2</h2>
         <p class="form-hint">Enter expenses by date and category. A report supports up to 30 travel days; add multiple expense categories for each day as needed.</p>
         <p class="form-hint">Breakfast is KSH 1,000, lunch is KSH 1,000, and dinner is KSH 1,500. Those amounts fill automatically; enter other expense amounts manually.</p>
         <p class="form-hint" data-expense-day-count>0 of 30 travel days</p>
@@ -107,6 +149,8 @@
               <tr>
                 <th>Date</th>
                 <th>Category</th>
+                <th>Description</th>
+                <th>Invoice No.</th>
                 <th>Amount (KSH)</th>
                 <th></th>
               </tr>
@@ -136,7 +180,7 @@
           <input type="text" class="signature-text-input" placeholder="Or type your full name as a digital signature" autocomplete="off" />
           <input type="hidden" name="requesterSignature" class="signature-value" />
           <button type="button" class="btn btn--ghost btn--sm clear-signature-btn">Clear signature</button>
-          <p class="form-hint">Draw, upload or type your signature as shown in the TAR form. It will appear in the requester sign-off area of the Payment Request.</p>
+          <p class="form-hint">Draw, upload or type your signature as shown in the TAR form. It will appear on Document 1, the Payment Request.</p>
         </div>
       </section>
 
@@ -176,7 +220,9 @@
     const travelSelect = document.getElementById('travelRequestId');
     const supervisorSelect = document.getElementById('supervisorId');
     const financeAdminSelect = document.getElementById('financeAdminId');
+    const financeCcAdminSelect = document.getElementById('financeCcAdminId');
     const lineManagerDisplay = document.getElementById('line-manager-display');
+    const paymentRequestPurpose = document.getElementById('paymentRequestPurpose');
     const previewMergedDocumentsBtn = document.getElementById('preview-merged-documents-btn');
     const reimbursementId = new URLSearchParams(window.location.search).get('id');
 
@@ -253,7 +299,7 @@
       try {
         const result = await fetchSupervisors();
         const supervisors = result.data || result.users || result || [];
-        supervisorSelect.innerHTML = '<option value="">Select a Supervisor</option>' +
+        supervisorSelect.innerHTML = '<option value="">No separate Supervisor</option>' +
           supervisors.map((supervisor) =>
             `<option value="${escapeHtml(supervisor._id || supervisor.id)}">${escapeHtml(supervisor.name)} (${escapeHtml(supervisor.email)})</option>`
           ).join('');
@@ -263,24 +309,51 @@
       }
     }
 
-    async function loadFinanceAdmins(selectedId) {
+    async function loadFinanceAdmins(selectedId, selectedCcId) {
       try {
         const result = await fetchFinanceAdmins();
         const financeAdmins = result.data || result.users || result || [];
-        financeAdminSelect.innerHTML = '<option value="">Select a Finance Admin</option>' +
-          financeAdmins.map((financeAdmin) =>
-            `<option value="${escapeHtml(financeAdmin._id || financeAdmin.id)}">${escapeHtml(financeAdmin.name)} (${escapeHtml(financeAdmin.email)})</option>`
-          ).join('');
+        const financeAdminOptions = financeAdmins.map((financeAdmin) =>
+          `<option value="${escapeHtml(financeAdmin._id || financeAdmin.id)}">${escapeHtml(financeAdmin.name)} (${escapeHtml(financeAdmin.email)})</option>`
+        ).join('');
+        financeAdminSelect.innerHTML = '<option value="">Select a Finance Admin</option>' + financeAdminOptions;
+        financeCcAdminSelect.innerHTML = '<option value="">Do not copy another Finance Admin</option>' + financeAdminOptions;
         financeAdminSelect.value = selectedId?._id || selectedId || '';
+        financeCcAdminSelect.value = selectedCcId?._id || selectedCcId || '';
+        updateFinanceCcOptions();
       } catch (err) {
         renderApiErrors(errorEl, err);
       }
     }
 
+    function updateFinanceCcOptions() {
+      const assignedFinanceId = financeAdminSelect.value;
+      for (const option of financeCcAdminSelect.options) {
+        option.disabled = Boolean(option.value && option.value === assignedFinanceId);
+      }
+      if (financeCcAdminSelect.value === assignedFinanceId) {
+        financeCcAdminSelect.value = '';
+      }
+    }
+
     function updateSelectedTravelDetails() {
       const selectedOption = travelSelect.selectedOptions[0];
+      const lineManagerId = selectedOption?.dataset.lineManagerId || '';
+      for (const option of supervisorSelect.options) {
+        option.disabled = Boolean(option.value && option.value === lineManagerId);
+      }
+      if (lineManagerId && supervisorSelect.value === lineManagerId) {
+        supervisorSelect.value = '';
+      }
       lineManagerDisplay.textContent = selectedOption?.dataset.lineManager ||
         (travelSelect.value ? 'The selected TAR Line Manager will be verified by the server.' : 'Select an approved TAR to view its Line Manager.');
+      document.getElementById('fund-code-display').textContent = selectedOption?.dataset.fundCode || '—';
+      document.getElementById('project-id-display').textContent = selectedOption?.dataset.projectId || '—';
+      document.getElementById('activity-id-display').textContent = selectedOption?.dataset.activityId || '—';
+      document.getElementById('department-id-display').textContent = selectedOption?.dataset.departmentId || '—';
+      if (selectedOption?.dataset.purpose && !paymentRequestPurpose.value.trim()) {
+        paymentRequestPurpose.value = selectedOption.dataset.purpose;
+      }
     }
 
     async function loadExistingReport() {
@@ -294,7 +367,7 @@
         }
         const selectedTravelRequestId = getLinkedTravelId(data.travelRequest);
         await loadApprovedTravelRequests(selectedTravelRequestId);
-        await loadFinanceAdmins(data.financeAdminId);
+        await loadFinanceAdmins(data.financeAdminId, data.financeCcAdminId);
         const sessionUser = getUser() || {};
         setEmployeeDetails({
           name: sessionUser.name,
@@ -305,6 +378,16 @@
           baseLocation: data.baseLocation || sessionUser.office,
         });
         await initReimbursementLineItems(lineItemsBody, data.lineItems || []);
+        paymentRequestPurpose.value = data.paymentRequestPurpose || data.travelRequest?.purposeOfTrip || '';
+        for (const [field, value] of Object.entries(data.paymentDetails || {})) {
+          const input = form.elements[field];
+          if (input && input.type !== 'radio') input.value = value || '';
+          if (input?.type === 'radio') input.checked = input.value === value;
+        }
+        const paymentMethodInput = form.querySelector(
+          `input[name="paymentMethod"][value="${CSS.escape(data.paymentDetails?.paymentMethod || 'bank_transfer')}"]`
+        );
+        if (paymentMethodInput) paymentMethodInput.checked = true;
         await loadSupervisors(data.supervisorId);
         submitBtn.textContent = 'Update Reimbursement';
       } catch (err) {
@@ -317,12 +400,6 @@
       errorEl.hidden = true;
 
       const payload = buildReimbursementPayload(form);
-
-      if (!payload.supervisorId) {
-        renderApiErrors(errorEl, { message: 'Please select an active Supervisor.' });
-        supervisorSelect.focus();
-        return;
-      }
 
       if (!payload.financeAdminId) {
         renderApiErrors(errorEl, { message: 'Please select an active Finance Admin.' });
@@ -343,6 +420,12 @@
 
       if (!payload.travelRequestId) {
         renderApiErrors(errorEl, { message: 'Please select an approved travel request.' });
+        return;
+      }
+
+      if (!payload.paymentRequestPurpose) {
+        renderApiErrors(errorEl, { message: 'Please enter the Payment Request purpose.' });
+        paymentRequestPurpose.focus();
         return;
       }
 
@@ -418,6 +501,7 @@
     }
 
     travelSelect.addEventListener('change', updateSelectedTravelDetails);
+    financeAdminSelect.addEventListener('change', updateFinanceCcOptions);
 
     initForm();
     previewMergedDocumentsBtn.addEventListener('click', async () => {

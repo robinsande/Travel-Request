@@ -159,20 +159,8 @@
           'SUBMITTED_TO_LINE_MANAGER',
           'SUBMITTED_TO_FINANCE',
         ].includes(currentReport.status);
-        const combinedSupervisorAndLineManager =
-          String(currentReport.supervisorId?._id || currentReport.supervisorId) ===
-          String(currentReport.lineManagerId?._id || currentReport.lineManagerId);
-        approveBtn.textContent = needsReviewStart
-          ? combinedSupervisorAndLineManager && currentReport.status === 'SUBMITTED_TO_SUPERVISOR'
-            ? 'Start Combined Review'
-            : 'Start Review'
-          : combinedSupervisorAndLineManager && currentReport.status === 'SUPERVISOR_REVIEW'
-            ? 'Approve Both Roles'
-            : 'Approve';
-        rejectBtn.textContent =
-          combinedSupervisorAndLineManager && currentReport.status === 'SUPERVISOR_REVIEW'
-            ? 'Decline Both Roles'
-            : 'Reject';
+        approveBtn.textContent = needsReviewStart ? 'Start Review' : 'Approve';
+        rejectBtn.textContent = 'Reject';
         rejectBtn.hidden = canComplete || needsReviewStart;
       } catch (err) {
         loadingEl.innerHTML = '';

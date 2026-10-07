@@ -145,7 +145,8 @@ function buildReimbursementPayload(form) {
         expenseDate,
         location: tripLocation,
         category,
-        description: category,
+        description: row.querySelector('[data-line-item="description"]')?.value?.trim() || category,
+        invoiceNumber: row.querySelector('[data-line-item="invoiceNumber"]')?.value?.trim() || '',
         amount: Number(amount || 0),
       });
     }
@@ -155,8 +156,26 @@ function buildReimbursementPayload(form) {
     travelRequestId: fd.get('travelRequestId')?.trim() || '',
     supervisorId: fd.get('supervisorId')?.trim() || '',
     financeAdminId: fd.get('financeAdminId')?.trim() || '',
+    financeCcAdminId: fd.get('financeCcAdminId')?.trim() || '',
     requesterSignedName: getUser()?.name?.trim() || '',
     requesterSignature: fd.get('requesterSignature')?.trim() || '',
+    paymentRequestPurpose: fd.get('paymentRequestPurpose')?.trim() || '',
+    paymentDetails: {
+      paymentMethod: fd.get('paymentMethod') || '',
+      chequeNumber: fd.get('chequeNumber')?.trim() || '',
+      pickedUpBy: fd.get('pickedUpBy')?.trim() || '',
+      mailedTo: fd.get('mailedTo')?.trim() || '',
+      mobileNumber: fd.get('mobileNumber')?.trim() || '',
+      bankName: fd.get('bankName')?.trim() || '',
+      bankAddress: fd.get('bankAddress')?.trim() || '',
+      bankAccountNumber: fd.get('bankAccountNumber')?.trim() || '',
+      swiftCode: fd.get('swiftCode')?.trim() || '',
+      beneficiaryName: fd.get('beneficiaryName')?.trim() || '',
+      sortCode: fd.get('sortCode')?.trim() || '',
+      intermediaryBankAddress: fd.get('intermediaryBankAddress')?.trim() || '',
+      intermediaryBankAccountNumber: fd.get('intermediaryBankAccountNumber')?.trim() || '',
+      intermediarySwiftAba: fd.get('intermediarySwiftAba')?.trim() || '',
+    },
     employeeNumber: fd.get('employeeNumber')?.trim() || '',
     department: fd.get('department')?.trim() || '',
     position: fd.get('position')?.trim() || '',
@@ -198,6 +217,22 @@ function addReimbursementLineItemRow(container, item = {}, categories = expenseC
         </select>
       </div>
     </td>
+    <td data-label="Description">
+      <div class="form-group">
+        <label class="mobile-only-label" for="expense-description-${idx}">Description</label>
+        <input type="text" id="expense-description-${idx}" data-line-item="description" value="${escapeHtml(
+          item.description || selectedCategory
+        )}" maxlength="200" required />
+      </div>
+    </td>
+    <td data-label="Invoice No.">
+      <div class="form-group">
+        <label class="mobile-only-label" for="expense-invoice-${idx}">Invoice No.</label>
+        <input type="text" id="expense-invoice-${idx}" data-line-item="invoiceNumber" value="${escapeHtml(
+          item.invoiceNumber || ''
+        )}" maxlength="100" />
+      </div>
+    </td>
     <td data-label="Amount (KSH)">
       <div class="form-group">
         <label class="mobile-only-label" for="expense-amount-${idx}">Amount (KSH)</label>
@@ -218,6 +253,7 @@ function addReimbursementLineItemRow(container, item = {}, categories = expenseC
     amountInput.readOnly = Boolean(rate);
     amountInput.setAttribute('aria-label', rate ? 'Standard fixed rate' : 'Expense amount');
     if (rate) amountInput.value = String(rate);
+    row.querySelector('[data-line-item="description"]').value = categorySelect.value;
     bindUpdate();
   });
   row.querySelectorAll('input, select').forEach((el) => {
@@ -277,6 +313,7 @@ function canApproveReimbursement(report, user = getUser()) {
   const supervisorStatuses = ['SUBMITTED_TO_SUPERVISOR', 'SUPERVISOR_REVIEW'];
   const lineManagerStatuses = ['SUBMITTED_TO_LINE_MANAGER', 'LINE_MANAGER_REVIEW'];
   const financeStatuses = ['SUBMITTED_TO_FINANCE', 'FINANCE_REVIEW'];
+  const financeAssignedId = idOf(report?.financeAdminId);
   return (
     (roles.includes('supervisor') &&
       idOf(report?.supervisorId) === uid &&
@@ -284,13 +321,17 @@ function canApproveReimbursement(report, user = getUser()) {
     (['admin', 'approver_budget_holder'].includes(user.role) &&
       idOf(report?.lineManagerId || report?.selected_approver_id) === uid &&
       lineManagerStatuses.includes(report?.status)) ||
-    (roles.includes('finance_admin') && financeStatuses.includes(report?.status))
+    (roles.includes('finance_admin') &&
+      (!financeAssignedId || financeAssignedId === uid) &&
+      financeStatuses.includes(report?.status))
   );
 }
 
 function canCompleteReimbursementPayment(report, user = getUser()) {
   return Boolean(
     user?.roles?.includes('finance_admin') &&
+    (!report?.financeAdminId ||
+      String(report.financeAdminId?._id || report.financeAdminId) === String(user.id || user._id)) &&
     report?.status === 'PAYMENT_PROCESSING'
   );
 }
@@ -311,8 +352,6 @@ function renderReimbursementRejectForm(reportId) {
 
 function renderReimbursementDecisionButtons(report) {
   const reportId = getReimbursementId(report);
-  const combinedApproval = String(report.supervisorId?._id || report.supervisorId) ===
-    String(report.lineManagerId?._id || report.lineManagerId);
   const needsReviewStart = [
     'SUBMITTED_TO_SUPERVISOR',
     'SUBMITTED_TO_LINE_MANAGER',
@@ -322,15 +361,15 @@ function renderReimbursementDecisionButtons(report) {
     return `
       <div class="btn-group" style="margin-top: 1rem;">
         <a href="reimbursement-detail.html?id=${encodeURIComponent(reportId)}" class="btn btn--secondary btn--sm">View Details</a>
-        <button type="button" class="btn btn--primary btn--sm start-review-btn">${combinedApproval && report.status === 'SUBMITTED_TO_SUPERVISOR' ? 'Start Combined Review' : 'Start Review'}</button>
+        <button type="button" class="btn btn--primary btn--sm start-review-btn">Start Review</button>
       </div>`;
   }
 
   return `
     <div class="btn-group" style="margin-top: 1rem;">
       <a href="reimbursement-detail.html?id=${encodeURIComponent(reportId)}" class="btn btn--secondary btn--sm">View Details</a>
-      <button type="button" class="btn btn--success btn--sm approve-btn">${combinedApproval && report.status === 'SUPERVISOR_REVIEW' ? 'Approve Both Roles' : 'Approve'}</button>
-      <button type="button" class="btn btn--danger btn--sm reject-toggle-btn">${combinedApproval && report.status === 'SUPERVISOR_REVIEW' ? 'Decline' : 'Reject'}</button>
+      <button type="button" class="btn btn--success btn--sm approve-btn">Approve</button>
+      <button type="button" class="btn btn--danger btn--sm reject-toggle-btn">Reject</button>
     </div>
     ${renderReimbursementRejectForm(reportId)}`;
 }
@@ -461,6 +500,8 @@ function renderReimbursementLineItemsTable(lineItems) {
           <tr>
             <th>Date</th>
             <th>Category</th>
+            <th>Description</th>
+            <th>Invoice No.</th>
             <th>Amount (KSH)</th>
           </tr>
         </thead>
@@ -471,6 +512,8 @@ function renderReimbursementLineItemsTable(lineItems) {
             <tr>
               <td data-label="Date">${formatDate(item.expenseDate)}</td>
               <td data-label="Category">${escapeHtml(formatExpenseCategoryLabel(item.category || item.description))}</td>
+              <td data-label="Description">${escapeHtml(item.description || item.category || '—')}</td>
+              <td data-label="Invoice No.">${escapeHtml(item.invoiceNumber || '—')}</td>
               <td data-label="Amount (KSH)">${escapeHtml(formatCurrency(item.amount))}</td>
             </tr>`
             )
@@ -507,11 +550,16 @@ function renderReimbursementDetail(report) {
     }
 
     <section class="detail-section">
-      <h2>Report Overview</h2>
+      <h2>Payment Request — Document 1</h2>
       <dl class="detail-grid">
         <dt>Report ID</dt><dd>${escapeHtml(id)}</dd>
+        <dt>Payment Request Purpose</dt><dd>${escapeHtml(report.paymentRequestPurpose || '—')}</dd>
         <dt>Linked Travel</dt><dd>${escapeHtml(getTravelRequestLabel(report))}</dd>
         <dt>Submitted By</dt><dd>${escapeHtml(requester)}</dd>
+        <dt>PeopleSoft Fund Account</dt><dd>${escapeHtml(report.travelRequest?.project?.fundCode || '—')}</dd>
+        <dt>PeopleSoft Project ID</dt><dd>${escapeHtml(report.travelRequest?.project?.projectId || '—')}</dd>
+        <dt>PeopleSoft Activity ID</dt><dd>${escapeHtml(report.travelRequest?.project?.activityId || '—')}</dd>
+        <dt>PeopleSoft Department ID</dt><dd>${escapeHtml(report.travelRequest?.project?.departmentId || '—')}</dd>
         <dt>Supervisor</dt><dd>${escapeHtml(approver)}</dd>
         <dt>Line Manager</dt><dd>${escapeHtml(report.lineManagerId?.name || report.travelRequest?.selected_approver_id?.name || '—')}</dd>
         <dt>Submitted</dt><dd>${formatDateTime(report.submittedAt || report.createdAt)}</dd>
@@ -571,5 +619,7 @@ function renderApprovedTravelOption(request) {
   const destination = request.itinerary?.destination || 'Trip';
   const dates = `${formatDate(request.itinerary?.dateFrom)} - ${formatDate(request.itinerary?.dateTo)}`;
   const lineManager = request.selected_approver_id?.name || '';
-  return `<option value="${escapeHtml(requestId)}" data-destination="${escapeHtml(destination)}" data-line-manager="${escapeHtml(lineManager)}">${escapeHtml(destination)} (${escapeHtml(dates)})</option>`;
+  const lineManagerId = request.selected_approver_id?._id || request.selected_approver_id || '';
+  const project = request.project || {};
+  return `<option value="${escapeHtml(requestId)}" data-destination="${escapeHtml(destination)}" data-line-manager="${escapeHtml(lineManager)}" data-line-manager-id="${escapeHtml(lineManagerId)}" data-fund-code="${escapeHtml(project.fundCode || '')}" data-project-id="${escapeHtml(project.projectId || '')}" data-activity-id="${escapeHtml(project.activityId || '')}" data-department-id="${escapeHtml(project.departmentId || '')}" data-purpose="${escapeHtml(request.purposeOfTrip || '')}">${escapeHtml(destination)} (${escapeHtml(dates)})</option>`;
 }
