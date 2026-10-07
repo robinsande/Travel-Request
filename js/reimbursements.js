@@ -145,7 +145,7 @@ function buildReimbursementPayload(form) {
         expenseDate,
         location: tripLocation,
         category,
-        description: row.querySelector('[data-line-item="description"]')?.value?.trim() || category,
+        description: row.querySelector('[data-line-item="description"]')?.value?.trim() || '',
         invoiceNumber: row.querySelector('[data-line-item="invoiceNumber"]')?.value?.trim() || '',
         amount: Number(amount || 0),
       });
@@ -184,6 +184,8 @@ function addReimbursementLineItemRow(container, item = {}, categories = expenseC
     item.category || item.description || '',
     categories
   );
+  const initialDescription = String(item.description || '').trim();
+  const descriptionIsCategory = initialDescription.toLowerCase() === selectedCategory.toLowerCase();
   const standardRate = STANDARD_EXPENSE_RATES[selectedCategory];
   const initialAmount = standardRate ?? item.amount ?? '';
   const row = document.createElement('tr');
@@ -209,8 +211,8 @@ function addReimbursementLineItemRow(container, item = {}, categories = expenseC
       <div class="form-group">
         <label class="mobile-only-label" for="expense-description-${idx}">Description</label>
         <input type="text" id="expense-description-${idx}" data-line-item="description" value="${escapeHtml(
-          item.description || selectedCategory
-        )}" maxlength="200" required />
+          descriptionIsCategory ? '' : initialDescription
+        )}" placeholder="e.g., Per diem in Dadaab" maxlength="200" required />
       </div>
     </td>
     <td data-label="Invoice No.">
@@ -241,7 +243,6 @@ function addReimbursementLineItemRow(container, item = {}, categories = expenseC
     amountInput.readOnly = Boolean(rate);
     amountInput.setAttribute('aria-label', rate ? 'Standard fixed rate' : 'Expense amount');
     if (rate) amountInput.value = String(rate);
-    row.querySelector('[data-line-item="description"]').value = categorySelect.value;
     bindUpdate();
   });
   row.querySelectorAll('input, select').forEach((el) => {
