@@ -39,15 +39,21 @@ async function createReimbursement(payload) {
   return api.post('/reimbursements', payload);
 }
 
-async function previewReimbursementPdf(payload, previewWindow) {
+async function previewReimbursementPdf(payload, previewWindow, attachments = []) {
   const token = typeof getToken === 'function' ? getToken() : null;
+  const formData = new FormData();
+  formData.append('payload', JSON.stringify(payload));
+  formData.append(
+    'previewAttachments',
+    JSON.stringify(attachments.map(({ documentType, category }) => ({ documentType, category })))
+  );
+  attachments.forEach(({ file }) => formData.append('attachments', file));
   const response = await fetch(buildApiUrl('/reimbursements/preview'), {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify(payload),
+    body: formData,
   });
 
   if (!response.ok) {

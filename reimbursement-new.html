@@ -720,8 +720,36 @@
         return;
       }
       try {
+        const previewAttachments = [
+          ...[...document.getElementById('receipt-ticket-files').files].map((file) => ({
+            file,
+            documentType: 'receipt_ticket',
+            category: 'financial',
+          })),
+          ...(document.getElementById('expense-support-file').files[0]
+            ? [{
+                file: document.getElementById('expense-support-file').files[0],
+                documentType: 'expense_document',
+                category: 'financial',
+              }]
+            : []),
+          ...(document.getElementById('back-to-office-file').files[0]
+            ? [{
+                file: document.getElementById('back-to-office-file').files[0],
+                documentType: 'back_to_office',
+                category: 'line_manager',
+              }]
+            : []),
+          ...(document.getElementById('terms-of-reference-file').files[0]
+            ? [{
+                file: document.getElementById('terms-of-reference-file').files[0],
+                documentType: 'terms_of_reference',
+                category: 'line_manager',
+              }]
+            : []),
+        ];
         await withLoading(previewMergedDocumentsBtn, 'Preparing Preview…', () =>
-          previewReimbursementPdf(payload, previewWindow)
+          previewReimbursementPdf(payload, previewWindow, previewAttachments)
         );
       } catch (err) {
         previewWindow.close();

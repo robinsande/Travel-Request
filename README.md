@@ -92,6 +92,10 @@ frontend/
       admin.js               → /admin/*
 ```
 
+The **Preview Merged Documents** action includes selected receipt and financial
+support PDF/image uploads in the same order as the final merged reimbursement
+package, so the preview reflects the files currently chosen on the form.
+
 Reimbursement details provide a dedicated single-page **Payment Voucher Form** PDF
 for printing or download; this voucher-only PDF does not include receipts or
 other supporting documents. To download the combined file, use **Download Merged
