@@ -57,6 +57,35 @@
         <button type="submit" class="btn btn--primary" id="password-button">Update password</button>
       </form>
     </section>
+    <section class="profile-card profile-mfa-card" aria-labelledby="mfa-heading">
+      <div class="section-heading-row">
+        <h2 id="mfa-heading" class="profile-card__title">Authenticator app</h2>
+        <button type="button" class="btn btn--primary" id="show-mfa-reset">Reset authenticator</button>
+      </div>
+      <p class="text-muted profile-card__intro">Replace your authenticator app by scanning a new QR code. Your current setup stays active until the new code is verified.</p>
+      <div id="mfa-reset-error" class="alert alert--error" hidden role="alert"></div>
+      <form id="mfa-reset-form" novalidate hidden>
+        <div class="form-group">
+          <label for="mfa-current-password">Current password</label>
+          <input id="mfa-current-password" type="password" required autocomplete="current-password" />
+        </div>
+        <button type="submit" class="btn btn--primary" id="mfa-reset-button">Continue to QR code</button>
+      </form>
+      <div id="mfa-reset-setup" hidden>
+        <p class="form-hint">Scan this QR code with your new authenticator app, then enter the six-digit code it displays.</p>
+        <img id="mfa-reset-qr" class="authenticator-qr" alt="QR code for replacement authenticator setup" />
+        <p class="form-hint">If you cannot scan the QR code, enter this setup key manually:</p>
+        <code id="mfa-reset-manual-key" class="authenticator-manual-key"></code>
+        <form id="mfa-reset-code-form" autocomplete="one-time-code" novalidate>
+          <div class="form-group">
+            <label for="mfa-reset-code">Six-digit code from your new authenticator app</label>
+            <input id="mfa-reset-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required />
+          </div>
+          <button type="submit" class="btn btn--primary" id="mfa-reset-verify-button">Verify new code</button>
+          <button type="button" class="btn btn--ghost" id="cancel-mfa-reset">Cancel</button>
+        </form>
+      </div>
+    </section>
     </div>
   </div>
   <script src="js/config.js"></script>
@@ -79,6 +108,18 @@
     const profileError = document.getElementById('profile-error');
     const profileButton = document.getElementById('profile-button');
     const passwordFormToggle = document.getElementById('show-password-form');
+    const mfaResetToggle = document.getElementById('show-mfa-reset');
+    const mfaResetForm = document.getElementById('mfa-reset-form');
+    const mfaResetError = document.getElementById('mfa-reset-error');
+    const mfaResetSetup = document.getElementById('mfa-reset-setup');
+    const mfaResetButton = document.getElementById('mfa-reset-button');
+    const mfaResetQr = document.getElementById('mfa-reset-qr');
+    const mfaResetManualKey = document.getElementById('mfa-reset-manual-key');
+    const mfaResetCodeForm = document.getElementById('mfa-reset-code-form');
+    const mfaResetCode = document.getElementById('mfa-reset-code');
+    const mfaResetVerifyButton = document.getElementById('mfa-reset-verify-button');
+    let pendingMfaResetToken = null;
+    let isMfaResetVerifying = false;
 
     async function loadProfile() {
       showPageLoading(loading);
@@ -183,6 +224,90 @@
       } finally {
         setLoading(button, false);
       }
+    });
+
+    mfaResetToggle.addEventListener('click', () => {
+      mfaResetError.hidden = true;
+      mfaResetForm.hidden = false;
+      mfaResetToggle.hidden = true;
+      document.getElementById('mfa-current-password').focus();
+    });
+
+    mfaResetForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      mfaResetError.hidden = true;
+      setLoading(mfaResetButton, true, 'Preparing…');
+      try {
+        const setup = await resetMfaSetupRequest(
+          document.getElementById('mfa-current-password').value
+        );
+        pendingMfaResetToken = setup.challengeToken;
+        mfaResetQr.src = setup.qrCodeDataUrl;
+        mfaResetManualKey.textContent = setup.manualEntryKey;
+        mfaResetForm.hidden = true;
+        mfaResetSetup.hidden = false;
+        mfaResetCode.focus();
+      } catch (err) {
+        renderApiErrors(mfaResetError, err);
+      } finally {
+        setLoading(mfaResetButton, false);
+      }
+    });
+
+    async function verifyReplacementAuthenticator() {
+      if (isMfaResetVerifying) return;
+      mfaResetError.hidden = true;
+      if (!pendingMfaResetToken) {
+        renderApiErrors(mfaResetError, { message: 'Your reset session expired. Please start again.' });
+        return;
+      }
+
+      isMfaResetVerifying = true;
+      mfaResetCode.disabled = true;
+      mfaResetVerifyButton.disabled = true;
+      mfaResetVerifyButton.textContent = 'Verifying…';
+      try {
+        const result = await verifyMfaLogin(pendingMfaResetToken, mfaResetCode.value.trim());
+        pendingMfaResetToken = null;
+        setAuth(result.token, result.user);
+        mfaResetSetup.hidden = true;
+        mfaResetForm.hidden = true;
+        mfaResetToggle.hidden = false;
+        mfaResetCodeForm.reset();
+        mfaResetForm.reset();
+        showToast('Authenticator reset successfully. Use your new app next time you sign in.', 'success');
+      } catch (err) {
+        mfaResetCode.value = '';
+        mfaResetCode.focus();
+        renderApiErrors(mfaResetError, err);
+      } finally {
+        isMfaResetVerifying = false;
+        mfaResetCode.disabled = false;
+        mfaResetVerifyButton.disabled = false;
+        mfaResetVerifyButton.textContent = 'Verify new code';
+      }
+    }
+
+    mfaResetCode.addEventListener('input', () => {
+      mfaResetCode.value = mfaResetCode.value.replace(/\D/g, '').slice(0, 6);
+      if (/^\d{6}$/.test(mfaResetCode.value)) {
+        verifyReplacementAuthenticator();
+      }
+    });
+
+    mfaResetCodeForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      verifyReplacementAuthenticator();
+    });
+
+    document.getElementById('cancel-mfa-reset').addEventListener('click', () => {
+      pendingMfaResetToken = null;
+      mfaResetCodeForm.reset();
+      mfaResetForm.reset();
+      mfaResetSetup.hidden = true;
+      mfaResetForm.hidden = true;
+      mfaResetToggle.hidden = false;
+      mfaResetError.hidden = true;
     });
     loadProfile();
   </script>

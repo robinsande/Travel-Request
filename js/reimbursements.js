@@ -188,6 +188,7 @@ function buildReimbursementPayload(form) {
 }
 
 let reimbursementLineItemIndex = 0;
+let initializedReimbursementMealDates = new Set();
 
 function addReimbursementLineItemRow(container, item = {}, categories = expenseCategoriesCache || []) {
   if (container.querySelectorAll('[data-line-item-row]').length >= 300) {
@@ -264,11 +265,6 @@ function addReimbursementLineItemRow(container, item = {}, categories = expenseC
     el.addEventListener('change', bindUpdate);
   });
   row.querySelector('[data-remove-line-item]').addEventListener('click', () => {
-    const allRows = container.querySelectorAll('[data-line-item-row]');
-    if (allRows.length <= 1) {
-      showToast('At least one line item is required.', 'warning');
-      return;
-    }
     row.remove();
     updateReimbursementTotal(container.closest('form'));
   });
@@ -280,6 +276,9 @@ function addReimbursementLineItemRow(container, item = {}, categories = expenseC
 async function initReimbursementLineItems(container, items = []) {
   const categories = await ensureExpenseCategories();
   reimbursementLineItemIndex = 0;
+  initializedReimbursementMealDates = new Set(
+    items.map((item) => item.expenseDate ? String(item.expenseDate).slice(0, 10) : '').filter(Boolean)
+  );
   container.innerHTML = '';
   const rows = items.length ? items : [{}];
   rows.forEach((item) => addReimbursementLineItemRow(container, item, categories));
@@ -291,6 +290,42 @@ async function initReimbursementLineItems(container, items = []) {
     freshBtn.addEventListener('click', () => addReimbursementLineItemRow(container, {}, categories));
   }
 
+  updateReimbursementTotal(container.closest('form'));
+}
+
+function addDefaultMealsForExpenseDate(container, expenseDate) {
+  if (!expenseDate) return;
+
+  const categories = expenseCategoriesCache || [];
+  const standardMeals = Object.keys(STANDARD_EXPENSE_RATES);
+  const missingMeals = standardMeals.filter((category) => {
+    if (!categories.includes(category)) return false;
+    return ![...container.querySelectorAll('[data-line-item-row]')].some((row) =>
+      row.querySelector('[data-line-item="expenseDate"]')?.value === expenseDate &&
+      row.querySelector('[data-line-item="category"]')?.value === category
+    );
+  });
+  const selectedRow = [...container.querySelectorAll('[data-line-item-row]')].find((row) =>
+    row.querySelector('[data-line-item="expenseDate"]')?.value === expenseDate &&
+    !row.querySelector('[data-line-item="category"]')?.value &&
+    !row.querySelector('[data-line-item="invoiceNumber"]')?.value &&
+    !row.querySelector('[data-line-item="amount"]')?.value
+  );
+  selectedRow?.remove();
+
+  if (initializedReimbursementMealDates.has(expenseDate)) {
+    updateReimbursementTotal(container.closest('form'));
+    return;
+  }
+
+  initializedReimbursementMealDates.add(expenseDate);
+  missingMeals.forEach((category) => {
+    addReimbursementLineItemRow(container, {
+      expenseDate,
+      category,
+      amount: STANDARD_EXPENSE_RATES[category],
+    }, categories);
+  });
   updateReimbursementTotal(container.closest('form'));
 }
 

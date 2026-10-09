@@ -29,7 +29,7 @@
       <section class="form-section">
         <h2>Travel Expense Report — Document 2</h2>
         <p class="form-hint">Complete your expenses by date. Daily totals from this report are used in the Payment Voucher Form. Each expense description is filled from the selected approved TAR destination.</p>
-        <p class="form-hint">Enter expenses by category; add multiple expense entries on the same date when needed. A report supports up to 30 travel days.</p>
+        <p class="form-hint">Selecting a date on an expense line automatically adds breakfast, lunch, and dinner at the standard rates. Remove any meal you did not take. You can also add other expense entries for the same date. A report supports up to 30 travel days.</p>
         <p class="form-hint">Breakfast is KSH 1,000, lunch is KSH 1,000, and dinner is KSH 1,500. Those amounts fill automatically; enter other expense amounts manually.</p>
         <p class="form-hint" id="reimbursement-draft-status" aria-live="polite">Your reimbursement details are saved automatically in this browser as you work. If you refresh, reselect any documents you had chosen to upload.</p>
         <p class="form-hint" data-expense-day-count>0 of 30 travel days</p>
@@ -618,6 +618,9 @@
     lineItemsBody.addEventListener('change', (event) => {
       if (event.target.matches('[data-line-item="category"]')) {
         updateExpenseSupportVisibility();
+      }
+      if (event.target.matches('[data-line-item="expenseDate"]')) {
+        addDefaultMealsForExpenseDate(lineItemsBody, event.target.value);
       }
     });
 

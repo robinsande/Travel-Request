@@ -29,6 +29,10 @@ async function verifyMfaRequest(challengeToken, code) {
   });
 }
 
+async function resetMfaSetupRequest(currentPassword) {
+  return api.post('/auth/mfa/reset/setup', { currentPassword });
+}
+
 async function activateAccountRequest(email, token, newPassword) {
   return api.post('/auth/activate', { email, token, newPassword });
 }

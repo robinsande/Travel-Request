@@ -104,6 +104,7 @@
     const bgVideo = document.querySelector('.auth-bg-video');
     let pendingMfaToken = null;
     let isMfaEnrollment = false;
+    let isAuthenticatorVerifying = false;
 
     if (new URLSearchParams(window.location.search).get('activated') === 'true') {
       loginInfoEl.textContent = 'Your account is activated. Sign in to set up authenticator verification.';
@@ -223,14 +224,16 @@
       }
     });
 
-    authenticatorForm.addEventListener('submit', async (event) => {
-      event.preventDefault();
+    async function verifyAuthenticatorCode() {
+      if (isAuthenticatorVerifying) return;
       errorEl.hidden = true;
       if (!pendingMfaToken) {
         renderApiErrors(errorEl, { message: 'Your verification session expired. Please sign in again.' });
         return;
       }
 
+      isAuthenticatorVerifying = true;
+      authenticatorCode.disabled = true;
       authenticatorSubmit.disabled = true;
       authenticatorSubmit.textContent = 'Verifying…';
       try {
@@ -244,9 +247,23 @@
         authenticatorCode.focus();
         renderApiErrors(errorEl, err);
       } finally {
+        isAuthenticatorVerifying = false;
+        authenticatorCode.disabled = false;
         authenticatorSubmit.disabled = false;
         authenticatorSubmit.textContent = 'Verify and continue';
       }
+    }
+
+    authenticatorCode.addEventListener('input', () => {
+      authenticatorCode.value = authenticatorCode.value.replace(/\D/g, '').slice(0, 6);
+      if (/^\d{6}$/.test(authenticatorCode.value)) {
+        verifyAuthenticatorCode();
+      }
+    });
+
+    authenticatorForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      verifyAuthenticatorCode();
     });
   </script>
 </body>
