@@ -78,7 +78,7 @@
       <section class="form-section">
         <h2>Payment Voucher Form — Document 1</h2>
         <div class="form-group">
-          <label for="travelRequestId">Approved TAR to Merge into this Reimbursement</label>
+          <label for="travelRequestId">Approved TAR for this Travel Advance</label>
           <select id="travelRequestId" name="travelRequestId" required>
             <option value="">Select an approved trip</option>
           </select>
@@ -475,7 +475,7 @@
           if (input && input.type !== 'radio') input.value = value || '';
           if (input?.type === 'radio') input.checked = input.value === value;
         }
-        submitBtn.textContent = 'Update Reimbursement';
+        submitBtn.textContent = 'Update Travel Advance';
       } catch (err) {
         renderApiErrors(errorEl, err);
       }
@@ -553,7 +553,7 @@
           console.error('Failed to clear submitted reimbursement draft', error);
           showToast('The reimbursement was submitted, but its local draft could not be cleared.', 'warning');
         }
-        showToast(reimbursementId ? 'Reimbursement request updated successfully.' : 'Reimbursement request submitted successfully.', 'success');
+        showToast(reimbursementId ? 'Travel Advance updated successfully.' : 'Travel Advance submitted successfully.', 'success');
         window.location.href = id ? `reimbursement-detail.html?id=${encodeURIComponent(id)}` : 'reimbursements.html';
       } catch (err) {
         renderApiErrors(errorEl, buildManagerAssignmentError(err) || err);

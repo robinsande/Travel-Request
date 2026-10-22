@@ -78,16 +78,16 @@
     initProtectedPage(activeNav);
 
     document.getElementById('page-title').textContent = isAuthorizedAllView
-      ? 'All Reimbursement Requests'
+      ? 'All Travel Advances'
       : 'My Travel Advances';
     document.title = isAuthorizedAllView
-      ? 'All Reimbursement Requests — CARE TAR'
+      ? 'All Travel Advances — CARE TAR'
       : 'My Travel Advances — CARE TAR';
 
     const subtitleEl = document.getElementById('page-subtitle');
     if (subtitleEl) {
       subtitleEl.textContent = isAuthorizedAllView
-        ? 'All reimbursement requests across the organization.'
+        ? 'All travel advances across the organization.'
         : 'Travel advances you have submitted.';
     }
 
@@ -160,20 +160,20 @@
           showEmptyState(
             listEl,
             hasFilters
-              ? 'No reimbursement requests match your filters.'
+              ? 'No travel advances match your filters.'
               : isAuthorizedAllView
-                ? 'No reimbursement requests found.'
-                : 'No reimbursement requests submitted yet.',
+                ? 'No travel advances found.'
+                : 'No travel advances submitted yet.',
             hasFilters || isAuthorizedAllView || !canCreateRequests()
               ? ''
-              : '<a href="reimbursement-new.html" class="btn btn--primary">Create your first reimbursement request</a>'
+              : '<a href="reimbursement-new.html" class="btn btn--primary">Create your first Travel Advance</a>'
           );
         } else {
           listEl.innerHTML = reports.map(renderReimbursementRow).join('');
         }
       } catch (err) {
         loadingEl.innerHTML = '';
-        showToast(err.message || 'Failed to load reimbursement requests.', 'error');
+        showToast(err.message || 'Failed to load Travel Advances.', 'error');
       }
     }
 

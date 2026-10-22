@@ -640,7 +640,7 @@ function getNavItems() {
       { href: 'requests.html?scope=all', label: 'All Travel Requests', id: 'all-requests' },
       { href: 'approvals.html', label: 'All Approvals', id: 'approvals' },
       { href: 'reimbursements.html', label: 'Travel Advance', id: 'my-reimbursements' },
-      { href: 'reimbursements.html?scope=all', label: 'All Reimbursements', id: 'all-reimbursements' },
+      { href: 'reimbursements.html?scope=all', label: 'All Travel Advances', id: 'all-reimbursements' },
       { href: 'admin-users.html', label: 'Users', id: 'admin-users' }
     );
   } else if (user.role === 'super_superadmin') {
@@ -648,7 +648,7 @@ function getNavItems() {
       { href: 'requests.html?scope=mine', label: 'My Travel Requests', id: 'my-requests' },
       { href: 'requests.html?scope=all&status=approved', label: 'Approved TARs', id: 'all-requests' },
       { href: 'reimbursements.html', label: 'Travel Advance', id: 'my-reimbursements' },
-      { href: 'reimbursements.html?scope=all', label: 'All Reimbursements', id: 'all-reimbursements' }
+      { href: 'reimbursements.html?scope=all', label: 'All Travel Advances', id: 'all-reimbursements' }
     );
   } else {
     items.push(
@@ -668,7 +668,7 @@ function getNavItems() {
     ) {
       items.push({
         href: 'reimbursement-approvals.html',
-        label: 'Reimbursement Approvals',
+        label: 'Travel Advance Approvals',
         id: 'reimbursement-approvals',
       });
     }
@@ -706,7 +706,7 @@ function getNavItems() {
     if (!items.some((item) => item.id === 'all-reimbursements')) {
       items.push({
         href: 'reimbursements.html?scope=all',
-        label: 'Audit all Reimbursements',
+        label: 'Audit all Travel Advances',
         id: 'all-reimbursements',
       });
     }

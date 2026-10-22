@@ -84,18 +84,18 @@
         ['admin', 'approver_budget_holder'].includes(dashboardUser?.role) ||
         (dashboardUser?.roles || []).some((role) => ['supervisor', 'finance_admin'].includes(role));
       actionsEl.innerHTML = isSuperadmin
-        ? actionLink('Manage users and roles', 'admin-users.html', '♙') + actionLink('Import employees', 'admin-import.html', '⇧') + actionLink('Review all TARs', 'requests.html?scope=all', '▣') + (canCreateRequests() ? actionLink('Create TAR', 'request-new.html', '＋') + actionLink('Create reimbursement', 'reimbursement-new.html', '＋') + actionLink('View my reimbursements', 'reimbursements.html', '¤') : '')
+        ? actionLink('Manage users and roles', 'admin-users.html', '♙') + actionLink('Import employees', 'admin-import.html', '⇧') + actionLink('Review all TARs', 'requests.html?scope=all', '▣') + (canCreateRequests() ? actionLink('Create TAR', 'request-new.html', '＋') + actionLink('Create Travel Advance', 'reimbursement-new.html', '＋') + actionLink('View my Travel Advances', 'reimbursements.html', '¤') : '')
         : isAuditor
-          ? actionLink('Audit all TARs', 'requests.html?scope=all', '▣') + actionLink('Audit all reimbursements', 'reimbursements.html?scope=all', '¤') + (canCreateRequests() ? actionLink('Create TAR', 'request-new.html', '＋') + actionLink('Create reimbursement', 'reimbursement-new.html', '＋') + actionLink('View my reimbursements', 'reimbursements.html', '¤') : '')
+          ? actionLink('Audit all TARs', 'requests.html?scope=all', '▣') + actionLink('Audit all Travel Advances', 'reimbursements.html?scope=all', '¤') + (canCreateRequests() ? actionLink('Create TAR', 'request-new.html', '＋') + actionLink('Create Travel Advance', 'reimbursement-new.html', '＋') + actionLink('View my Travel Advances', 'reimbursements.html', '¤') : '')
         : actionLink('Review TAR approvals', 'approvals.html', '✓') +
           (canCreateRequests()
-            ? actionLink('Create TAR', 'request-new.html', '＋') + actionLink('Create reimbursement', 'reimbursement-new.html', '＋') + actionLink('View my reimbursements', 'reimbursements.html', '¤')
+            ? actionLink('Create TAR', 'request-new.html', '＋') + actionLink('Create Travel Advance', 'reimbursement-new.html', '＋') + actionLink('View my Travel Advances', 'reimbursements.html', '¤')
             : '') +
           (['admin', 'approver_budget_holder'].includes(dashboardUser?.role)
             ? actionLink('View team TARs', 'requests.html?scope=team', '♧')
             : '') +
           (canReviewReimbursements
-            ? actionLink('Review reimbursement approvals', 'reimbursement-approvals.html', '¤')
+            ? actionLink('Review Travel Advance approvals', 'reimbursement-approvals.html', '¤')
             : '');
 
       const activity = (isSuperadmin ? requests : pending).slice(0, 5);
