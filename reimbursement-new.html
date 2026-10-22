@@ -112,6 +112,11 @@
           <input id="peopleSoftAccount" name="peopleSoftAccount" type="text" maxlength="80" required />
           <p class="form-hint">Enter the PeopleSoft account code to show in the voucher alongside the approved TAR codes.</p>
         </div>
+        <div class="form-group">
+          <label for="peopleSoftVehicleRepairAccount">Additional PeopleSoft Account for Vehicle Repairs (optional)</label>
+          <input id="peopleSoftVehicleRepairAccount" name="peopleSoftVehicleRepairAccount" type="text" maxlength="80" />
+          <p class="form-hint">Use this account for vehicle-repair receipts included with this reimbursement.</p>
+        </div>
       </section>
 
       <section class="form-section">
@@ -138,15 +143,14 @@
             <span class="readonly-field__label">Position</span>
             <div class="readonly-field__value" id="position-display">—</div>
           </div>
-          <div class="readonly-field">
-            <span class="readonly-field__label">Base Location</span>
-            <div class="readonly-field__value" id="base-location-display">—</div>
+          <div class="form-group">
+            <label for="baseLocation">Base Location / Area of Operation</label>
+            <input id="baseLocation" name="baseLocation" type="text" maxlength="120" required />
           </div>
         </div>
         <input type="hidden" id="employeeNumber" name="employeeNumber" />
         <input type="hidden" id="department" name="department" />
         <input type="hidden" id="position" name="position" />
-        <input type="hidden" id="baseLocation" name="baseLocation" />
       </section>
 
       <section class="form-section">
@@ -367,7 +371,6 @@
       document.getElementById('employee-number-display').textContent = employeeNumber || '—';
       document.getElementById('department-display').textContent = department || '—';
       document.getElementById('position-display').textContent = position || '—';
-      document.getElementById('base-location-display').textContent = baseLocation || '—';
 
       form.employeeNumber.value = employeeNumber;
       form.department.value = department;
@@ -467,6 +470,7 @@
         updateExpenseSupportVisibility();
         paymentRequestPurpose.value = data.paymentRequestPurpose || data.travelRequest?.purposeOfTrip || '';
         form.elements.peopleSoftAccount.value = data.peopleSoftAccount || '';
+        form.elements.peopleSoftVehicleRepairAccount.value = data.peopleSoftVehicleRepairAccount || '';
         form.elements.peopleSoftFundCode.value = data.peopleSoftFundCode ?? data.travelRequest?.project?.fundCode ?? '';
         form.elements.peopleSoftProjectId.value = data.peopleSoftProjectId ?? data.travelRequest?.project?.projectId ?? '';
         form.elements.peopleSoftActivityId.value = data.peopleSoftActivityId ?? data.travelRequest?.project?.activityId ?? '';

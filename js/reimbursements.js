@@ -171,6 +171,7 @@ function buildReimbursementPayload(form) {
     requesterSignature: fd.get('requesterSignature')?.trim() || '',
     paymentRequestPurpose: fd.get('paymentRequestPurpose')?.trim() || '',
     peopleSoftAccount: fd.get('peopleSoftAccount')?.trim() || '',
+    peopleSoftVehicleRepairAccount: fd.get('peopleSoftVehicleRepairAccount')?.trim() || '',
     peopleSoftFundCode: fd.get('peopleSoftFundCode')?.trim() || '',
     peopleSoftProjectId: fd.get('peopleSoftProjectId')?.trim() || '',
     peopleSoftActivityId: fd.get('peopleSoftActivityId')?.trim() || '',
@@ -219,7 +220,8 @@ function getReimbursementPayloadValidationError(payload) {
   }
   if (!payload.baseLocation) {
     return {
-      message: 'Base location is missing from your profile. Ask an administrator to set your office location, then try again.',
+      message: 'Please enter your Base Location / Area of Operation.',
+      focusField: 'baseLocation',
     };
   }
   if (!payload.lineItems.length) {
@@ -694,6 +696,7 @@ function renderReimbursementDetail(report) {
         <dt>Report ID</dt><dd>${escapeHtml(id)}</dd>
         <dt>Payment Request Purpose</dt><dd>${escapeHtml(report.paymentRequestPurpose || '—')}</dd>
         <dt>PeopleSoft Account</dt><dd>${escapeHtml(report.peopleSoftAccount || '—')}</dd>
+        <dt>Vehicle Repair PeopleSoft Account</dt><dd>${escapeHtml(report.peopleSoftVehicleRepairAccount || '—')}</dd>
         <dt>Linked Travel</dt><dd>${escapeHtml(getTravelRequestLabel(report))}</dd>
         <dt>Submitted By</dt><dd>${escapeHtml(requester)}</dd>
         <dt>PeopleSoft Fund Account</dt><dd>${escapeHtml(report.travelRequest?.project?.fundCode || '—')}</dd>
