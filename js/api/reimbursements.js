@@ -72,7 +72,8 @@ async function previewReimbursementPdf(payload, previewWindow, attachments = [])
     throw new Error(message);
   }
 
-  const previewUrl = URL.createObjectURL(await response.blob());
+  const previewPdf = new Blob([await response.arrayBuffer()], { type: 'application/pdf' });
+  const previewUrl = URL.createObjectURL(previewPdf);
   if (previewWindow) previewWindow.location = previewUrl;
   else window.open(previewUrl, '_blank');
   return previewUrl;
