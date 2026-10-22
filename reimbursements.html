@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Reimbursement Requests — CARE TAR</title>
+  <title>Travel Advances — CARE TAR</title>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
@@ -11,10 +11,10 @@
 
   <div id="page-content" class="page-content" hidden>
     <div class="page-header">
-      <h1 id="page-title">My Reimbursement Requests</h1>
-      <a href="reimbursement-new.html" class="btn btn--primary" id="new-reimbursement-btn" hidden>New Reimbursement Request</a>
+      <h1 id="page-title">My Travel Advances</h1>
+      <a href="reimbursement-new.html" class="btn btn--primary" id="new-reimbursement-btn" hidden>New Travel Advance</a>
     </div>
-    <p class="text-muted" id="page-subtitle">Reimbursement requests you have submitted.</p>
+    <p class="text-muted" id="page-subtitle">Travel advances you have submitted.</p>
 
     <div id="filters-bar" class="filters-bar">
       <div class="form-group">
@@ -79,16 +79,16 @@
 
     document.getElementById('page-title').textContent = isAuthorizedAllView
       ? 'All Reimbursement Requests'
-      : 'My Reimbursement Requests';
+      : 'My Travel Advances';
     document.title = isAuthorizedAllView
       ? 'All Reimbursement Requests — CARE TAR'
-      : 'My Reimbursement Requests — CARE TAR';
+      : 'My Travel Advances — CARE TAR';
 
     const subtitleEl = document.getElementById('page-subtitle');
     if (subtitleEl) {
       subtitleEl.textContent = isAuthorizedAllView
         ? 'All reimbursement requests across the organization.'
-        : 'Reimbursement requests you have submitted.';
+        : 'Travel advances you have submitted.';
     }
 
     if (isAuthorizedAllView) {

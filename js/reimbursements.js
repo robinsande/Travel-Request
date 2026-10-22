@@ -10,6 +10,7 @@ const STANDARD_EXPENSE_RATES = {
   LUNCH: 1000,
   DINNER: 1500,
 };
+const VEHICLE_ACCOUNT_CATEGORIES = new Set(['VEHICLE FUEL', 'VEHICLE MAINTENANCE']);
 
 async function ensureExpenseCategories() {
   if (expenseCategoriesCache?.length) return expenseCategoriesCache;
@@ -53,6 +54,10 @@ function resolveExpenseCategory(value = '', categories = expenseCategoriesCache 
         s.includes('matatu') ||
         s.includes('boda'),
       value: 'TAXI/LOCAL TRANSPORTATION',
+    },
+    {
+      test: (s) => s.includes('maintenance') || s.includes('repair'),
+      value: 'VEHICLE MAINTENANCE',
     },
     {
       test: (s) => s.includes('fuel') || s.includes('petrol') || s.includes('diesel'),
@@ -129,14 +134,18 @@ function getSelectedTravelDestination(form) {
   return option?.dataset?.destination?.trim() || option?.textContent?.trim() || '';
 }
 
-function getAutoExpenseDescription(destination) {
+function getAutoExpenseDescription(destination, category = '') {
+  if (category === 'VEHICLE FUEL') return 'Vehicle fuel';
+  if (category === 'VEHICLE MAINTENANCE') return 'Vehicle maintenance';
   return destination ? `Per diem while in ${destination}` : 'Per diem';
 }
 
 function updateReimbursementLineItemDescriptions(form) {
-  const description = getAutoExpenseDescription(getSelectedTravelDestination(form));
-  form?.querySelectorAll('[data-line-item="description"]').forEach((input) => {
-    input.value = description;
+  const destination = getSelectedTravelDestination(form);
+  form?.querySelectorAll('[data-line-item-row]').forEach((row) => {
+    const category = row.querySelector('[data-line-item="category"]')?.value || '';
+    const description = row.querySelector('[data-line-item="description"]');
+    if (description) description.value = getAutoExpenseDescription(destination, category);
   });
 }
 
@@ -144,7 +153,6 @@ function buildReimbursementPayload(form) {
   const fd = new FormData(form);
   const rows = form.querySelectorAll('[data-line-item-row]');
   const tripLocation = getSelectedTravelDestination(form);
-  const expenseDescription = getAutoExpenseDescription(tripLocation);
   const lineItems = [];
 
   rows.forEach((row) => {
@@ -157,8 +165,11 @@ function buildReimbursementPayload(form) {
         expenseDate,
         location: tripLocation,
         category,
-        description: expenseDescription,
+        description: row.querySelector('[data-line-item="description"]')?.value?.trim() || '',
         invoiceNumber: row.querySelector('[data-line-item="invoiceNumber"]')?.value?.trim() || '',
+        vehicleRepairPeopleSoftAccount: VEHICLE_ACCOUNT_CATEGORIES.has(category)
+          ? row.querySelector('[data-line-item="vehicleRepairPeopleSoftAccount"]')?.value?.trim() || ''
+          : '',
         amount: Number(amount || 0),
       });
     }
@@ -171,7 +182,6 @@ function buildReimbursementPayload(form) {
     requesterSignature: fd.get('requesterSignature')?.trim() || '',
     paymentRequestPurpose: fd.get('paymentRequestPurpose')?.trim() || '',
     peopleSoftAccount: fd.get('peopleSoftAccount')?.trim() || '',
-    peopleSoftVehicleRepairAccount: fd.get('peopleSoftVehicleRepairAccount')?.trim() || '',
     peopleSoftFundCode: fd.get('peopleSoftFundCode')?.trim() || '',
     peopleSoftProjectId: fd.get('peopleSoftProjectId')?.trim() || '',
     peopleSoftActivityId: fd.get('peopleSoftActivityId')?.trim() || '',
@@ -276,6 +286,12 @@ function addReimbursementLineItemRow(container, item = {}, categories = expenseC
         <select id="expense-category-${idx}" data-line-item="category" required>
           ${buildExpenseCategoryOptions(selectedCategory, categories)}
         </select>
+        <div class="form-group" data-vehicle-account-group ${VEHICLE_ACCOUNT_CATEGORIES.has(selectedCategory) ? '' : 'hidden'}>
+          <label for="vehicle-account-${idx}">Additional PeopleSoft Account for Vehicle Repairs (optional)</label>
+          <input type="text" id="vehicle-account-${idx}" data-line-item="vehicleRepairPeopleSoftAccount" value="${escapeHtml(
+            item.vehicleRepairPeopleSoftAccount || ''
+          )}" maxlength="80" placeholder="Optional vehicle account" />
+        </div>
       </div>
     </td>
     <td data-label="Description">
@@ -310,6 +326,9 @@ function addReimbursementLineItemRow(container, item = {}, categories = expenseC
   const categorySelect = row.querySelector('[data-line-item="category"]');
   const amountInput = row.querySelector('[data-line-item="amount"]');
   categorySelect.addEventListener('change', () => {
+    row.querySelector('[data-vehicle-account-group]').hidden =
+      !VEHICLE_ACCOUNT_CATEGORIES.has(categorySelect.value);
+    updateReimbursementLineItemDescriptions(container.closest('form'));
     const rate = STANDARD_EXPENSE_RATES[categorySelect.value];
     amountInput.readOnly = Boolean(rate);
     amountInput.setAttribute('aria-label', rate ? 'Standard fixed rate' : 'Expense amount');
@@ -643,6 +662,7 @@ function renderReimbursementLineItemsTable(lineItems) {
             <th>Category</th>
             <th>Description</th>
             <th>Invoice No.</th>
+            <th>Vehicle Repair PeopleSoft Account</th>
             <th>Amount (KSH)</th>
           </tr>
         </thead>
@@ -655,6 +675,7 @@ function renderReimbursementLineItemsTable(lineItems) {
               <td data-label="Category">${escapeHtml(formatExpenseCategoryLabel(item.category || item.description))}</td>
               <td data-label="Description">${escapeHtml(item.description || item.category || '—')}</td>
               <td data-label="Invoice No.">${escapeHtml(item.invoiceNumber || '—')}</td>
+              <td data-label="Vehicle Repair PeopleSoft Account">${escapeHtml(item.vehicleRepairPeopleSoftAccount || '—')}</td>
               <td data-label="Amount (KSH)">${escapeHtml(formatCurrency(item.amount))}</td>
             </tr>`
             )
@@ -696,7 +717,6 @@ function renderReimbursementDetail(report) {
         <dt>Report ID</dt><dd>${escapeHtml(id)}</dd>
         <dt>Payment Request Purpose</dt><dd>${escapeHtml(report.paymentRequestPurpose || '—')}</dd>
         <dt>PeopleSoft Account</dt><dd>${escapeHtml(report.peopleSoftAccount || '—')}</dd>
-        <dt>Vehicle Repair PeopleSoft Account</dt><dd>${escapeHtml(report.peopleSoftVehicleRepairAccount || '—')}</dd>
         <dt>Linked Travel</dt><dd>${escapeHtml(getTravelRequestLabel(report))}</dd>
         <dt>Submitted By</dt><dd>${escapeHtml(requester)}</dd>
         <dt>PeopleSoft Fund Account</dt><dd>${escapeHtml(report.travelRequest?.project?.fundCode || '—')}</dd>

@@ -639,7 +639,7 @@ function getNavItems() {
       { href: 'requests.html', label: 'My Travel Requests', id: 'my-requests' },
       { href: 'requests.html?scope=all', label: 'All Travel Requests', id: 'all-requests' },
       { href: 'approvals.html', label: 'All Approvals', id: 'approvals' },
-      { href: 'reimbursements.html', label: 'My Reimbursements', id: 'my-reimbursements' },
+      { href: 'reimbursements.html', label: 'Travel Advance', id: 'my-reimbursements' },
       { href: 'reimbursements.html?scope=all', label: 'All Reimbursements', id: 'all-reimbursements' },
       { href: 'admin-users.html', label: 'Users', id: 'admin-users' }
     );
@@ -647,7 +647,7 @@ function getNavItems() {
     items.push(
       { href: 'requests.html?scope=mine', label: 'My Travel Requests', id: 'my-requests' },
       { href: 'requests.html?scope=all&status=approved', label: 'Approved TARs', id: 'all-requests' },
-      { href: 'reimbursements.html', label: 'My Reimbursements', id: 'my-reimbursements' },
+      { href: 'reimbursements.html', label: 'Travel Advance', id: 'my-reimbursements' },
       { href: 'reimbursements.html?scope=all', label: 'All Reimbursements', id: 'all-reimbursements' }
     );
   } else {
@@ -684,7 +684,7 @@ function getNavItems() {
   ) {
     items.push({
       href: 'reimbursements.html',
-      label: 'My Reimbursements',
+      label: 'Travel Advance',
       id: 'my-reimbursements',
     });
   }
