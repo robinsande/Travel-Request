@@ -61,6 +61,11 @@ async function previewReimbursementPdf(payload, previewWindow, attachments = [])
     try {
       const result = await response.json();
       message = result.message || message;
+      if (result.errors?.length) {
+        message += `: ${result.errors.map(({ path, msg }) =>
+          path ? `${path}: ${msg}` : msg
+        ).join('; ')}`;
+      }
     } catch {
       // Keep the status-based message when the server response is not JSON.
     }

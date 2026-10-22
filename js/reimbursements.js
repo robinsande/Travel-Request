@@ -187,6 +187,60 @@ function buildReimbursementPayload(form) {
   };
 }
 
+function getReimbursementPayloadValidationError(payload) {
+  if (!payload.requesterSignedName) {
+    return { message: 'Your staff account name is not available for the requester signature.' };
+  }
+  if (!payload.requesterSignature) {
+    return {
+      message: 'Please draw, upload, or type your requester signature.',
+      focusField: 'signature',
+    };
+  }
+  if (!payload.travelRequestId) {
+    return { message: 'Please select an approved travel request.' };
+  }
+  if (!payload.paymentRequestPurpose) {
+    return {
+      message: 'Please enter the Payment Request purpose.',
+      focusField: 'paymentRequestPurpose',
+    };
+  }
+  if (!payload.peopleSoftAccount) {
+    return {
+      message: 'Please enter the PeopleSoft Account for the Payment Voucher.',
+      focusField: 'peopleSoftAccount',
+    };
+  }
+  if (payload.lineItems.some((item) => !item.location)) {
+    return {
+      message: 'Selected travel request is missing a destination. Choose another approved trip or update the travel request.',
+    };
+  }
+  if (!payload.baseLocation) {
+    return {
+      message: 'Base location is missing from your profile. Ask an administrator to set your office location, then try again.',
+    };
+  }
+  if (!payload.lineItems.length) {
+    return { message: 'Please add at least one expense line item.' };
+  }
+  if (new Set(payload.lineItems.map((item) => item.expenseDate).filter(Boolean)).size > 30) {
+    return { message: 'A reimbursement can include expenses for no more than 30 travel days.' };
+  }
+  if (payload.lineItems.length > 300) {
+    return { message: 'A reimbursement can include up to 300 expense entries.' };
+  }
+  if (payload.lineItems.some(
+    (item) => !item.expenseDate || !item.category || !(Number(item.amount) > 0)
+  )) {
+    return {
+      message: 'Each line item requires a date, category, and amount greater than zero.',
+    };
+  }
+  return null;
+}
+
 let reimbursementLineItemIndex = 0;
 let initializedReimbursementMealDates = new Set();
 

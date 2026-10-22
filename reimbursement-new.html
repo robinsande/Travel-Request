@@ -487,68 +487,14 @@
       errorEl.hidden = true;
 
       const payload = buildReimbursementPayload(form);
-
-      if (!payload.requesterSignedName) {
-        renderApiErrors(errorEl, { message: 'Your staff account name is not available for the requester signature.' });
-        return;
-      }
-
-      if (!payload.requesterSignature) {
-        renderApiErrors(errorEl, { message: 'Please draw, upload, or type your requester signature.' });
-        form.querySelector('.signature-text-input')?.focus();
-        return;
-      }
-
-      if (!payload.travelRequestId) {
-        renderApiErrors(errorEl, { message: 'Please select an approved travel request.' });
-        return;
-      }
-
-      if (!payload.paymentRequestPurpose) {
-        renderApiErrors(errorEl, { message: 'Please enter the Payment Request purpose.' });
-        paymentRequestPurpose.focus();
-        return;
-      }
-      if (!payload.peopleSoftAccount) {
-        renderApiErrors(errorEl, { message: 'Please enter the PeopleSoft Account for the Payment Voucher.' });
-        form.elements.peopleSoftAccount.focus();
-        return;
-      }
-
-      if (payload.lineItems.some((item) => !item.location)) {
-        renderApiErrors(errorEl, {
-          message: 'Selected travel request is missing a destination. Choose another approved trip or update the travel request.',
-        });
-        return;
-      }
-
-      if (!payload.baseLocation) {
-        renderApiErrors(errorEl, {
-          message: 'Base location is missing from your profile. Ask an administrator to set your office location, then try again.',
-        });
-        return;
-      }
-
-      if (!payload.lineItems.length) {
-        renderApiErrors(errorEl, { message: 'Please add at least one expense line item.' });
-        return;
-      }
-      if (new Set(payload.lineItems.map((item) => item.expenseDate).filter(Boolean)).size > 30) {
-        renderApiErrors(errorEl, { message: 'A reimbursement can include expenses for no more than 30 travel days.' });
-        return;
-      }
-      if (payload.lineItems.length > 300) {
-        renderApiErrors(errorEl, { message: 'A reimbursement can include up to 300 expense entries.' });
-        return;
-      }
-
-      const hasInvalidLine = payload.lineItems.some(
-        (item) => !item.expenseDate || !item.category || !(Number(item.amount) > 0)
-      );
-      if (hasInvalidLine) {
-        renderApiErrors(errorEl, {
-          message: 'Each line item requires a date, category, and amount greater than zero.',
-        });
+      const validationError = getReimbursementPayloadValidationError(payload);
+      if (validationError) {
+        renderApiErrors(errorEl, validationError);
+        if (validationError.focusField === 'signature') {
+          form.querySelector('.signature-text-input')?.focus();
+        } else if (validationError.focusField) {
+          form.elements[validationError.focusField]?.focus();
+        }
         return;
       }
 
@@ -654,9 +600,14 @@
       if (!form.reportValidity()) return;
 
       const payload = buildReimbursementPayload(form);
-      if (!payload.requesterSignature) {
-        renderApiErrors(errorEl, { message: 'Please draw, upload, or type your requester signature before previewing.' });
-        form.querySelector('.signature-text-input')?.focus();
+      const validationError = getReimbursementPayloadValidationError(payload);
+      if (validationError) {
+        renderApiErrors(errorEl, validationError);
+        if (validationError.focusField === 'signature') {
+          form.querySelector('.signature-text-input')?.focus();
+        } else if (validationError.focusField) {
+          form.elements[validationError.focusField]?.focus();
+        }
         return;
       }
 
