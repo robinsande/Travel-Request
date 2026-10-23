@@ -300,10 +300,14 @@
     function buildDraft() {
         const fields = {};
         Array.from(form.elements).forEach((element) => {
-          if (!element.name || element.name.startsWith('passenger_user_')) return;
+          if (
+            !element.name ||
+            element.name.startsWith('passenger_user_') ||
+            element.type === 'file'
+          ) return;
           fields[element.name] = element.type === 'checkbox'
             ? element.checked
-            : element.multiple
+            : element instanceof HTMLSelectElement && element.multiple
               ? Array.from(element.selectedOptions).map((option) => option.value)
               : element.value;
         });
