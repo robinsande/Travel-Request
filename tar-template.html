@@ -31,23 +31,22 @@
     if (!requireAuth()) throw new Error('auth');
 
     initProtectedPage('my-requests');
-    document.getElementById('template-preview').innerHTML = renderRequestDetail({
-      _id: 'template',
-      requestedBy: {},
-      project: {},
-      selected_budget_holder_id: {},
-      budgetHolderDecision: {},
-      assignedAreaOfOperation: '',
-      employeeOffice: '',
-      purposeOfTrip: '',
-      modeOfTravel: {},
-      itinerary: {},
-      passengers: [],
-      status: 'pending',
-      submittedAt: null,
-      decision: {},
-    });
-    enhanceSmallTarSignatures(document.getElementById('template-preview'));
+    const previewContainer = document.getElementById('template-preview');
+    try {
+      const request = JSON.parse(sessionStorage.getItem('tar-request-preview') || 'null');
+      if (!request) {
+        previewContainer.textContent =
+          'No TAR details to preview yet. Return to the new TAR form, enter your details, and select Preview TAR.';
+      } else {
+        previewContainer.innerHTML = renderRequestDetail(request);
+        previewContainer.querySelector('.tar-preview-wrap > .back-link')?.remove();
+        enhanceSmallTarSignatures(previewContainer);
+      }
+    } catch (error) {
+      console.error('Failed to load TAR preview data.', error);
+      previewContainer.textContent =
+        'The TAR preview could not be loaded. Return to the form and select Preview TAR again.';
+    }
   </script>
 </body>
 </html>

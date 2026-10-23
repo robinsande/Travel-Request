@@ -195,7 +195,7 @@
       <div class="btn-group">
         <button type="submit" class="btn btn--primary" id="submit-btn">Submit Travel Request</button>
         <button type="button" class="btn btn--secondary" id="save-draft-btn">Save TAR draft</button>
-        <a href="tar-template.html" class="btn btn--secondary">Preview TAR</a>
+        <a href="tar-template.html" class="btn btn--secondary" id="preview-tar-btn">Preview TAR</a>
         <a href="requests.html" class="btn btn--ghost">Cancel</a>
       </div>
     </form>
@@ -463,6 +463,43 @@
     window.addEventListener('beforeunload', saveDraftLocally);
     window.addEventListener('pagehide', saveDraftLocally);
     document.addEventListener('before-app-logout', saveDraftLocally);
+    document.getElementById('preview-tar-btn').addEventListener('click', (event) => {
+      try {
+        const request = buildRequestPayload(form);
+        const selectedBudgetHolder = form.elements.selected_budget_holder_id.selectedOptions[0];
+        request.selected_budget_holder_id = selectedBudgetHolder
+          ? { name: selectedBudgetHolder.textContent.trim() }
+          : {};
+        request.selected_approver_ids = Array.from(
+          form.querySelector('[name="selected_approver_ids"]')?.selectedOptions || []
+        ).map((option) => ({ name: option.textContent.trim(), email: option.value }));
+        request.selected_approver_id = request.selected_approver_ids[0] || {};
+        request.travelSegments = request.travelSegments.map((segment, index) => {
+          const selectedOption = travelSegments.querySelectorAll('.travel-segment')[index]
+            ?.querySelector('[data-segment="budgetHolder"]')?.selectedOptions[0];
+          return {
+            ...segment,
+            selected_budget_holder_id: selectedOption
+              ? { name: selectedOption.textContent.trim() }
+              : {},
+          };
+        });
+        request.passengers = Array.from(form.querySelectorAll('.passenger-row')).map((row) => ({
+          name: row.querySelector('[data-passenger-name]')?.value?.trim() || '',
+          employeeNumber: row.querySelector('[data-passenger-employee]')?.value?.trim() || '',
+        }));
+        request.requestedBy = {
+          name: sessionUser.name || sessionUser.email || '',
+          office: sessionUser.office || '',
+        };
+        request._id = 'Preview';
+        sessionStorage.setItem('tar-request-preview', JSON.stringify(request));
+      } catch (error) {
+        event.preventDefault();
+        console.error('Failed to prepare TAR preview.', error);
+        showToast(`Could not prepare TAR preview: ${error.message}`, 'error', 7000);
+      }
+    });
     document.getElementById('save-draft-btn').addEventListener('click', async (event) => {
       const button = event.currentTarget;
       const localResult = saveDraftLocally();
