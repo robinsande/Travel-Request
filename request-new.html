@@ -250,7 +250,7 @@
         <button type="button" class="btn btn--danger btn--sm remove-travel-segment">Remove</button>`;
       row.querySelector('.remove-travel-segment').addEventListener('click', () => {
         row.remove();
-        saveDraft();
+        saveDraftLocally();
       });
       travelSegments.appendChild(row);
       bindDatePickers(row);
@@ -258,14 +258,14 @@
 
     document.getElementById('add-travel-segment').addEventListener('click', () => {
       addTravelSegment();
-      saveDraft();
+      saveDraftLocally();
     });
     document.getElementById('add-passenger').addEventListener('click', async () => {
       const options = await loadPassengerOptions();
       addPassengerRow(passengersList, options);
       passengersList.lastElementChild?.querySelector('.searchable-select__input')?.focus();
       await loadApprovers();
-      saveDraft();
+      saveDraftLocally();
     });
     const passengersList = document.getElementById('passengers-list');
     const approverSelectContainer = document.getElementById('approver-select');
@@ -297,14 +297,7 @@
       return accountDraft?.version === 2 ? accountDraft : readLegacyDraft();
     }
 
-    async function saveDraft() {
-        if (isSubmittingRequest) {
-          return {
-            savedLocally: false,
-            savedToAccount: false,
-            error: new Error('The TAR is already being submitted.'),
-          };
-        }
+    function buildDraft() {
         const fields = {};
         Array.from(form.elements).forEach((element) => {
           if (!element.name || element.name.startsWith('passenger_user_')) return;
@@ -338,22 +331,37 @@
 
         const draft = { version: 2, savedAt: new Date().toISOString(), fields, passengers, segments };
         accountDraft = draft;
-
-        try {
-          localStorage.setItem(draftKey, JSON.stringify(draft));
-        } catch (error) {
-          console.error('Failed to save TAR draft on this device.', error);
-          return { savedLocally: false, savedToAccount: false, error };
-        }
-
-        try {
-          await saveTarDraft(draft);
-          return { savedLocally: true, savedToAccount: true };
-        } catch (error) {
-          console.error('Failed to sync TAR draft to the account; kept the local copy.', error);
-          return { savedLocally: true, savedToAccount: false, error };
-        }
+        return draft;
       }
+
+    function saveDraftLocally() {
+      if (isSubmittingRequest) {
+        return {
+          savedLocally: false,
+          savedToAccount: false,
+          error: new Error('The TAR is already being submitted.'),
+        };
+      }
+
+      try {
+        const draft = buildDraft();
+        localStorage.setItem(draftKey, JSON.stringify(draft));
+        return { savedLocally: true, savedToAccount: false, draft };
+      } catch (error) {
+        console.error('Failed to save TAR draft on this device.', error);
+        return { savedLocally: false, savedToAccount: false, error };
+      }
+    }
+
+    async function syncDraftToAccount(draft) {
+      try {
+        await saveTarDraft(draft);
+        return { savedLocally: true, savedToAccount: true };
+      } catch (error) {
+        console.error('Failed to sync TAR draft to the account; kept the local copy.', error);
+        return { savedLocally: true, savedToAccount: false, error };
+      }
+    }
 
     function saveTarDefaults() {
       const defaults = {};
@@ -420,7 +428,7 @@
 
     function queueDraftSave() {
         if (draftSaveTimer) clearTimeout(draftSaveTimer);
-        draftSaveTimer = setTimeout(saveDraft, 250);
+        draftSaveTimer = setTimeout(saveDraftLocally, 250);
       }
 
     function restoreDraft(options) {
@@ -448,11 +456,30 @@
 
     form.addEventListener('input', queueDraftSave);
     form.addEventListener('change', queueDraftSave);
-    window.addEventListener('beforeunload', saveDraft);
-    window.addEventListener('pagehide', saveDraft);
-    document.addEventListener('before-app-logout', saveDraft);
-    document.getElementById('save-draft-btn').addEventListener('click', async () => {
-      const result = await saveDraft();
+    window.addEventListener('beforeunload', saveDraftLocally);
+    window.addEventListener('pagehide', saveDraftLocally);
+    document.addEventListener('before-app-logout', saveDraftLocally);
+    document.getElementById('save-draft-btn').addEventListener('click', async (event) => {
+      const button = event.currentTarget;
+      const localResult = saveDraftLocally();
+      if (!localResult.savedLocally) {
+        showToast(
+          `TAR draft could not be saved: ${localResult.error.message}`,
+          'error',
+          7000
+        );
+        return;
+      }
+
+      showToast('TAR draft saved on this device. Syncing to your account…', 'info', 7000);
+      setLoading(button, true, 'Saving…');
+      let result;
+      try {
+        result = await syncDraftToAccount(localResult.draft);
+      } finally {
+        setLoading(button, false);
+      }
+
       if (result.savedToAccount) {
         showToast('TAR draft saved to your account and this device.', 'success');
       } else if (result.savedLocally) {
@@ -525,17 +552,27 @@
 
       const options = await initPassengerList(passengersList);
       try {
-        accountDraft = await fetchTarDraft();
-        if (accountDraft) {
+        const savedAccountDraft = await fetchTarDraft();
+        const localDraft = readLegacyDraft();
+        const accountSavedAt = Date.parse(savedAccountDraft?.savedAt || '') || 0;
+        const localSavedAt = Date.parse(localDraft?.savedAt || '') || 0;
+        if (localDraft && localSavedAt > accountSavedAt) {
+          accountDraft = localDraft;
+          try {
+            await saveTarDraft(localDraft);
+          } catch (error) {
+            console.error('Failed to sync the newer local TAR draft to the account.', error);
+          }
+        } else if (savedAccountDraft) {
+          accountDraft = savedAccountDraft;
           try {
             localStorage.setItem(draftKey, JSON.stringify(accountDraft));
           } catch (error) {
             console.error('Failed to cache the account TAR draft on this device.', error);
           }
         } else {
-          const localDraft = readLegacyDraft();
+          accountDraft = localDraft;
           if (localDraft) {
-            accountDraft = localDraft;
             try {
               await saveTarDraft(localDraft);
             } catch (error) {
