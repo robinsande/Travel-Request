@@ -93,9 +93,9 @@
 
       <section class="form-section">
         <h2>Additional Travel Segments</h2>
-        <p class="form-hint">Add each destination and its dates, project/function codes, and budget holder. Each budget holder reviews only the fund code assigned to their travel dates before the line manager receives the complete TAR.</p>
+        <p class="form-hint">Add each additional leg and its dates, project/function codes, and budget holder. Each budget holder reviews only the fund code assigned to their travel dates before the line manager receives the complete TAR.</p>
         <div id="travel-segments"></div>
-        <button type="button" class="btn btn--secondary btn--sm" id="add-travel-segment">Add destination</button>
+        <button type="button" class="btn btn--secondary btn--sm" id="add-travel-segment">Add travel segment</button>
       </section>
 
       <section class="form-section">
@@ -195,8 +195,7 @@
       <div class="btn-group">
         <button type="submit" class="btn btn--primary" id="submit-btn">Submit Travel Request</button>
         <button type="button" class="btn btn--secondary" id="save-draft-btn">Save TAR draft</button>
-        <a href="tar-template.html" class="btn btn--secondary">View TAR Template</a>
-        <button type="button" class="btn btn--secondary" id="download-template-btn">Download Blank TAR Template</button>
+        <a href="tar-template.html" class="btn btn--secondary">Preview TAR</a>
         <a href="requests.html" class="btn btn--ghost">Cancel</a>
       </div>
     </form>
@@ -238,7 +237,6 @@
       row.innerHTML = `
         <div class="form-group"><label>From</label><input type="text" data-segment="from" required value="${escapeHtml(segment.from || '')}" /></div>
         <div class="form-group"><label>To</label><input type="text" data-segment="to" required value="${escapeHtml(segment.to || '')}" /></div>
-        <div class="form-group"><label>Destination</label><input type="text" data-segment="destination" required value="${escapeHtml(segment.destination || '')}" /></div>
         <div class="form-group"><label>Arrival</label><div class="date-input"><input type="text" inputmode="numeric" data-segment="dateFrom" data-date-text placeholder="DD/MM/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}" required value="${escapeHtml(formatDateInput(segment.dateFrom))}" /><button type="button" class="date-input__button" aria-label="Open arrival date picker">&#128197;</button><input type="date" data-date-picker tabindex="-1" aria-hidden="true" /></div></div>
         <div class="form-group"><label>Departure</label><div class="date-input"><input type="text" inputmode="numeric" data-segment="dateTo" data-date-text placeholder="DD/MM/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}" required value="${escapeHtml(formatDateInput(segment.dateTo))}" /><button type="button" class="date-input__button" aria-label="Open departure date picker">&#128197;</button><input type="date" data-date-picker tabindex="-1" aria-hidden="true" /></div></div>
         <div class="form-group"><label>Project Name</label><input type="text" data-segment-project="name" required value="${escapeHtml(project.name || '')}" /></div>
@@ -269,7 +267,6 @@
       await loadApprovers();
       saveDraft();
     });
-    const downloadTemplateBtn = document.getElementById('download-template-btn');
     const passengersList = document.getElementById('passengers-list');
     const approverSelectContainer = document.getElementById('approver-select');
     const previousTarSelect = document.getElementById('previous-tar-select');
@@ -322,7 +319,7 @@
         const segments = Array.from(form.querySelectorAll('.travel-segment')).map((row) => ({
           from: row.querySelector('[data-segment="from"]')?.value || '',
           to: row.querySelector('[data-segment="to"]')?.value || '',
-          destination: row.querySelector('[data-segment="destination"]')?.value || '',
+          destination: row.querySelector('[data-segment="to"]')?.value || '',
           dateFrom: row.querySelector('[data-segment="dateFrom"]')?.value || '',
           dateTo: row.querySelector('[data-segment="dateTo"]')?.value || '',
           project: Object.fromEntries(
@@ -551,13 +548,6 @@
     });
 
     bootstrapForm();
-    downloadTemplateBtn.addEventListener('click', async () => {
-      try {
-        await withLoading(downloadTemplateBtn, 'Preparing…', fetchTravelRequestTemplatePdf);
-      } catch (err) {
-        showToast(err.message || 'Failed to download TAR template.', 'error');
-      }
-    });
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();

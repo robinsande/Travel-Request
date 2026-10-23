@@ -116,7 +116,3 @@ async function fetchTravelRequestsPdf(params = {}) {
     'travel-requests.pdf'
   );
 }
-
-async function fetchTravelRequestTemplatePdf() {
-  return downloadFile('/travel-requests/template/pdf', 'care-travel-authority-request-template.pdf');
-}

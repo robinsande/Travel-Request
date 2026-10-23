@@ -92,7 +92,7 @@ function buildRequestPayload(form) {
     travelSegments: Array.from(form.querySelectorAll('.travel-segment')).map((row) => ({
       from: row.querySelector('[data-segment="from"]').value.trim(),
       to: row.querySelector('[data-segment="to"]').value.trim(),
-      destination: row.querySelector('[data-segment="destination"]').value.trim(),
+      destination: row.querySelector('[data-segment="to"]').value.trim(),
       dateFrom: parseDateInput(row.querySelector('[data-segment="dateFrom"]').value),
       dateTo: parseDateInput(row.querySelector('[data-segment="dateTo"]').value),
       project: {
@@ -194,7 +194,6 @@ function addTravelSegment(container, segment = {}) {
   row.innerHTML = `
     <div class="form-group"><label>From</label><input type="text" data-segment="from" required value="${escapeHtml(segment.from || '')}" /></div>
     <div class="form-group"><label>To</label><input type="text" data-segment="to" required value="${escapeHtml(segment.to || '')}" /></div>
-    <div class="form-group"><label>Destination</label><input type="text" data-segment="destination" required value="${escapeHtml(segment.destination || '')}" /></div>
     <div class="form-group"><label>Arrival</label><div class="date-input"><input type="text" inputmode="numeric" data-segment="dateFrom" data-date-text placeholder="DD/MM/YYYY" pattern="\\d{1,2}/\\d{1,2}/\\d{4}" required value="${escapeHtml(formatDateInput(segment.dateFrom))}" /><button type="button" class="date-input__button" aria-label="Open arrival date picker">&#128197;</button><input type="date" data-date-picker tabindex="-1" aria-hidden="true" /></div></div>
     <div class="form-group"><label>Departure</label><div class="date-input"><input type="text" inputmode="numeric" data-segment="dateTo" data-date-text placeholder="DD/MM/YYYY" pattern="\\d{1,2}/\\d{1,2}/\\d{4}" required value="${escapeHtml(formatDateInput(segment.dateTo))}" /><button type="button" class="date-input__button" aria-label="Open departure date picker">&#128197;</button><input type="date" data-date-picker tabindex="-1" aria-hidden="true" /></div></div>
     <div class="form-group"><label>Project Name</label><input type="text" data-segment-project="name" required value="${escapeHtml(project.name || '')}" /></div>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TAR Template - CARE TAR</title>
+  <title>Preview TAR - CARE TAR</title>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body class="tar-template-page">
@@ -13,10 +13,9 @@
     <div class="page-header">
       <div>
         <a href="request-new.html" class="back-link">&larr; New Travel Request</a>
-        <h1>TAR Template</h1>
-        <p class="page-header__subtitle">Blank Travel Authorization Request form.</p>
+        <h1>Preview TAR</h1>
+        <p class="page-header__subtitle">Preview of the Travel Authorization Request form.</p>
       </div>
-      <button type="button" class="btn btn--primary" id="download-template-btn">Download Blank TAR Template</button>
     </div>
 
     <div id="template-preview"></div>
@@ -49,15 +48,6 @@
       decision: {},
     });
     enhanceSmallTarSignatures(document.getElementById('template-preview'));
-
-    const downloadButton = document.getElementById('download-template-btn');
-    downloadButton.addEventListener('click', async () => {
-      try {
-        await withLoading(downloadButton, 'Preparing...', fetchTravelRequestTemplatePdf);
-      } catch (err) {
-        showToast(err.message || 'Failed to download TAR template.', 'error');
-      }
-    });
   </script>
 </body>
 </html>
