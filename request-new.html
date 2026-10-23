@@ -93,7 +93,7 @@
 
       <section class="form-section">
         <h2>Additional Travel Segments</h2>
-        <p class="form-hint">Optional: add each extra destination with the departure point, arrival point, and travel dates. The original itinerary above remains the primary TAR segment.</p>
+        <p class="form-hint">Add each destination and its dates, project/function codes, and budget holder. Each budget holder reviews only the fund code assigned to their travel dates before the line manager receives the complete TAR.</p>
         <div id="travel-segments"></div>
         <button type="button" class="btn btn--secondary btn--sm" id="add-travel-segment">Add destination</button>
       </section>
@@ -224,16 +224,31 @@
     const errorEl = document.getElementById('form-error');
     const submitBtn = document.getElementById('submit-btn');
     const travelSegments = document.getElementById('travel-segments');
+    let budgetHolderOptions = [];
 
     function addTravelSegment(segment = {}) {
       const row = document.createElement('div');
       row.className = 'travel-segment form-row';
+      const project = segment.project || {};
+      const holderId = segment.selected_budget_holder_id?._id || segment.selected_budget_holder_id || '';
+      const holderOptions = budgetHolderOptions.map((holder) => {
+        const id = String(holder._id || holder.id);
+        return `<option value="${escapeHtml(id)}" ${String(holderId) === id ? 'selected' : ''}>${escapeHtml(holder.name)} (${escapeHtml(holder.email)})</option>`;
+      }).join('');
       row.innerHTML = `
         <div class="form-group"><label>From</label><input type="text" data-segment="from" required value="${escapeHtml(segment.from || '')}" /></div>
         <div class="form-group"><label>To</label><input type="text" data-segment="to" required value="${escapeHtml(segment.to || '')}" /></div>
         <div class="form-group"><label>Destination</label><input type="text" data-segment="destination" required value="${escapeHtml(segment.destination || '')}" /></div>
         <div class="form-group"><label>Arrival</label><div class="date-input"><input type="text" inputmode="numeric" data-segment="dateFrom" data-date-text placeholder="DD/MM/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}" required value="${escapeHtml(formatDateInput(segment.dateFrom))}" /><button type="button" class="date-input__button" aria-label="Open arrival date picker">&#128197;</button><input type="date" data-date-picker tabindex="-1" aria-hidden="true" /></div></div>
         <div class="form-group"><label>Departure</label><div class="date-input"><input type="text" inputmode="numeric" data-segment="dateTo" data-date-text placeholder="DD/MM/YYYY" pattern="\d{1,2}/\d{1,2}/\d{4}" required value="${escapeHtml(formatDateInput(segment.dateTo))}" /><button type="button" class="date-input__button" aria-label="Open departure date picker">&#128197;</button><input type="date" data-date-picker tabindex="-1" aria-hidden="true" /></div></div>
+        <div class="form-group"><label>Project Name</label><input type="text" data-segment-project="name" required value="${escapeHtml(project.name || '')}" /></div>
+        <div class="form-group"><label>Business Unit</label><input type="text" data-segment-project="businessUnit" required value="${escapeHtml(project.businessUnit || '')}" /></div>
+        <div class="form-group"><label>Fund Code</label><input type="text" data-segment-project="fundCode" required value="${escapeHtml(project.fundCode || '')}" /></div>
+        <div class="form-group"><label>Project ID</label><input type="text" data-segment-project="projectId" required value="${escapeHtml(project.projectId || '')}" /></div>
+        <div class="form-group"><label>Department ID</label><input type="text" data-segment-project="departmentId" required value="${escapeHtml(project.departmentId || '')}" /></div>
+        <div class="form-group"><label>Activity ID</label><input type="text" data-segment-project="activityId" required value="${escapeHtml(project.activityId || '')}" /></div>
+        <div class="form-group"><label>Budget Holder</label><select class="form-control" data-segment="budgetHolder" required><option value="">Select a Budget Holder</option>${holderOptions}</select></div>
+        <label class="checkbox-label"><input type="checkbox" data-segment="accommodationNeeded" ${segment.accommodationNeeded ? 'checked' : ''} /> Accommodation needed for this segment</label>
         <button type="button" class="btn btn--danger btn--sm remove-travel-segment">Remove</button>`;
       row.querySelector('.remove-travel-segment').addEventListener('click', () => {
         row.remove();
@@ -310,6 +325,13 @@
           destination: row.querySelector('[data-segment="destination"]')?.value || '',
           dateFrom: row.querySelector('[data-segment="dateFrom"]')?.value || '',
           dateTo: row.querySelector('[data-segment="dateTo"]')?.value || '',
+          project: Object.fromEntries(
+            ['name', 'businessUnit', 'fundCode', 'projectId', 'departmentId', 'activityId']
+              .map((field) => [field, row.querySelector(`[data-segment-project="${field}"]`)?.value || ''])
+          ),
+          selected_budget_holder_id: row.querySelector('[data-segment="budgetHolder"]')?.value || '',
+          accommodationNeeded: row.querySelector('[data-segment="accommodationNeeded"]')?.checked || false,
+          accommodationNeeded: row.querySelector('[data-segment="accommodationNeeded"]')?.checked || false,
         }));
 
         const draft = { version: 2, savedAt: new Date().toISOString(), fields, passengers, segments };
@@ -458,7 +480,7 @@
 
     async function bootstrapForm() {
       try {
-        await populateBudgetHolderOptions(
+        budgetHolderOptions = await populateBudgetHolderOptions(
           form.elements.selected_budget_holder_id
         );
       } catch (error) {

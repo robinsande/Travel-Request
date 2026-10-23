@@ -140,15 +140,23 @@
         } else {
           budgetListEl.innerHTML = budgetRequests.map((request) => {
             const id = request._id || request.id;
-            const holder = request.selected_budget_holder_id || {};
-            const fundCode = request.project?.fundCode || 'Not provided';
+            const allocation = request.budgetHolderApprovals?.find((approval) => approval.status === 'pending');
+            const isPrimaryAllocation = !allocation || allocation.segmentIndex === -1;
+            const segment = isPrimaryAllocation ? null : request.travelSegments?.[allocation.segmentIndex];
+            const project = segment?.project || request.project || {};
+            const destination = allocation?.destination || segment?.destination || request.itinerary?.destination;
+            const dateFrom = allocation?.dateFrom || segment?.dateFrom || request.itinerary?.dateFrom;
+            const dateTo = allocation?.dateTo || segment?.dateTo || request.itinerary?.dateTo;
+            const holder = allocation?.budgetHolder || request.selected_budget_holder_id || {};
+            const fundCode = allocation?.fundCode || project.fundCode || 'Not provided';
             return `<article class="approval-card" data-budget-request-id="${escapeHtml(id)}">
               <div class="approval-card__header">
-                <div><h3>${escapeHtml(request.itinerary?.destination || 'Travel request')}</h3>
-                  <p>${escapeHtml(request.requestedBy?.name || 'Requester')} · ${escapeHtml(formatDate(request.itinerary?.dateFrom))} – ${escapeHtml(formatDate(request.itinerary?.dateTo))}</p>
+                <div><h3>${escapeHtml(destination || 'Travel request')}</h3>
+                  <p>${escapeHtml(request.requestedBy?.name || 'Requester')} · ${escapeHtml(formatDate(dateFrom))} – ${escapeHtml(formatDate(dateTo))}</p>
                 </div><span class="badge">Fund-code review</span>
               </div>
-              <dl class="detail-grid"><dt>Fund code on TAR</dt><dd>${escapeHtml(fundCode)}</dd>
+              <dl class="detail-grid"><dt>Project</dt><dd>${escapeHtml(project.name || '—')}</dd>
+                <dt>Fund code on TAR</dt><dd>${escapeHtml(fundCode)}</dd>
                 <dt>Budget holder</dt><dd>${escapeHtml(holder.name || user.name)}</dd></dl>
               <a class="btn btn--secondary btn--sm" href="request-detail.html?id=${encodeURIComponent(id)}">View TAR</a>
               <p class="form-hint">Review the fund code entered by the requester. No re-entry is needed.</p>
@@ -179,12 +187,17 @@
               setLoading(button, true, 'Approving…');
               try {
                 const result = await approveBudgetHolderRequest(card.dataset.budgetRequestId, { signature });
-                showToast(result.status === 'approved'
-                  ? 'Budget review and line-manager approval completed.'
-                  : 'Budget review approved. The TAR has been sent to its selected line manager.', 'success');
-                card.remove();
-                if (!budgetListEl.children.length) showEmptyState(budgetListEl, 'No travel requests are waiting for your Budget Holder approval.');
-                if (typeof refreshApprovalBadges === 'function') refreshApprovalBadges();
+                if (result.approvalStage === 'budget_holder') {
+                  showToast('Fund code approved. The next Budget Holder has been notified.', 'success');
+                  await loadApprovals();
+                } else {
+                  showToast(result.status === 'approved'
+                    ? 'Budget review and line-manager approval completed.'
+                    : 'All fund codes are approved. The TAR has been sent to its selected line manager.', 'success');
+                  card.remove();
+                  if (!budgetListEl.children.length) showEmptyState(budgetListEl, 'No travel requests are waiting for your Budget Holder approval.');
+                  if (typeof refreshApprovalBadges === 'function') refreshApprovalBadges();
+                }
               } catch (err) {
                 showToast(err.message || 'Could not approve this TAR.', 'error');
                 setLoading(button, false);

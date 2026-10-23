@@ -105,6 +105,37 @@ function getTravelRequestLabel(report) {
   return request.itinerary?.destination || request.project?.name || getLinkedTravelId(request) || 'Linked trip';
 }
 
+function getFundingAllocationsForOption(option) {
+  try {
+    return JSON.parse(option?.dataset.fundingAllocations || '[]');
+  } catch (error) {
+    console.error('Failed to read TAR funding allocations', error);
+    return [];
+  }
+}
+
+function getFundingAllocationForExpenseDate(form, expenseDate) {
+  if (!expenseDate) return null;
+  const option = form?.querySelector('#travelRequestId')?.selectedOptions[0];
+  return getFundingAllocationsForOption(option).find((allocation) =>
+    expenseDate >= allocation.dateFrom && expenseDate <= allocation.dateTo
+  ) || null;
+}
+
+function updateLineItemFundingAllocations(form) {
+  form?.querySelectorAll('[data-line-item-row]').forEach((row) => {
+    const date = row.querySelector('[data-line-item="expenseDate"]')?.value || '';
+    const label = row.querySelector('[data-line-allocation]');
+    if (!label) return;
+    const allocation = getFundingAllocationForExpenseDate(form, date);
+    label.textContent = allocation
+      ? `Fund code: ${allocation.project?.fundCode || 'Not set'} (${allocation.destination})`
+      : date
+        ? 'No approved TAR fund code covers this date'
+        : 'Select a date to see the fund code';
+  });
+}
+
 function getReimbursementRequesterLabel(report) {
   return report.submittedBy?.name || report.submittedBy?.email || getUser()?.name || '—';
 }
@@ -141,9 +172,12 @@ function getAutoExpenseDescription(destination, category = '') {
 }
 
 function updateReimbursementLineItemDescriptions(form) {
-  const destination = getSelectedTravelDestination(form);
+  const defaultDestination = getSelectedTravelDestination(form);
   form?.querySelectorAll('[data-line-item-row]').forEach((row) => {
     const category = row.querySelector('[data-line-item="category"]')?.value || '';
+    const expenseDate = row.querySelector('[data-line-item="expenseDate"]')?.value || '';
+    const destination = getFundingAllocationForExpenseDate(form, expenseDate)?.destination ||
+      defaultDestination;
     const description = row.querySelector('[data-line-item="description"]');
     if (description) description.value = getAutoExpenseDescription(destination, category);
   });
@@ -163,7 +197,7 @@ function buildReimbursementPayload(form) {
     if (expenseDate || category || amount) {
       lineItems.push({
         expenseDate,
-        location: tripLocation,
+        location: getFundingAllocationForExpenseDate(form, expenseDate)?.destination || tripLocation,
         category,
         description: row.querySelector('[data-line-item="description"]')?.value?.trim() || '',
         invoiceNumber: row.querySelector('[data-line-item="invoiceNumber"]')?.value?.trim() || '',
@@ -278,6 +312,7 @@ function addReimbursementLineItemRow(container, item = {}, categories = expenseC
         <input type="date" id="expense-date-${idx}" data-line-item="expenseDate" value="${escapeHtml(
           item.expenseDate ? String(item.expenseDate).slice(0, 10) : ''
         )}" required />
+        <small class="form-hint" data-line-allocation></small>
       </div>
     </td>
     <td data-label="Category">
@@ -336,8 +371,14 @@ function addReimbursementLineItemRow(container, item = {}, categories = expenseC
     bindUpdate();
   });
   row.querySelectorAll('input, select').forEach((el) => {
-    el.addEventListener('input', bindUpdate);
-    el.addEventListener('change', bindUpdate);
+    el.addEventListener('input', () => {
+      bindUpdate();
+      updateLineItemFundingAllocations(container.closest('form'));
+    });
+    el.addEventListener('change', () => {
+      bindUpdate();
+      updateLineItemFundingAllocations(container.closest('form'));
+    });
   });
   row.querySelector('[data-remove-line-item]').addEventListener('click', () => {
     row.remove();
@@ -346,6 +387,7 @@ function addReimbursementLineItemRow(container, item = {}, categories = expenseC
 
   container.appendChild(row);
   updateReimbursementLineItemDescriptions(container.closest('form'));
+  updateLineItemFundingAllocations(container.closest('form'));
 }
 
 async function initReimbursementLineItems(container, items = []) {
@@ -429,12 +471,15 @@ function canApproveReimbursement(report, user = getUser()) {
   const lineManagerStatuses = ['SUBMITTED_TO_LINE_MANAGER', 'LINE_MANAGER_REVIEW'];
   const financeStatuses = ['SUBMITTED_TO_FINANCE', 'FINANCE_REVIEW'];
   const financeAssignedId = idOf(report?.financeAdminId);
+  const currentBudgetHolderId = idOf(
+    report?.currentBudgetHolderId || report?.selected_approver_id
+  );
   return (
     (roles.includes('supervisor') &&
       idOf(report?.supervisorId) === uid &&
       supervisorStatuses.includes(report?.status)) ||
     (['admin', 'approver_budget_holder'].includes(user.role) &&
-      idOf(report?.selected_approver_id) === uid &&
+      currentBudgetHolderId === uid &&
       budgetHolderStatuses.includes(report?.status)) ||
     (['admin', 'approver_budget_holder'].includes(user.role) &&
       idOf(report?.lineManagerId || report?.selected_approver_id) === uid &&
@@ -473,6 +518,10 @@ function canViewMergedReimbursementPackage(report, user = getUser()) {
   return (
     idOf(report.submittedBy) === uid ||
     idOf(report.selected_approver_id) === uid ||
+    idOf(report.currentBudgetHolderId) === uid ||
+    (report.budgetHolderApprovals || []).some(
+      (approval) => idOf(approval.budgetHolderUser) === uid
+    ) ||
     idOf(report.financeAdminId) === uid ||
     idOf(report.financeCcAdminId) === uid ||
     ['superadmin', 'super_superadmin'].includes(user.role) ||
@@ -541,6 +590,21 @@ function renderReimbursementRow(report, options = {}) {
     ? '<span class="badge badge--type">Reimbursement Request</span>'
     : '';
   const canDecide = options.showApproveActions && canApproveReimbursement(report);
+  const currentBudgetHolderId = String(
+    report.currentBudgetHolderId?._id ||
+    report.currentBudgetHolderId ||
+    report.selected_approver_id?._id ||
+    report.selected_approver_id ||
+    ''
+  );
+  const currentAllocation = (report.budgetHolderApprovals || []).find(
+    (approval) =>
+      String(approval.budgetHolderUser?._id || approval.budgetHolderUser || '') === currentBudgetHolderId &&
+      approval.status === 'pending'
+  );
+  const allocationSummary = currentAllocation
+    ? `<p class="text-muted">Your fund-code review: ${escapeHtml((currentAllocation.allocations || []).map((allocation) => `${allocation.destination} · ${allocation.fundCode || 'No fund code'}`).join('; '))}</p>`
+    : '';
 
   if (canDecide) {
     return `
@@ -557,6 +621,7 @@ function renderReimbursementRow(report, options = {}) {
         </div>
         <p>Total: ${escapeHtml(formatCurrency(report.totalAmountKsh))}</p>
         <p class="text-muted">Base location: ${escapeHtml(report.baseLocation || '—')}</p>
+        ${allocationSummary}
         ${renderReimbursementDecisionButtons(report)}
       </article>`;
   }
@@ -659,6 +724,7 @@ function renderReimbursementLineItemsTable(lineItems) {
         <thead>
           <tr>
             <th>Date</th>
+            <th>Destination / Fund Code</th>
             <th>Category</th>
             <th>Description</th>
             <th>Invoice No.</th>
@@ -672,6 +738,7 @@ function renderReimbursementLineItemsTable(lineItems) {
               (item) => `
             <tr>
               <td data-label="Date">${formatDate(item.expenseDate)}</td>
+              <td data-label="Destination / Fund Code">${escapeHtml([item.destination, item.fundCode].filter(Boolean).join(' · ') || '—')}</td>
               <td data-label="Category">${escapeHtml(formatExpenseCategoryLabel(item.category || item.description))}</td>
               <td data-label="Description">${escapeHtml(item.description || item.category || '—')}</td>
               <td data-label="Invoice No.">${escapeHtml(item.invoiceNumber || '—')}</td>
@@ -691,6 +758,20 @@ function renderReimbursementDetail(report) {
   const rejectionComment = report.decision?.comment;
   const lineItems = report.lineItems || [];
   const id = getReimbursementId(report);
+  const currentUserId = String(getUser()?.id || getUser()?._id || '');
+  const ownFundingApproval = (report.budgetHolderApprovals || []).find(
+    (approval) =>
+      String(approval.budgetHolderUser?._id || approval.budgetHolderUser || '') === currentUserId
+  );
+  const isLineManager = String(report.lineManagerId?._id || report.lineManagerId || '') === currentUserId;
+  const visibleLineItems = ownFundingApproval &&
+    !isLineManager &&
+    String(report.submittedBy?._id || report.submittedBy || '') !== currentUserId
+    ? lineItems.filter(
+        (item) =>
+          String(item.budgetHolderUserId?._id || item.budgetHolderUserId || '') === currentUserId
+      )
+    : lineItems;
 
   return `
     <div class="page-header">
@@ -743,7 +824,22 @@ function renderReimbursementDetail(report) {
     ${canViewMergedReimbursementPackage(report) ? `
       <section class="detail-section">
         <h2>Expense Line Items</h2>
-        ${lineItems.length ? renderReimbursementLineItemsTable(lineItems) : '<p class="text-muted">No line items were submitted.</p>'}
+        ${visibleLineItems.length ? renderReimbursementLineItemsTable(visibleLineItems) : '<p class="text-muted">No line items were submitted for your fund-code allocation.</p>'}
+      </section>` : ''}
+
+    ${report.budgetHolderApprovals?.length ? `
+      <section class="detail-section">
+        <h2>Fund-Code Approvals</h2>
+        <div class="data-table-wrap"><table class="detail-table">
+          <thead><tr><th>Budget Holder</th><th>Destination / Fund Codes</th><th>Status</th><th>Decision By</th></tr></thead>
+          <tbody>${report.budgetHolderApprovals.map((approval) => `
+            <tr>
+              <td>${escapeHtml(approval.budgetHolderUser?.name || approval.budgetHolderUser?.email || 'Budget Holder')}</td>
+              <td>${escapeHtml((approval.allocations || []).map((allocation) => `${allocation.destination} · ${allocation.fundCode || '—'}`).join('; ') || '—')}</td>
+              <td>${escapeHtml(approval.status || 'pending')}</td>
+              <td>${escapeHtml(approval.decidedBy?.name || '—')}</td>
+            </tr>`).join('')}</tbody>
+        </table></div>
       </section>` : ''}
 
     <section class="detail-section">
@@ -794,5 +890,19 @@ function renderApprovedTravelOption(request) {
   const budgetHolderName = budgetHolder?.name || '';
   const budgetHolderId = budgetHolder?._id || budgetHolder?.id || '';
   const project = request.project || {};
-  return `<option value="${escapeHtml(requestId)}" data-destination="${escapeHtml(destination)}" data-line-manager="${escapeHtml(lineManager)}" data-line-manager-id="${escapeHtml(lineManagerId)}" data-budget-holder="${escapeHtml(budgetHolderName)}" data-budget-holder-id="${escapeHtml(budgetHolderId)}" data-fund-code="${escapeHtml(project.fundCode || '')}" data-project-id="${escapeHtml(project.projectId || '')}" data-activity-id="${escapeHtml(project.activityId || '')}" data-department-id="${escapeHtml(project.departmentId || '')}" data-purpose="${escapeHtml(request.purposeOfTrip || '')}">${escapeHtml(destination)} (${escapeHtml(dates)})</option>`;
+  const fundingAllocations = [
+    {
+      dateFrom: String(request.itinerary?.dateFrom || '').slice(0, 10),
+      dateTo: String(request.itinerary?.dateTo || '').slice(0, 10),
+      destination: request.itinerary?.destination || destination,
+      project,
+    },
+    ...(request.travelSegments || []).map((segment) => ({
+      dateFrom: String(segment.dateFrom || '').slice(0, 10),
+      dateTo: String(segment.dateTo || '').slice(0, 10),
+      destination: segment.destination || destination,
+      project: segment.project || project,
+    })),
+  ];
+  return `<option value="${escapeHtml(requestId)}" data-funding-allocations="${escapeHtml(JSON.stringify(fundingAllocations))}" data-destination="${escapeHtml(destination)}" data-line-manager="${escapeHtml(lineManager)}" data-line-manager-id="${escapeHtml(lineManagerId)}" data-budget-holder="${escapeHtml(budgetHolderName)}" data-budget-holder-id="${escapeHtml(budgetHolderId)}" data-fund-code="${escapeHtml(project.fundCode || '')}" data-project-id="${escapeHtml(project.projectId || '')}" data-activity-id="${escapeHtml(project.activityId || '')}" data-department-id="${escapeHtml(project.departmentId || '')}" data-purpose="${escapeHtml(request.purposeOfTrip || '')}">${escapeHtml(destination)} (${escapeHtml(dates)})</option>`;
 }

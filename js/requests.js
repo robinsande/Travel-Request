@@ -95,6 +95,16 @@ function buildRequestPayload(form) {
       destination: row.querySelector('[data-segment="destination"]').value.trim(),
       dateFrom: parseDateInput(row.querySelector('[data-segment="dateFrom"]').value),
       dateTo: parseDateInput(row.querySelector('[data-segment="dateTo"]').value),
+      project: {
+        name: row.querySelector('[data-segment-project="name"]').value.trim(),
+        businessUnit: row.querySelector('[data-segment-project="businessUnit"]').value.trim(),
+        fundCode: row.querySelector('[data-segment-project="fundCode"]').value.trim(),
+        projectId: row.querySelector('[data-segment-project="projectId"]').value.trim(),
+        departmentId: row.querySelector('[data-segment-project="departmentId"]').value.trim(),
+        activityId: row.querySelector('[data-segment-project="activityId"]').value.trim(),
+      },
+      selected_budget_holder_id: row.querySelector('[data-segment="budgetHolder"]').value,
+      accommodationNeeded: row.querySelector('[data-segment="accommodationNeeded"]').checked,
     })),
     passengers,
   };
@@ -150,7 +160,16 @@ async function populateRequestForm(form, request, passengerOptions = null) {
   const segmentContainer = form.querySelector('#travel-segments');
   if (segmentContainer) {
     segmentContainer.innerHTML = '';
-    segments.forEach((segment) => addTravelSegment(segmentContainer, segment));
+    segments.forEach((segment) => addTravelSegment(segmentContainer, {
+      ...segment,
+      project: segment.project || p,
+      selected_budget_holder_id: segment.selected_budget_holder_id ||
+        request.selected_budget_holder_id?._id ||
+        request.selected_budget_holder_id ||
+        '',
+    }));
+    await Promise.all(Array.from(segmentContainer.querySelectorAll('.travel-segment'))
+      .map((row) => row.budgetHolderOptionsReady));
   }
   form.elements.itinerary_accommodationNeeded.checked = !!it.accommodationNeeded;
 
@@ -171,15 +190,34 @@ let cachedPassengerOptions = null;
 function addTravelSegment(container, segment = {}) {
   const row = document.createElement('div');
   row.className = 'travel-segment form-row';
+  const project = segment.project || {};
   row.innerHTML = `
     <div class="form-group"><label>From</label><input type="text" data-segment="from" required value="${escapeHtml(segment.from || '')}" /></div>
     <div class="form-group"><label>To</label><input type="text" data-segment="to" required value="${escapeHtml(segment.to || '')}" /></div>
     <div class="form-group"><label>Destination</label><input type="text" data-segment="destination" required value="${escapeHtml(segment.destination || '')}" /></div>
     <div class="form-group"><label>Arrival</label><div class="date-input"><input type="text" inputmode="numeric" data-segment="dateFrom" data-date-text placeholder="DD/MM/YYYY" pattern="\\d{1,2}/\\d{1,2}/\\d{4}" required value="${escapeHtml(formatDateInput(segment.dateFrom))}" /><button type="button" class="date-input__button" aria-label="Open arrival date picker">&#128197;</button><input type="date" data-date-picker tabindex="-1" aria-hidden="true" /></div></div>
     <div class="form-group"><label>Departure</label><div class="date-input"><input type="text" inputmode="numeric" data-segment="dateTo" data-date-text placeholder="DD/MM/YYYY" pattern="\\d{1,2}/\\d{1,2}/\\d{4}" required value="${escapeHtml(formatDateInput(segment.dateTo))}" /><button type="button" class="date-input__button" aria-label="Open departure date picker">&#128197;</button><input type="date" data-date-picker tabindex="-1" aria-hidden="true" /></div></div>
+    <div class="form-group"><label>Project Name</label><input type="text" data-segment-project="name" required value="${escapeHtml(project.name || '')}" /></div>
+    <div class="form-group"><label>Business Unit</label><input type="text" data-segment-project="businessUnit" required value="${escapeHtml(project.businessUnit || '')}" /></div>
+    <div class="form-group"><label>Fund Code</label><input type="text" data-segment-project="fundCode" required value="${escapeHtml(project.fundCode || '')}" /></div>
+    <div class="form-group"><label>Project ID</label><input type="text" data-segment-project="projectId" required value="${escapeHtml(project.projectId || '')}" /></div>
+    <div class="form-group"><label>Department ID</label><input type="text" data-segment-project="departmentId" required value="${escapeHtml(project.departmentId || '')}" /></div>
+    <div class="form-group"><label>Activity ID</label><input type="text" data-segment-project="activityId" required value="${escapeHtml(project.activityId || '')}" /></div>
+    <div class="form-group"><label>Budget Holder</label><select class="form-control" data-segment="budgetHolder" required><option value="">Loading budget holders…</option></select></div>
+    <label class="checkbox-label"><input type="checkbox" data-segment="accommodationNeeded" ${segment.accommodationNeeded ? 'checked' : ''} /> Accommodation needed for this segment</label>
     <button type="button" class="btn btn--danger btn--sm remove-travel-segment">Remove</button>`;
   row.querySelector('.remove-travel-segment').addEventListener('click', () => row.remove());
   container.appendChild(row);
+  const holderId = segment.selected_budget_holder_id?._id ||
+    segment.selected_budget_holder_id ||
+    '';
+  row.budgetHolderOptionsReady = populateBudgetHolderOptions(
+    row.querySelector('[data-segment="budgetHolder"]'),
+    holderId
+  ).catch((error) => {
+    console.error('Failed to load budget holders for a travel segment', error);
+    showToast('Budget holders could not be loaded for an additional destination.', 'error');
+  });
   bindDatePickers(row);
 }
 
@@ -872,7 +910,11 @@ function renderRequestDetail(request) {
             <tr><th colspan="6" class="tar-preview__section-title">Travel Itinerary (must be completed prior to supervisor authorizing travel)</th></tr>
             <tr><th>Date From</th><th>Date To</th><th colspan="2">Destination</th><th>Passengers</th><th>Accommodation</th></tr>
             <tr><td>${fieldValue(it.dateFrom ? formatDate(it.dateFrom) : '')}</td><td>${fieldValue(it.dateTo ? formatDate(it.dateTo) : '')}</td><td colspan="2">${fieldValue(it.destination)}</td><td>${fieldValue(passengers.length || '')}</td><td>${fieldValue(it.accommodationNeeded ? 'Yes' : '')}</td></tr>
-            ${(request.travelSegments || []).length ? `<tr><th colspan="6" class="tar-preview__section-title">Additional Travel Destinations</th></tr><tr><th>Arrival</th><th>Departure</th><th>From</th><th>To</th><th colspan="2">Destination</th></tr>${request.travelSegments.map((segment) => `<tr><td>${formatDate(segment.dateFrom)}</td><td>${formatDate(segment.dateTo)}</td><td>${escapeHtml(segment.from || '—')}</td><td>${escapeHtml(segment.to || '—')}</td><td colspan="2">${escapeHtml(segment.destination || '—')}</td></tr>`).join('')}` : ''}
+            ${(request.travelSegments || []).length ? `<tr><th colspan="6" class="tar-preview__section-title">Additional Travel Destinations and Fund Codes</th></tr>${request.travelSegments.map((segment, index) => {
+              const approval = (request.budgetHolderApprovals || []).find((item) => item.segmentIndex === index);
+              const segmentHolder = segment.selected_budget_holder_id || {};
+              return `<tr><td colspan="6"><strong>${escapeHtml(segment.destination || '—')}</strong> (${escapeHtml(formatDate(segment.dateFrom))} – ${escapeHtml(formatDate(segment.dateTo))}) · ${escapeHtml(segment.from || '—')} to ${escapeHtml(segment.to || '—')} · Accommodation: ${segment.accommodationNeeded ? 'Yes' : 'No'}<br />Project: ${escapeHtml(segment.project?.name || '—')} · Fund Code: ${escapeHtml(segment.project?.fundCode || approval?.fundCode || '—')} · Project ID: ${escapeHtml(segment.project?.projectId || '—')} · Department ID: ${escapeHtml(segment.project?.departmentId || '—')} · Activity ID: ${escapeHtml(segment.project?.activityId || '—')}<br />Budget Holder: ${escapeHtml(segmentHolder.name || segmentHolder.user?.name || '—')} · Review: ${escapeHtml(approval?.status || 'Pending')} · ${signatureCell(approval?.signature, 'Segment budget holder signature')}</td></tr>`;
+            }).join('')}` : ''}
             <tr class="tar-preview__signature-row"><th>Requested by:<br><br>Signature:</th><td colspan="3">${fieldValue(requester)}<br>${signatureCell(request.requesterSignature, 'Requester signature')}</td><td colspan="2">Date: ${fieldValue(request.submittedAt || request.createdAt ? formatDate(request.submittedAt || request.createdAt) : '')}</td></tr>
             <tr class="tar-preview__signature-row"><th>Budget Holder Review:</th><td colspan="2">Print Name:<br>${fieldValue(budgetHolderDecision.decidedBy?.name || budgetHolder.name || '')}</td><td colspan="3">Signature:<br>${signatureCell(budgetHolderDecision.signature, 'Budget holder signature')}</td></tr>
             <tr class="tar-preview__signature-row"><th>Travel<br>Authorized<br>by:</th><td>Print Name:<br>${fieldValue(approver)}</td><td>Position:<br>${fieldValue(request.decision?.decidedBy?.position || request.selected_approver_id?.position || 'Supervisor / Approver')}</td><td>Signature:<br>${signatureCell(request.decision?.signature, 'Approver signature')}</td><td colspan="2">Date:<br>${fieldValue(request.decision?.decidedAt || request.submittedAt ? formatDate(request.decision?.decidedAt || request.submittedAt) : '')}</td></tr>
