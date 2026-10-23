@@ -460,17 +460,31 @@
           });
           tbody.querySelectorAll('.user-reset-password-button').forEach((button) => {
             button.addEventListener('click', async () => {
-              if (!window.confirm('Reset this user password and generate a new temporary password?')) return;
+              if (!window.confirm('Reset this user password and email them a temporary password?')) return;
               button.disabled = true;
               try {
                 const result = await resetUserPassword(button.dataset.userId);
                 const expires = new Date(result.passwordExpiresAt).toLocaleDateString();
                 const passwordResult = document.getElementById('temporary-password-result');
-                passwordResult.innerHTML = `Temporary password for <strong>${escapeHtml(result.email)}</strong>: <code>${escapeHtml(result.temporaryPassword)}</code><br>Expires: ${escapeHtml(expires)}. Copy it now; it will not be shown again.`;
+                passwordResult.innerHTML = `A temporary password was emailed to <strong>${escapeHtml(result.email)}</strong>. It expires ${escapeHtml(expires)}.`;
                 passwordResult.hidden = false;
-                showToast('Password reset successfully.', 'success');
+                showToast('Temporary password emailed successfully.', 'success');
               } catch (error) {
                 showToast(error.message || 'Failed to reset password.', 'error');
+              } finally {
+                button.disabled = false;
+              }
+            });
+          });
+          tbody.querySelectorAll('.user-reset-authenticator-button').forEach((button) => {
+            button.addEventListener('click', async () => {
+              if (!window.confirm('Reset this user authenticator? Their current authenticator will stop working and they must scan a new QR code at their next sign-in.')) return;
+              button.disabled = true;
+              try {
+                const result = await resetUserAuthenticator(button.dataset.userId);
+                showToast(`Authenticator reset for ${result.email}. They can scan a new QR code at sign-in.`, 'success');
+              } catch (error) {
+                showToast(error.message || 'Failed to reset authenticator.', 'error');
               } finally {
                 button.disabled = false;
               }

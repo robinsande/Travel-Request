@@ -48,6 +48,7 @@
       submittedAt: null,
       decision: {},
     });
+    enhanceSmallTarSignatures(document.getElementById('template-preview'));
 
     const downloadButton = document.getElementById('download-template-btn');
     downloadButton.addEventListener('click', async () => {

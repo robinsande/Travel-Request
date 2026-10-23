@@ -284,6 +284,7 @@
 
         loadingEl.innerHTML = '';
         contentEl.innerHTML = renderRequestDetail(currentRequest);
+        enhanceSmallTarSignatures(contentEl);
         const canDownloadSignedTar =
           currentRequest.status === 'approved' &&
           Boolean(currentRequest.requesterSignature) &&

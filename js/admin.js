@@ -81,6 +81,7 @@ function renderUserRow(user) {
           <button type="button" class="btn btn--secondary user-edit-button" data-user-id="${escapeHtml(user._id || user.id)}">Edit profile</button>
           <button type="button" class="btn btn--secondary user-draft-button" data-user-id="${escapeHtml(user._id || user.id)}">View TAR draft</button>
           <button type="button" class="btn btn--secondary user-reset-password-button" data-user-id="${escapeHtml(user._id || user.id)}">Reset password</button>
+          <button type="button" class="btn btn--secondary user-reset-authenticator-button" data-user-id="${escapeHtml(user._id || user.id)}">Reset authenticator</button>
           <button type="button" class="btn btn--danger user-delete-button" data-user-id="${escapeHtml(user._id || user.id)}">Delete</button>
           </div>
         </details>

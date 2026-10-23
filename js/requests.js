@@ -930,6 +930,73 @@ function renderRequestDetail(request) {
     </div>`;
 }
 
+function enhanceSmallTarSignatures(container) {
+    container.querySelectorAll('img.tar-preview__signature').forEach((image) => {
+      if (!image.src.startsWith('data:image/png;base64,')) return;
+
+      const cropSmallSignature = () => {
+        if (image.dataset.signatureCropped || !image.naturalWidth || !image.naturalHeight) return;
+        const canvas = document.createElement('canvas');
+        canvas.width = image.naturalWidth;
+        canvas.height = image.naturalHeight;
+        const context = canvas.getContext('2d', { willReadFrequently: true });
+        if (!context) return;
+
+        context.drawImage(image, 0, 0);
+        const { data, width, height } = context.getImageData(0, 0, canvas.width, canvas.height);
+        let left = width;
+        let top = height;
+        let right = -1;
+        let bottom = -1;
+        for (let y = 0; y < height; y += 1) {
+          for (let x = 0; x < width; x += 1) {
+            const pixel = (y * width + x) * 4;
+            if (data[pixel] < 230 || data[pixel + 1] < 230 || data[pixel + 2] < 230) {
+              left = Math.min(left, x);
+              top = Math.min(top, y);
+              right = Math.max(right, x);
+              bottom = Math.max(bottom, y);
+            }
+          }
+        }
+
+        if (right < left || bottom < top) return;
+        const inkWidth = right - left + 1;
+        const inkHeight = bottom - top + 1;
+        if (inkWidth >= width * 0.82 && inkHeight >= height * 0.7) return;
+
+        const marginX = Math.max(6, Math.round(inkWidth * 0.1));
+        const marginY = Math.max(6, Math.round(inkHeight * 0.2));
+        const cropX = Math.max(0, left - marginX);
+        const cropY = Math.max(0, top - marginY);
+        const cropRight = Math.min(width, right + marginX + 1);
+        const cropBottom = Math.min(height, bottom + marginY + 1);
+        const croppedCanvas = document.createElement('canvas');
+        croppedCanvas.width = cropRight - cropX;
+        croppedCanvas.height = cropBottom - cropY;
+        const croppedContext = croppedCanvas.getContext('2d');
+        if (!croppedContext) return;
+        croppedContext.drawImage(
+          canvas,
+          cropX,
+          cropY,
+          croppedCanvas.width,
+          croppedCanvas.height,
+          0,
+          0,
+          croppedCanvas.width,
+          croppedCanvas.height
+        );
+        image.dataset.signatureCropped = 'true';
+        image.classList.add('tar-preview__signature--small');
+        image.src = croppedCanvas.toDataURL('image/png');
+      };
+
+      if (image.complete) cropSmallSignature();
+      else image.addEventListener('load', cropSmallSignature, { once: true });
+    });
+}
+
 function getSelectedApproverId(request) {
   if (!request) return '';
   const first = (request.selected_approver_ids || [])[0];

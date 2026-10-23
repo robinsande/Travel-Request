@@ -48,6 +48,10 @@ async function resetUserPassword(userId) {
   return api.post(`/users/${userId}/reset-password`, {});
 }
 
+async function resetUserAuthenticator(userId) {
+  return api.post(`/users/${userId}/reset-authenticator`, {});
+}
+
 async function sendBulkInvitations(userIds = [], all = false) {
   return api.post('/users/bulk-invite', { userIds, all });
 }

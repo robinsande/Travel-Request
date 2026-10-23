@@ -108,6 +108,12 @@
   object-position: left center;
 }
 
+.tar-preview__signature--small {
+  width: min(100%, 240px);
+  max-width: 240px;
+  max-height: 85px;
+}
+
 .tar-preview__missing {
   display: inline-block;
   margin-top: 0.35rem;
@@ -222,15 +228,11 @@ body.auth-page {
 }
 
 body:not(.auth-page):not(.landing-page) {
-  background:
-    linear-gradient(135deg, rgba(33, 18, 38, 0.78), rgba(215, 125, 31, 0.52)),
-    url('https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat fixed;
+  background: linear-gradient(135deg, #211226, #d77d1f);
 }
 
 .travel-bg {
-  background:
-    linear-gradient(135deg, rgba(33, 18, 38, 0.78), rgba(215, 125, 31, 0.52)),
-    url('https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat fixed;
+  background: linear-gradient(135deg, #211226, #d77d1f);
 }
 
 .dashboard-page {
