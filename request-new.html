@@ -280,7 +280,6 @@
     const tarDefaultFields = ['project_name', 'project_businessUnit', 'project_fundCode', 'project_projectId', 'project_departmentId', 'project_activityId', 'employeeOffice'];
     let draftSaveTimer = null;
     let accountDraft = null;
-    let accountDraftLoaded = false;
     let isSubmittingRequest = false;
     let previousApprovedTars = [];
 
@@ -298,8 +297,14 @@
       return accountDraft?.version === 2 ? accountDraft : readLegacyDraft();
     }
 
-    function saveDraft() {
-        if (isSubmittingRequest) return;
+    async function saveDraft() {
+        if (isSubmittingRequest) {
+          return {
+            savedLocally: false,
+            savedToAccount: false,
+            error: new Error('The TAR is already being submitted.'),
+          };
+        }
         const fields = {};
         Array.from(form.elements).forEach((element) => {
           if (!element.name || element.name.startsWith('passenger_user_')) return;
@@ -333,7 +338,21 @@
 
         const draft = { version: 2, savedAt: new Date().toISOString(), fields, passengers, segments };
         accountDraft = draft;
-        return saveTarDraft(draft).then(() => true).catch(() => false);
+
+        try {
+          localStorage.setItem(draftKey, JSON.stringify(draft));
+        } catch (error) {
+          console.error('Failed to save TAR draft on this device.', error);
+          return { savedLocally: false, savedToAccount: false, error };
+        }
+
+        try {
+          await saveTarDraft(draft);
+          return { savedLocally: true, savedToAccount: true };
+        } catch (error) {
+          console.error('Failed to sync TAR draft to the account; kept the local copy.', error);
+          return { savedLocally: true, savedToAccount: false, error };
+        }
       }
 
     function saveTarDefaults() {
@@ -433,8 +452,22 @@
     window.addEventListener('pagehide', saveDraft);
     document.addEventListener('before-app-logout', saveDraft);
     document.getElementById('save-draft-btn').addEventListener('click', async () => {
-      const saved = await saveDraft();
-      showToast(saved ? 'TAR draft saved to your account.' : 'TAR draft could not be saved. Check your connection and try again.', saved ? 'success' : 'error');
+      const result = await saveDraft();
+      if (result.savedToAccount) {
+        showToast('TAR draft saved to your account and this device.', 'success');
+      } else if (result.savedLocally) {
+        showToast(
+          `TAR draft saved on this device, but account sync failed: ${result.error.message}`,
+          'error',
+          7000
+        );
+      } else {
+        showToast(
+          `TAR draft could not be saved: ${result.error.message}`,
+          'error',
+          7000
+        );
+      }
     });
 
     async function loadApprovers(selectedApproverIds = []) {
@@ -493,24 +526,31 @@
       const options = await initPassengerList(passengersList);
       try {
         accountDraft = await fetchTarDraft();
-        accountDraftLoaded = true;
-        if (!accountDraft) {
-          const legacyDraft = readLegacyDraft();
-          if (legacyDraft) {
-            accountDraft = legacyDraft;
-            await saveTarDraft(legacyDraft);
+        if (accountDraft) {
+          try {
+            localStorage.setItem(draftKey, JSON.stringify(accountDraft));
+          } catch (error) {
+            console.error('Failed to cache the account TAR draft on this device.', error);
           }
-          localStorage.removeItem(draftKey);
+        } else {
+          const localDraft = readLegacyDraft();
+          if (localDraft) {
+            accountDraft = localDraft;
+            try {
+              await saveTarDraft(localDraft);
+            } catch (error) {
+              console.error('Failed to sync the local TAR draft to the account.', error);
+            }
+          }
         }
-      } catch {
+      } catch (error) {
+        console.error('Failed to load the account TAR draft; checking this device for a saved copy.', error);
         accountDraft = null;
       }
       const restored = restoreDraft(options);
       if (restored) document.getElementById('request-form-title').textContent = 'Edit Saved TAR Draft';
-      if (restored && accountDraftLoaded && !accountDraft) localStorage.removeItem(draftKey);
       if (!restored) {
         migrateLegacyDraftDefaults();
-        if (accountDraftLoaded) localStorage.removeItem(draftKey);
       }
       if (!restoreTarDefaults()) await restoreApprovedTarDefaults();
       const requester = options.find(

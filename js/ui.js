@@ -457,7 +457,11 @@ function rememberAndMaskPageUrl() {
   if (!currentPath || currentPath === '/' || currentPath === '/index.html') return;
 
   sessionStorage.setItem('tar_resume_path', currentPath);
-  window.history.replaceState({}, document.title, '/');
+  const directoryPath = window.location.pathname.slice(
+    0,
+    window.location.pathname.lastIndexOf('/') + 1
+  ) || '/';
+  window.history.replaceState({}, document.title, directoryPath);
 }
 
 function unwrapListResult(result, fallbackKeys = []) {
